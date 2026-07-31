@@ -1,0 +1,118 @@
+version: 1
+cases:
+  - name: choice-ending
+    kind: error
+    text: "커피던지 차던지 고르세요."
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.ending.deun-choice
+        count: 2
+        suggestions: ["커피든지", "차든지"]
+
+  - name: topic-particle
+    kind: error
+    text: "책는 유용하다."
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.particle.topic-allomorph
+        suggestions: ["책은"]
+
+  - name: subject-particle
+    kind: error
+    text: "나무이 필요하다."
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.particle.subject-allomorph
+        suggestions: ["무가"]
+
+  - name: object-particle
+    kind: error
+    text: "책를 읽는다."
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.particle.object-allomorph
+        suggestions: ["책을"]
+
+  - name: comitative-particle
+    kind: error
+    text: "책와 연필을 챙긴다."
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.particle.comitative-allomorph
+        suggestions: ["책과"]
+
+  - name: instrumental-particle
+    kind: error
+    text: "책로 공부한다."
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.particle.instrumental-allomorph
+        suggestions: ["책으로"]
+
+  - name: comma-spacing
+    kind: error
+    text: "사과,배를 샀다."
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: punctuation.space-after-comma
+        suggestions: [", "]
+
+  - name: sentence-mark-spacing
+    kind: error
+    text: "끝났다.다음 문장이다."
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: punctuation.space-after-sentence-mark
+        suggestions: [". "]
+
+  - name: adjacent-word-repetition
+    kind: error
+    text: "문서를 문서를 저장한다."
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: repetition.adjacent-word
+        suggestions: ["문서를"]
+
+  - name: correct-forms-stay-silent
+    kind: normal
+    text: "책은 유용하다. 나무가 필요하다. 작가는 책을 읽는다. 책과 연필을 챙긴다. 책으로 공부한다. 커피든지 차든지 고르세요. 사과, 배를 샀다. 끝났다. 다음 문장이다. 문서를 저장한다."
+    sourceKind: plain_text
+    profile: default
+    expected: []
+    absentRuleIds:
+      - grammar.ending.deun-choice
+      - grammar.particle.topic-allomorph
+      - grammar.particle.subject-allomorph
+      - grammar.particle.object-allomorph
+      - grammar.particle.comitative-allomorph
+      - grammar.particle.instrumental-allomorph
+      - punctuation.space-after-comma
+      - punctuation.space-after-sentence-mark
+      - repetition.adjacent-word
+
+  - name: lexical-subject-particle-exception
+    kind: exception
+    text: "그 아이."
+    sourceKind: plain_text
+    profile: default
+    expected: []
+    absentRuleIds:
+      - grammar.particle.subject-allomorph
+
+  - name: distributive-adjacent-repeat-exception
+    kind: exception
+    text: "그때 그때 한국인의 신앙을 생각한다."
+    sourceKind: plain_text
+    profile: default
+    expected: []
+    absentRuleIds:
+      - repetition.adjacent-word

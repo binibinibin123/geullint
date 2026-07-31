@@ -1,0 +1,10 @@
+version: 1
+language: ko
+rules:
+  - id: spelling.project.product-name
+    severity: warning
+    message: "프로젝트 제품명 표기를 확인하세요."
+    safeFix: true
+    replacements:
+      - from: 글린트
+        to: GeulLint

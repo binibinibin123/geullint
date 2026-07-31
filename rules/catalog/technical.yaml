@@ -1,0 +1,19 @@
+version: 1
+language: ko
+rules:
+  - id: technical.term.web-browser
+    title: "웹 브라우저 표기"
+    description: "기술 용어 ‘웹 브라우저’의 철자를 바로잡습니다."
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "‘웹부라우저’는 ‘웹 브라우저’로 고쳐 쓰세요."
+    safeFix: true
+    replacements:
+      - from: 웹부라우저
+        to: 웹 브라우저
+    examples:
+      incorrect:
+        - 웹부라우저
+      correct:
+        - 웹 브라우저

@@ -1,0 +1,47 @@
+name: Bug report
+description: 재현 가능한 진단, CLI, 편집기 또는 플레이그라운드 문제
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: "문장에 개인정보를 넣지 마세요. 최소 재현 사례만 공유해 주세요."
+  - type: input
+    id: version
+    attributes:
+      label: GeulLint version
+      placeholder: "0.2.0-alpha.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options: [CLI, VS Code, LSP, Browser playground, Rule pack]
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: 입력, 실행 명령과 실제 결과를 적어 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: 운영체제, CPU, 편집기 버전 등
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: 재현 사례에서 개인정보와 비공개 문서를 제거했습니다.
+          required: true

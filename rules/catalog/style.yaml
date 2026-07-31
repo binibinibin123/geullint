@@ -1,0 +1,20 @@
+version: 1
+language: ko
+rules:
+  - id: style.redundancy.majority-over
+    title: "과반수 이상 중복"
+    description: "‘과반수’에 이미 절반을 넘는다는 뜻이 있어 ‘이상’이 겹칠 수 있음을 알립니다."
+    severity: info
+    confidence: medium
+    profile: editorial
+    defaultEnabled: false
+    message: "‘과반수 이상’은 뜻이 겹칠 수 있습니다."
+    safeFix: false
+    replacements:
+      - from: 과반수 이상
+        to: 과반수
+    examples:
+      incorrect:
+        - 과반수 이상
+      correct:
+        - 과반수

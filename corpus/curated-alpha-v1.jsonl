@@ -1,0 +1,126 @@
+{"id":"seolgeoji-error-1","text":"저녁을 먹은 뒤 가족이 함께 설겆이를 마쳤다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.seolgeoji"]}
+{"id":"seolgeoji-error-2","text":"오늘은 밀린 설겆이부터 끝내야 한다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.seolgeoji"]}
+{"id":"seolgeoji-normal-1","text":"동생이 설거지를 하는 동안 나는 식탁을 닦았다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"seungnak-error-1","text":"담당자의 승락을 받기 전에는 자료를 공개할 수 없다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.seungnak"]}
+{"id":"seungnak-error-2","text":"부모님의 승락 없이 계약을 진행하지 않았다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.seungnak"]}
+{"id":"seungnak-normal-1","text":"위원장은 제안을 검토한 뒤 승낙 의사를 밝혔다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"gwittuim-error-1","text":"회의가 취소될 수 있다는 귀뜸을 미리 들었다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.gwittuim"]}
+{"id":"gwittuim-error-2","text":"친구가 면접 질문을 살짝 귀뜸해 주었다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.gwittuim"]}
+{"id":"gwittuim-normal-1","text":"선배의 귀띔 덕분에 준비물을 빠뜨리지 않았다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"neoljjikhada-error-1","text":"새로 얻은 작업실은 생각보다 넓직하다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.neoljjikhada"]}
+{"id":"neoljjikhada-error-2","text":"광장이 넓직하다 보니 아이들이 뛰어놀기 좋다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.neoljjikhada"]}
+{"id":"neoljjikhada-normal-1","text":"거실이 널찍하다 보니 큰 책장을 놓고도 여유가 있다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"jjejjehada-error-1","text":"작은 실수까지 따지는 태도가 너무 째째하다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.jjejjehada"]}
+{"id":"jjejjehada-error-2","text":"그 정도 비용을 아끼려는 모습은 조금 째째하다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.jjejjehada"]}
+{"id":"jjejjehada-normal-1","text":"사소한 일에 쩨쩨하게 굴지 말고 넉넉하게 넘어가자.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"sutgarak-error-1","text":"식탁 위에 숫가락과 젓가락을 가지런히 놓았다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.sutgarak"]}
+{"id":"sutgarak-error-2","text":"국을 먹으려고 숫가락을 찾았지만 보이지 않았다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.sutgarak"]}
+{"id":"sutgarak-normal-1","text":"아이는 숟가락으로 죽을 천천히 떠먹었다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"dwikkumchi-error-1","text":"새 구두를 오래 신었더니 뒷굼치가 까졌다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.dwikkumchi"]}
+{"id":"dwikkumchi-error-2","text":"달리기를 마친 뒤 오른쪽 뒷굼치가 아팠다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.dwikkumchi"]}
+{"id":"dwikkumchi-normal-1","text":"뒤꿈치를 들고 조용히 방을 빠져나왔다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"gurenarut-error-1","text":"배우는 배역을 위해 구렛나루를 길렀다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.gurenarut"]}
+{"id":"gurenarut-error-2","text":"사진 속 남자는 짙은 구렛나루가 인상적이었다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.gurenarut"]}
+{"id":"gurenarut-normal-1","text":"그는 구레나룻을 짧게 다듬고 촬영장에 도착했다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"uteoreun-error-1","text":"명절 아침에는 먼저 윗어른께 인사를 드렸다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.uteoreun"]}
+{"id":"uteoreun-error-2","text":"아이들에게 윗어른을 공경하는 태도를 가르쳤다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.uteoreun"]}
+{"id":"uteoreun-normal-1","text":"마을의 웃어른들이 회관에 모여 의논을 시작했다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"haesseukhada-error-1","text":"밤새 간호한 사람의 얼굴이 무척 핼쓱하다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.haesseukhada"]}
+{"id":"haesseukhada-error-2","text":"며칠 제대로 먹지 못해서인지 안색이 핼쓱하다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.haesseukhada"]}
+{"id":"haesseukhada-normal-1","text":"퇴원한 친구의 얼굴은 아직 해쓱해 보였다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"umcheurida-error-1","text":"찬바람을 피하려고 어깨를 움추리다 보니 목이 뻐근했다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.umcheurida"]}
+{"id":"umcheurida-error-2","text":"갑작스러운 고함에 몸을 움추리다 뒤로 물러섰다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.umcheurida"]}
+{"id":"umcheurida-normal-1","text":"고양이는 몸을 움츠리고 소파 아래로 숨었다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"aedalpeuda-error-1","text":"서로 만나지 못한 두 사람의 사연이 몹시 애닯다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.aedalpeuda"]}
+{"id":"aedalpeuda-error-2","text":"고향을 떠난 이들의 이야기가 참 애닯다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.aedalpeuda"]}
+{"id":"aedalpeuda-normal-1","text":"주인공의 애달픈 선택에 객석이 조용해졌다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"iljjiki-error-1","text":"그는 일찌기 독립해 혼자 생활하는 법을 배웠다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.iljjiki"]}
+{"id":"iljjiki-error-2","text":"과학자는 일찌기 이 현상의 중요성을 알아보았다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.iljjiki"]}
+{"id":"iljjiki-normal-1","text":"아침 일찍이 길을 나선 덕분에 막히지 않았다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"dakdalhada-error-1","text":"실적이 부족하다고 직원을 닥달하다 결국 갈등이 생겼다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.dakdalhada"]}
+{"id":"dakdalhada-error-2","text":"아이에게 숙제를 빨리 하라고 닥달하다 목소리가 커졌다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.dakdalhada"]}
+{"id":"dakdalhada-normal-1","text":"마감이 급해도 사람을 닦달하는 방식은 피해야 한다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"dwichidakkeori-error-1","text":"행사가 끝난 뒤 남은 뒤치닥거리를 혼자 맡았다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.dwichidakkeori"]}
+{"id":"dwichidakkeori-error-2","text":"사고가 날 때마다 부모가 뒤치닥거리를 해야 했다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.dwichidakkeori"]}
+{"id":"dwichidakkeori-normal-1","text":"손님이 떠난 뒤 모두가 함께 뒤치다꺼리를 했다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"heoguhan-nal-error-1","text":"허구헌날 같은 변명만 늘어놓으니 믿기 어려웠다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.heoguhan-nal"]}
+{"id":"heoguhan-nal-error-2","text":"그는 허구헌날 늦잠을 자고 약속 시간에 늦었다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.heoguhan-nal"]}
+{"id":"heoguhan-nal-normal-1","text":"허구한 날 다투던 형제가 이제는 서로를 이해한다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"hyeolhyeoldansin-error-1","text":"그는 홀홀단신 낯선 도시에 올라와 일을 시작했다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.hyeolhyeoldansin"]}
+{"id":"hyeolhyeoldansin-error-2","text":"홀홀단신 떠난 여행에서 많은 사람을 만났다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.hyeolhyeoldansin"]}
+{"id":"hyeolhyeoldansin-normal-1","text":"혈혈단신 타국에 정착하는 일은 쉽지 않았다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"gwebyeon-error-1","text":"근거 없는 괴변으로 책임을 피하려 해서는 안 된다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.gwebyeon"]}
+{"id":"gwebyeon-error-2","text":"토론자는 논리처럼 들리는 괴변을 길게 늘어놓았다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.gwebyeon"]}
+{"id":"gwebyeon-normal-1","text":"그의 궤변은 질문이 이어지자 금세 모순을 드러냈다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"eolmakeum-error-1","text":"이 상자에 물건이 얼만큼 들어가는지 확인해 보자.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.eolmakeum"]}
+{"id":"eolmakeum-error-2","text":"목표를 위해 얼만큼 노력했는지는 스스로 알고 있다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.eolmakeum"]}
+{"id":"eolmakeum-normal-1","text":"재료가 얼마큼 남았는지 무게를 다시 재었다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"osundosun-error-1","text":"가족이 오손도손 둘러앉아 저녁을 먹었다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.osundosun"]}
+{"id":"osundosun-error-2","text":"이웃과 오손도손 지내는 모습이 보기 좋았다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.osundosun"]}
+{"id":"osundosun-normal-1","text":"세 자매는 오순도순 이야기를 나누며 밤을 보냈다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"ukyeoneohda-error-1","text":"두꺼운 외투를 작은 가방에 억지로 우겨넣다 지퍼가 망가졌다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.ukyeoneohda"]}
+{"id":"ukyeoneohda-error-2","text":"남은 종이를 서랍 안에 우겨넣다 모서리가 구겨졌다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.ukyeoneohda"]}
+{"id":"ukyeoneohda-normal-1","text":"옷을 가방에 욱여넣지 말고 차곡차곡 접어 넣어라.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"chireotda-error-1","text":"우리는 좁은 체육관에서 결승전을 치뤘다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.chireotda"]}
+{"id":"chireotda-error-2","text":"올해 행사는 비가 오는 가운데 치뤘다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.chireotda"]}
+{"id":"chireotda-normal-1","text":"대표팀은 어려운 원정 경기를 무사히 치렀다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"damgatda-error-1","text":"아침에 씻어 둔 채소를 양념장에 담궜다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.damgatda"]}
+{"id":"damgatda-error-2","text":"더위를 식히려고 발을 차가운 물에 담궜다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.damgatda"]}
+{"id":"damgatda-normal-1","text":"어머니는 배추를 소금물에 담갔다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"jamgatda-error-1","text":"외출하기 전에 창문을 닫고 문을 잠궜다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.jamgatda"]}
+{"id":"jamgatda-error-2","text":"관리인은 마지막으로 창고 자물쇠를 잠궜다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.jamgatda"]}
+{"id":"jamgatda-normal-1","text":"가게 주인은 셔터를 내리고 출입문을 잠갔다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"kkeorimchikhada-error-1","text":"출처가 분명하지 않은 돈을 받기가 꺼림직하다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.kkeorimchikhada"]}
+{"id":"kkeorimchikhada-error-2","text":"상대의 설명을 듣고도 어딘가 꺼림직하다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.kkeorimchikhada"]}
+{"id":"kkeorimchikhada-normal-1","text":"확인하지 않은 문서를 승인하기는 꺼림칙하다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"gaekjjeokda-error-1","text":"상황과 어울리지 않는 농담이 몹시 객적다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.gaekjjeokda"]}
+{"id":"gaekjjeokda-error-2","text":"그의 객적다 싶은 말에도 사람들은 웃지 않았다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.gaekjjeokda"]}
+{"id":"gaekjjeokda-normal-1","text":"객쩍은 소리는 그만하고 해결책을 이야기하자.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"silhjeungi-nada-error-1","text":"같은 메뉴를 매일 먹었더니 이제는 실증이 나다 못해 보기만 해도 싫다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.silhjeungi-nada"]}
+{"id":"silhjeungi-nada-error-2","text":"반복되는 업무에 실증이 나다 보니 집중력이 떨어졌다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.silhjeungi-nada"]}
+{"id":"silhjeungi-nada-normal-1","text":"단조로운 생활에 싫증이 나서 새로운 취미를 시작했다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"geondeurida-error-1","text":"전시품은 손으로 건들이다 파손될 수 있다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.geondeurida"]}
+{"id":"geondeurida-error-2","text":"잠든 아이를 괜히 건들이다 울음을 터뜨리게 했다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.geondeurida"]}
+{"id":"geondeurida-normal-1","text":"작동 중인 장비를 함부로 건드리면 위험하다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"deulyeodaboda-error-1","text":"창문 안을 드려다보다 집주인과 눈이 마주쳤다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.deulyeodaboda"]}
+{"id":"deulyeodaboda-error-2","text":"상자 속을 드려다보다 오래된 사진을 발견했다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.deulyeodaboda"]}
+{"id":"deulyeodaboda-normal-1","text":"현미경을 들여다보다 작은 균열을 찾아냈다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"naerorahada-error-1","text":"업계에서 내노라하다 싶은 전문가들이 모두 모였다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.naerorahada"]}
+{"id":"naerorahada-error-2","text":"지역에서 내노라하다 하는 식당도 이번 평가에서 탈락했다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.naerorahada"]}
+{"id":"naerorahada-normal-1","text":"국내에서 내로라하는 연구자들이 공동으로 보고서를 냈다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"putnaegi-error-1","text":"그는 아직 현장 경험이 부족한 풋나기 기자였다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.putnaegi"]}
+{"id":"putnaegi-error-2","text":"풋나기 시절의 실수를 잊지 않으려고 기록해 두었다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.putnaegi"]}
+{"id":"putnaegi-normal-1","text":"풋내기 선수는 첫 경기에서도 침착함을 잃지 않았다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"omeurida-error-1","text":"종이의 양쪽 끝을 안으로 오무리다 모양이 찌그러졌다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.omeurida"]}
+{"id":"omeurida-error-2","text":"추위를 견디려고 입술을 오무리다 한숨을 내쉬었다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.omeurida"]}
+{"id":"omeurida-normal-1","text":"아이는 입술을 오므리고 촛불을 불었다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"umkeum-error-1","text":"그는 모래를 한 웅큼 집어 유리병에 담았다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.umkeum"]}
+{"id":"umkeum-error-2","text":"화분마다 비료를 한 웅큼씩 뿌렸다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.umkeum"]}
+{"id":"umkeum-normal-1","text":"아이가 사탕을 한 움큼 쥐고 친구들에게 나누어 주었다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"eure-error-1","text":"그는 으례 그렇다는 듯 대수롭지 않게 넘겼다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.eure"]}
+{"id":"eure-error-2","text":"명절이면 으례 온 가족이 할머니 댁에 모였다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.eure"]}
+{"id":"eure-normal-1","text":"봄이 오면 으레 마당의 매화가 먼저 피었다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"daesup-error-1","text":"바람이 불자 댓숲에서 잎이 부딪치는 소리가 났다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.daesup"]}
+{"id":"daesup-error-2","text":"오솔길은 울창한 댓숲 사이로 이어졌다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.daesup"]}
+{"id":"daesup-normal-1","text":"대숲을 스치는 바람 소리가 밤새 창가에 들렸다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"kkeopjiljjae-error-1","text":"감자를 껍질채 삶으면 식감이 더 단단하다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.kkeopjiljjae"]}
+{"id":"kkeopjiljjae-error-2","text":"사과를 껍질채 갈아 주스로 만들었다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.kkeopjiljjae"]}
+{"id":"kkeopjiljjae-normal-1","text":"고구마를 껍질째 구운 뒤 반으로 갈랐다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"yosae-error-1","text":"요세는 해가 길어져 퇴근길에도 밝다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.yosae"]}
+{"id":"yosae-error-2","text":"그 식당은 요세 손님이 부쩍 늘었다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.yosae"]}
+{"id":"yosae-normal-1","text":"요새는 아침마다 동네 공원을 한 바퀴 걷는다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"mirunamu-error-1","text":"운동장 가장자리에 큰 미류나무가 서 있었다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.mirunamu"]}
+{"id":"mirunamu-error-2","text":"강가의 미류나무 잎이 바람에 빠르게 흔들렸다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.mirunamu"]}
+{"id":"mirunamu-normal-1","text":"학교 뒤편 미루나무가 운동장에 긴 그늘을 드리웠다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"matbogi-error-1","text":"행사장 입구에서 신제품 맛배기를 무료로 나누어 주었다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.matbogi"]}
+{"id":"matbogi-error-2","text":"첫 장은 앞으로 펼쳐질 이야기의 맛배기에 불과했다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.matbogi"]}
+{"id":"matbogi-normal-1","text":"공연에 앞서 관객에게 짧은 맛보기 영상을 공개했다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"napjakhada-error-1","text":"상자가 무거운 짐에 눌려 납짝하다 못해 찢어졌다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.napjakhada"]}
+{"id":"napjakhada-error-2","text":"반죽을 납짝하다 싶을 만큼 얇게 눌러 펼쳤다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.napjakhada"]}
+{"id":"napjakhada-normal-1","text":"빈 깡통이 자동차 바퀴에 눌려 납작해졌다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"neolbjeokhada-error-1","text":"돌의 한쪽 면이 넙적하다 보니 받침으로 쓰기 좋았다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.neolbjeokhada"]}
+{"id":"neolbjeokhada-error-2","text":"이 생선은 몸통이 넙적하다 못해 거의 둥글게 보인다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.neolbjeokhada"]}
+{"id":"neolbjeokhada-normal-1","text":"넓적한 접시에 과일을 보기 좋게 담았다.","sourceKind":"plain_text","expectedRuleIds":[]}
+{"id":"jjalmakhada-error-1","text":"회의 시작 전에 팀장이 짧막하다 싶은 인사말을 건넸다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.jjalmakhada"]}
+{"id":"jjalmakhada-error-2","text":"그는 질문에 짧막하다 못해 무성의한 답을 남겼다.","sourceKind":"plain_text","expectedRuleIds":["spelling.lexical.jjalmakhada"]}
+{"id":"jjalmakhada-normal-1","text":"발표자는 핵심만 담은 짤막한 설명으로 회의를 마쳤다.","sourceKind":"plain_text","expectedRuleIds":[]}

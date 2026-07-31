@@ -1,0 +1,19 @@
+version: 1
+language: ko
+rules:
+  - id: spacing.compound.database
+    title: "데이터베이스 붙여쓰기"
+    description: "한 단어로 굳어진 ‘데이터베이스’를 붙여 씁니다."
+    severity: warning
+    confidence: high
+    defaultEnabled: true
+    message: "‘데이터 베이스’는 ‘데이터베이스’로 붙여 쓰세요."
+    safeFix: true
+    replacements:
+      - from: 데이터 베이스
+        to: 데이터베이스
+    examples:
+      incorrect:
+        - 데이터 베이스
+      correct:
+        - 데이터베이스

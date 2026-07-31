@@ -1,0 +1,100 @@
+{"id":"bundled-advanced.honorific.jeo-jasin","text":"제가 제 자신을","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["advanced.honorific.jeo-jasin"]}
+{"id":"bundled-grammar.conjugation.doe-to-dwae","text":"되서","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.conjugation.doe-to-dwae"]}
+{"id":"bundled-grammar.conjugation.dwae-to-doe","text":"돼면","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.conjugation.dwae-to-doe"]}
+{"id":"bundled-grammar.ending.deun-choice","text":"커피던지 차던지","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.ending.deun-choice","grammar.ending.deun-choice"]}
+{"id":"bundled-grammar.ending.euryeo","text":"할려고","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.ending.euryeo"]}
+{"id":"bundled-grammar.ending.hal-ge","text":"할께","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.ending.hal-ge"]}
+{"id":"bundled-grammar.negation.an-before-predicate","text":"않 간다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.negation.an-before-predicate"]}
+{"id":"bundled-grammar.negation.ji-anh","text":"지 안았다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.negation.ji-anh"]}
+{"id":"bundled-grammar.particle.comitative-allomorph","text":"책와","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.particle.comitative-allomorph"]}
+{"id":"bundled-grammar.particle.duplicate","text":"를를","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.particle.duplicate"]}
+{"id":"bundled-grammar.particle.instrumental-allomorph","text":"책로","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.particle.instrumental-allomorph"]}
+{"id":"bundled-grammar.particle.object-allomorph","text":"책를","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.particle.object-allomorph"]}
+{"id":"bundled-grammar.particle.subject-allomorph","text":"나무이","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.particle.subject-allomorph"]}
+{"id":"bundled-grammar.particle.topic-allomorph","text":"책는","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.particle.topic-allomorph"]}
+{"id":"bundled-punctuation.duplicate.comma","text":",,","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["punctuation.duplicate.comma"]}
+{"id":"bundled-punctuation.no-space-before-mark","text":" .","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["punctuation.no-space-before-mark"]}
+{"id":"bundled-punctuation.space-after-comma","text":"사과,배","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["punctuation.space-after-comma"]}
+{"id":"bundled-punctuation.space-after-sentence-mark","text":"끝났다.다음","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["punctuation.space-after-sentence-mark"]}
+{"id":"bundled-repetition.adjacent-word","text":"문서를 문서를","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["repetition.adjacent-word"]}
+{"id":"bundled-repetition.ending","text":"했습니다습니다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["repetition.ending"]}
+{"id":"bundled-spacing.compound.database","text":"데이터 베이스","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.compound.database"]}
+{"id":"bundled-spacing.dependent-noun.geot","text":"좋을것 같다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.geot"]}
+{"id":"bundled-spacing.dependent-noun.jeok","text":"본적 있다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.jeok"]}
+{"id":"bundled-spacing.dependent-noun.jul","text":"알줄 안다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.jul"]}
+{"id":"bundled-spacing.dependent-noun.jung","text":"하는중","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.jung"]}
+{"id":"bundled-spacing.dependent-noun.ppun","text":"기다릴뿐이다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.ppun"]}
+{"id":"bundled-spacing.dependent-noun.su","text":"할수 있다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.su"]}
+{"id":"bundled-spacing.dependent-noun.ttae","text":"만날때","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.ttae"]}
+{"id":"bundled-spacing.fixed.ppunman-anira","text":"뿐만아니라","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.fixed.ppunman-anira"]}
+{"id":"bundled-spacing.fixed.su-bakke","text":"할 수 밖에","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.fixed.su-bakke"]}
+{"id":"bundled-spelling.adverb.i-hi","text":"깨끗히","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.adverb.i-hi"]}
+{"id":"bundled-spelling.confusable.oraen-oraet","text":"오랫만에","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.confusable.oraen-oraet"]}
+{"id":"bundled-spelling.confusable.waen-il","text":"왠일","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.confusable.waen-il"]}
+{"id":"bundled-spelling.confusable.wen-waen","text":"왠만","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.confusable.wen-waen"]}
+{"id":"bundled-spelling.conjugation.boe-bwae","text":"뵈요","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.conjugation.boe-bwae"]}
+{"id":"bundled-spelling.conjugation.dwaet","text":"됬","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.conjugation.dwaet"]}
+{"id":"bundled-spelling.lexical.aedalpeuda","text":"애닯다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.aedalpeuda"]}
+{"id":"bundled-spelling.lexical.anseong-matchum","text":"안성마춤","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.anseong-matchum"]}
+{"id":"bundled-spelling.lexical.chireotda","text":"치뤘다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.chireotda"]}
+{"id":"bundled-spelling.lexical.chojeom","text":"촛점","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.chojeom"]}
+{"id":"bundled-spelling.lexical.daega","text":"댓가","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.daega"]}
+{"id":"bundled-spelling.lexical.daesup","text":"댓숲","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.daesup"]}
+{"id":"bundled-spelling.lexical.dakdalhada","text":"닥달하다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.dakdalhada"]}
+{"id":"bundled-spelling.lexical.damgatda","text":"담궜다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.damgatda"]}
+{"id":"bundled-spelling.lexical.deulyeodaboda","text":"드려다보다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.deulyeodaboda"]}
+{"id":"bundled-spelling.lexical.dodaeche","text":"도데체","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.dodaeche"]}
+{"id":"bundled-spelling.lexical.dwichidakkeori","text":"뒤치닥거리","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.dwichidakkeori"]}
+{"id":"bundled-spelling.lexical.dwikkumchi","text":"뒷굼치","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.dwikkumchi"]}
+{"id":"bundled-spelling.lexical.eoieopda","text":"어의없","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.eoieopda"]}
+{"id":"bundled-spelling.lexical.eojjaetdeun","text":"어쨋든","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.eojjaetdeun"]}
+{"id":"bundled-spelling.lexical.eolmakeum","text":"얼만큼","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.eolmakeum"]}
+{"id":"bundled-spelling.lexical.eure","text":"으례","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.eure"]}
+{"id":"bundled-spelling.lexical.gaekjjeokda","text":"객적다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.gaekjjeokda"]}
+{"id":"bundled-spelling.lexical.gaesu","text":"갯수","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.gaesu"]}
+{"id":"bundled-spelling.lexical.geokkuro","text":"꺼꾸로","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.geokkuro"]}
+{"id":"bundled-spelling.lexical.geondeurida","text":"건들이다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.geondeurida"]}
+{"id":"bundled-spelling.lexical.geumse","text":"금새","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.geumse"]}
+{"id":"bundled-spelling.lexical.gop-ppaegi","text":"곱배기","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.gop-ppaegi"]}
+{"id":"bundled-spelling.lexical.gurenarut","text":"구렛나루","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.gurenarut"]}
+{"id":"bundled-spelling.lexical.gwebyeon","text":"괴변","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.gwebyeon"]}
+{"id":"bundled-spelling.lexical.gwittuim","text":"귀뜸","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.gwittuim"]}
+{"id":"bundled-spelling.lexical.haesseukhada","text":"핼쓱하다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.haesseukhada"]}
+{"id":"bundled-spelling.lexical.hamatteomyeon","text":"하마트면","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.hamatteomyeon"]}
+{"id":"bundled-spelling.lexical.heoguhan-nal","text":"허구헌날","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.heoguhan-nal"]}
+{"id":"bundled-spelling.lexical.huihanhada","text":"희안","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.huihanhada"]}
+{"id":"bundled-spelling.lexical.hyeolhyeoldansin","text":"홀홀단신","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.hyeolhyeoldansin"]}
+{"id":"bundled-spelling.lexical.iljjiki","text":"일찌기","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.iljjiki"]}
+{"id":"bundled-spelling.lexical.jamgatda","text":"잠궜다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.jamgatda"]}
+{"id":"bundled-spelling.lexical.jjagipgi","text":"짜집기","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.jjagipgi"]}
+{"id":"bundled-spelling.lexical.jjalmakhada","text":"짧막하다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.jjalmakhada"]}
+{"id":"bundled-spelling.lexical.jjejjehada","text":"째째하다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.jjejjehada"]}
+{"id":"bundled-spelling.lexical.jjigae","text":"찌게","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.jjigae"]}
+{"id":"bundled-spelling.lexical.kkeopjiljjae","text":"껍질채","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.kkeopjiljjae"]}
+{"id":"bundled-spelling.lexical.kkeorimchikhada","text":"꺼림직하다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.kkeorimchikhada"]}
+{"id":"bundled-spelling.lexical.matbogi","text":"맛배기","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.matbogi"]}
+{"id":"bundled-spelling.lexical.mirunamu","text":"미류나무","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.mirunamu"]}
+{"id":"bundled-spelling.lexical.myeochil","text":"몇일","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.myeochil"]}
+{"id":"bundled-spelling.lexical.naerorahada","text":"내노라하다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.naerorahada"]}
+{"id":"bundled-spelling.lexical.napjakhada","text":"납짝하다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.napjakhada"]}
+{"id":"bundled-spelling.lexical.neolbjeokhada","text":"넙적하다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.neolbjeokhada"]}
+{"id":"bundled-spelling.lexical.neoljjikhada","text":"넓직하다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.neoljjikhada"]}
+{"id":"bundled-spelling.lexical.omeurida","text":"오무리다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.omeurida"]}
+{"id":"bundled-spelling.lexical.osundosun","text":"오손도손","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.osundosun"]}
+{"id":"bundled-spelling.lexical.putnaegi","text":"풋나기","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.putnaegi"]}
+{"id":"bundled-spelling.lexical.seolgeoji","text":"설겆이","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.seolgeoji"]}
+{"id":"bundled-spelling.lexical.seungnak","text":"승락","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.seungnak"]}
+{"id":"bundled-spelling.lexical.silhjeungi-nada","text":"실증이 나다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.silhjeungi-nada"]}
+{"id":"bundled-spelling.lexical.sutgarak","text":"숫가락","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.sutgarak"]}
+{"id":"bundled-spelling.lexical.tongjjaero","text":"통채로","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.tongjjaero"]}
+{"id":"bundled-spelling.lexical.ukyeoneohda","text":"우겨넣다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.ukyeoneohda"]}
+{"id":"bundled-spelling.lexical.umcheurida","text":"움추리다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.umcheurida"]}
+{"id":"bundled-spelling.lexical.umkeum","text":"웅큼","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.umkeum"]}
+{"id":"bundled-spelling.lexical.uteoreun","text":"윗어른","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.uteoreun"]}
+{"id":"bundled-spelling.lexical.yeokhal","text":"역활","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.yeokhal"]}
+{"id":"bundled-spelling.lexical.yosae","text":"요세","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.yosae"]}
+{"id":"bundled-spelling.lexical.yukgaejang","text":"육계장","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.yukgaejang"]}
+{"id":"bundled-spelling.loanword.curated","text":"메세지","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.loanword.curated"]}
+{"id":"bundled-style.redundancy.gajang-choego","text":"가장 최고","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["style.redundancy.gajang-choego"]}
+{"id":"bundled-style.redundancy.majority-over","text":"과반수 이상","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["style.redundancy.majority-over"]}
+{"id":"bundled-technical.term.web-browser","text":"웹부라우저","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["technical.term.web-browser"]}

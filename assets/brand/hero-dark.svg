@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">GeulLint 어두운 테마 소개 그림</title>
+  <desc id="desc">오픈소스 한국어 맞춤법 검사기로 맞춤법·띄어쓰기·문법·문체를 로컬에서 교정하는 장면</desc>
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0v32" fill="none" stroke="#f2f0e8" stroke-width=".5" opacity=".1"/></pattern>
+  </defs>
+  <rect width="1200" height="420" rx="28" fill="#18211c"/>
+  <rect width="1200" height="420" rx="28" fill="url(#grid)"/>
+  <path d="M0 350 1200 286v134H0z" fill="#ff6230"/>
+  <text x="72" y="86" fill="#ffb4ce" font-family="'Malgun Gothic', sans-serif" font-size="15" font-weight="700">오픈소스 한국어 맞춤법 검사기 · 맞춤법·띄어쓰기·문법·문체</text>
+  <text x="72" y="142" fill="#f2f0e8" font-family="Georgia, 'Malgun Gothic', serif" font-size="48" font-weight="800">GeulLint는 글을 가져가지 않습니다.</text>
+  <g transform="translate(72 187)">
+    <rect width="714" height="145" fill="#25312a" stroke="#637169"/>
+    <text x="28" y="43" fill="#c2c7c1" font-family="'Cascadia Mono', monospace" font-size="12">memo.md:12:4</text>
+    <text x="28" y="84" fill="#f2f0e8" font-family="'Malgun Gothic', sans-serif" font-size="24">이 작업은 <tspan fill="#ffb4ce">금새</tspan> 끝납니다.</text>
+    <path d="M145 96h53" stroke="#ff6230" stroke-width="4"/>
+    <rect x="495" y="90" width="185" height="36" fill="#dfff38"/>
+    <text x="517" y="114" fill="#18211c" font-family="'Malgun Gothic', sans-serif" font-size="15" font-weight="700">금세로 안전 수정 ↗</text>
+  </g>
+  <g transform="translate(835 53)">
+    <rect width="292" height="279" fill="#f2f0e8"/>
+    <text x="24" y="38" fill="#ff6230" font-family="'Cascadia Mono', monospace" font-size="12" font-weight="800">RULE INDEX</text>
+    <text x="24" y="94" fill="#18211c" font-family="Georgia, serif" font-size="44" font-weight="800">ALPHA</text>
+    <text x="24" y="123" fill="#6a7069" font-family="'Malgun Gothic', sans-serif" font-size="14">검수·설명 가능·개별 설정</text>
+    <path d="M24 151h244" stroke="#c8c7bd"/>
+    <text x="24" y="186" fill="#18211c" font-family="'Cascadia Mono', monospace" font-size="12">sentence-level counterexamples</text>
+    <text x="24" y="217" fill="#18211c" font-family="'Cascadia Mono', monospace" font-size="12">0 network requests</text>
+    <text x="24" y="248" fill="#18211c" font-family="'Cascadia Mono', monospace" font-size="12">6 native targets</text>
+  </g>
+</svg>

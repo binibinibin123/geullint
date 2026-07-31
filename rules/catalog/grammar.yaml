@@ -1,0 +1,19 @@
+version: 1
+language: ko
+rules:
+  - id: grammar.ending.hal-ge
+    title: "할게 표기"
+    description: "약속이나 의지를 나타내는 종결 어미 ‘-ㄹ게’를 바르게 씁니다."
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "‘할께’는 ‘할게’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 할께
+        to: 할게
+    examples:
+      incorrect:
+        - 할께
+      correct:
+        - 할게

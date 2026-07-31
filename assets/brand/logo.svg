@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 128" role="img" aria-labelledby="title desc">
+  <title id="title">GeulLint 로고</title>
+  <desc id="desc">한글 교정 표식과 GeulLint 이름, 글은 로컬에 교정은 즉시라는 문구</desc>
+  <rect width="128" height="128" rx="22" fill="#18211c"/>
+  <path d="M27 28h45v13H41v19H28zm1 43h13v29h34v13H28z" fill="#f2f0e8"/>
+  <path d="M82 27h17v48H82zM68 51h46v15H68z" fill="#ff6230"/>
+  <path d="m64 83 13 13 25-29 10 9-34 39-24-23z" fill="#dfff38"/>
+  <text x="158" y="70" fill="#18211c" font-family="Georgia, 'Malgun Gothic', serif" font-size="55" font-weight="800" letter-spacing="-3">GeulLint</text>
+  <text x="161" y="99" fill="#6a7069" font-family="'Cascadia Mono', monospace" font-size="14" font-weight="700" letter-spacing="1.8">글은 로컬에 · 교정은 즉시</text>
+</svg>

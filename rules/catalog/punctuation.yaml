@@ -1,0 +1,19 @@
+version: 1
+language: ko
+rules:
+  - id: punctuation.duplicate.comma
+    title: "쉼표 중복"
+    description: "연속으로 잘못 입력된 쉼표를 하나로 줄입니다."
+    severity: warning
+    confidence: high
+    defaultEnabled: true
+    message: "쉼표가 중복되었습니다."
+    safeFix: true
+    replacements:
+      - from: ",,"
+        to: ","
+    examples:
+      incorrect:
+        - ",,"
+      correct:
+        - ","

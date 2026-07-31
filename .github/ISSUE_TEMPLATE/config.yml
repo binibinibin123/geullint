@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/binibinibin123/geullint/security/advisories/new
+    about: 공개 Issue 대신 SECURITY.md의 비공개 신고 절차를 사용해 주세요.
+  - name: Documentation
+    url: https://github.com/binibinibin123/geullint/blob/master/README.md
+    about: 설치, 규칙, 설정과 현재 한계를 먼저 확인해 주세요.

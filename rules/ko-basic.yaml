@@ -1,0 +1,243 @@
+version: 1
+language: ko
+rules:
+  - id: spelling.lexical.myeochil
+    title: "며칠 표기"
+    description: "‘몇일’을 표준어 ‘며칠’로 고칩니다."
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "‘몇일’은 ‘며칠’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 몇일
+        to: 며칠
+    examples:
+      incorrect:
+        - 몇일
+      correct:
+        - 며칠
+  - id: spelling.lexical.geumse
+    severity: error
+    message: "‘금새’는 ‘금세’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 금새
+        to: 금세
+  - id: spelling.lexical.eoieopda
+    severity: error
+    message: "‘어의없다’는 ‘어이없다’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 어의없
+        to: 어이없
+  - id: spelling.lexical.yeokhal
+    severity: error
+    message: "‘역활’은 ‘역할’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 역활
+        to: 역할
+  - id: spelling.confusable.wen-waen
+    severity: error
+    message: "‘왠만’은 ‘웬만’으로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 왠만
+        to: 웬만
+      - from: 웬지
+        to: 왠지
+  - id: spelling.lexical.huihanhada
+    severity: error
+    message: "‘희안’은 ‘희한’으로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 희안
+        to: 희한
+  - id: spelling.confusable.oraen-oraet
+    severity: error
+    message: "‘오랫만에’는 ‘오랜만에’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 오랫만에
+        to: 오랜만에
+      - from: 오랜동안
+        to: 오랫동안
+  - id: spelling.lexical.dodaeche
+    severity: error
+    message: "‘도데체’는 ‘도대체’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 도데체
+        to: 도대체
+  - id: spelling.lexical.eojjaetdeun
+    severity: error
+    message: "‘어쨋든’은 ‘어쨌든’으로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 어쨋든
+        to: 어쨌든
+  - id: spelling.lexical.hamatteomyeon
+    severity: error
+    message: "‘하마트면’은 ‘하마터면’으로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 하마트면
+        to: 하마터면
+  - id: spelling.lexical.tongjjaero
+    severity: error
+    message: "‘통채로’는 ‘통째로’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 통채로
+        to: 통째로
+  - id: spelling.lexical.geokkuro
+    severity: error
+    message: "‘꺼꾸로’는 ‘거꾸로’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 꺼꾸로
+        to: 거꾸로
+  - id: spelling.lexical.jjagipgi
+    severity: error
+    message: "‘짜집기’는 ‘짜깁기’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 짜집기
+        to: 짜깁기
+  - id: spelling.lexical.anseong-matchum
+    severity: error
+    message: "‘안성마춤’은 ‘안성맞춤’으로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 안성마춤
+        to: 안성맞춤
+  - id: spelling.conjugation.dwaet
+    severity: error
+    message: "‘됬’은 ‘됐’으로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 됬
+        to: 됐
+  - id: spelling.conjugation.boe-bwae
+    severity: error
+    message: "‘뵈요’는 ‘봬요’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 뵈요
+        to: 봬요
+  - id: spelling.adverb.i-hi
+    severity: error
+    message: "부사의 ‘-이/-히’ 표기를 확인하세요."
+    safeFix: true
+    replacements:
+      - from: 깨끗히
+        to: 깨끗이
+      - from: 곰곰히
+        to: 곰곰이
+      - from: 일일히
+        to: 일일이
+      - from: 틈틈히
+        to: 틈틈이
+      - from: 번번히
+        to: 번번이
+      - from: 더욱히
+        to: 더욱이
+      - from: 꼼꼼이
+        to: 꼼꼼히
+      - from: 솔직이
+        to: 솔직히
+  - id: spelling.lexical.gaesu
+    severity: error
+    message: "‘갯수’는 ‘개수’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 갯수
+        to: 개수
+  - id: spelling.lexical.chojeom
+    severity: error
+    message: "‘촛점’은 ‘초점’으로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 촛점
+        to: 초점
+  - id: spelling.lexical.daega
+    severity: error
+    message: "‘댓가’는 ‘대가’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 댓가
+        to: 대가
+  - id: spelling.loanword.curated
+    severity: warning
+    message: "표준 외래어 표기를 확인하세요."
+    safeFix: true
+    replacements:
+      - from: 메세지
+        to: 메시지
+      - from: 컨텐츠
+        to: 콘텐츠
+      - from: 메뉴얼
+        to: 매뉴얼
+      - from: 악세사리
+        to: 액세서리
+      - from: 리더쉽
+        to: 리더십
+      - from: 네비게이션
+        to: 내비게이션
+      - from: 바베큐
+        to: 바비큐
+      - from: 밧데리
+        to: 배터리
+      - from: 카다로그
+        to: 카탈로그
+      - from: 카달로그
+        to: 카탈로그
+      - from: 디지탈
+        to: 디지털
+      - from: 레져
+        to: 레저
+      - from: 쥬스
+        to: 주스
+      - from: 후라이팬
+        to: 프라이팬
+      - from: 로보트
+        to: 로봇
+      - from: 케잌
+        to: 케이크
+  - id: spacing.fixed.ppunman-anira
+    severity: warning
+    message: "‘뿐만 아니라’는 띄어 씁니다."
+    safeFix: true
+    replacements:
+      - from: 뿐만아니라
+        to: 뿐만 아니라
+  - id: spelling.lexical.jjigae
+    severity: error
+    message: "음식 이름 ‘찌개’의 표기를 확인하세요."
+    safeFix: true
+    replacements:
+      - from: 찌게
+        to: 찌개
+  - id: spelling.lexical.yukgaejang
+    severity: error
+    message: "‘육계장’은 ‘육개장’으로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 육계장
+        to: 육개장
+  - id: spelling.lexical.gop-ppaegi
+    severity: error
+    message: "‘곱배기’는 ‘곱빼기’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 곱배기
+        to: 곱빼기
+  - id: style.redundancy.gajang-choego
+    severity: info
+    profile: editorial
+    message: "‘가장 최고’는 뜻이 겹칠 수 있습니다. 문맥을 보고 한 표현만 남기세요."
+    safeFix: false
+    replacements:
+      - from: 가장 최고
+        to: 최고

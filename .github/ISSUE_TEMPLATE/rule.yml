@@ -1,0 +1,53 @@
+name: Rule proposal
+description: 새 한국어 규칙 또는 기존 규칙의 오탐·누락 제안
+title: "[Rule] "
+labels: ["rule", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: "실제 문서 대신 짧게 만든 예문을 사용해 주세요."
+  - type: input
+    id: rule
+    attributes:
+      label: Rule or suggested ID
+      placeholder: "spelling.lexical.example"
+    validations:
+      required: true
+  - type: textarea
+    id: positives
+    attributes:
+      label: Incorrect examples and corrections
+      description: 잘못된 입력과 기대 교정을 3개 이상 적어 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: negatives
+    attributes:
+      label: Correct near-misses
+      description: 비슷하지만 진단하면 안 되는 정상 문장을 적어 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Rationale and sources
+      description: 표준 규정, 사전 또는 용례의 링크와 판단 근거
+    validations:
+      required: true
+  - type: dropdown
+    id: confidence
+    attributes:
+      label: Safe automatic fix?
+      options:
+        - "No — diagnostic only"
+        - "Yes — exact replacement is unambiguous"
+        - "Unsure"
+    validations:
+      required: true
+  - type: checkboxes
+    id: license
+    attributes:
+      label: Data
+      options:
+        - label: 예문을 직접 작성했거나 재배포 가능한 출처를 명시했습니다.
+          required: true

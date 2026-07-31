@@ -1,0 +1,675 @@
+version: 1
+language: ko
+rules:
+  - id: spelling.lexical.seolgeoji
+    title: "설거지 표기"
+    description: "권장 표기: ‘설거지’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘설거지’"
+    safeFix: true
+    replacements:
+      - from: "설겆이"
+        to: "설거지"
+    examples:
+      incorrect:
+        - "설겆이"
+      correct:
+        - "설거지"
+  - id: spelling.lexical.seungnak
+    title: "승낙 표기"
+    description: "권장 표기: ‘승낙’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘승낙’"
+    safeFix: true
+    replacements:
+      - from: "승락"
+        to: "승낙"
+    examples:
+      incorrect:
+        - "승락"
+      correct:
+        - "승낙"
+  - id: spelling.lexical.gwittuim
+    title: "귀띔 표기"
+    description: "권장 표기: ‘귀띔’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘귀띔’"
+    safeFix: true
+    replacements:
+      - from: "귀뜸"
+        to: "귀띔"
+    examples:
+      incorrect:
+        - "귀뜸"
+      correct:
+        - "귀띔"
+  - id: spelling.lexical.neoljjikhada
+    title: "널찍하다 표기"
+    description: "권장 표기: ‘널찍하다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘널찍하다’"
+    safeFix: true
+    replacements:
+      - from: "넓직하다"
+        to: "널찍하다"
+    examples:
+      incorrect:
+        - "넓직하다"
+      correct:
+        - "널찍하다"
+  - id: spelling.lexical.jjejjehada
+    title: "쩨쩨하다 표기"
+    description: "권장 표기: ‘쩨쩨하다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘쩨쩨하다’"
+    safeFix: true
+    replacements:
+      - from: "째째하다"
+        to: "쩨쩨하다"
+    examples:
+      incorrect:
+        - "째째하다"
+      correct:
+        - "쩨쩨하다"
+  - id: spelling.lexical.sutgarak
+    title: "숟가락 표기"
+    description: "권장 표기: ‘숟가락’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘숟가락’"
+    safeFix: true
+    replacements:
+      - from: "숫가락"
+        to: "숟가락"
+    examples:
+      incorrect:
+        - "숫가락"
+      correct:
+        - "숟가락"
+  - id: spelling.lexical.dwikkumchi
+    title: "뒤꿈치 표기"
+    description: "권장 표기: ‘뒤꿈치’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘뒤꿈치’"
+    safeFix: true
+    replacements:
+      - from: "뒷굼치"
+        to: "뒤꿈치"
+    examples:
+      incorrect:
+        - "뒷굼치"
+      correct:
+        - "뒤꿈치"
+  - id: spelling.lexical.gurenarut
+    title: "구레나룻 표기"
+    description: "권장 표기: ‘구레나룻’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘구레나룻’"
+    safeFix: true
+    replacements:
+      - from: "구렛나루"
+        to: "구레나룻"
+    examples:
+      incorrect:
+        - "구렛나루"
+      correct:
+        - "구레나룻"
+  - id: spelling.lexical.uteoreun
+    title: "웃어른 표기"
+    description: "권장 표기: ‘웃어른’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘웃어른’"
+    safeFix: true
+    replacements:
+      - from: "윗어른"
+        to: "웃어른"
+    examples:
+      incorrect:
+        - "윗어른"
+      correct:
+        - "웃어른"
+  - id: spelling.lexical.haesseukhada
+    title: "해쓱하다 표기"
+    description: "권장 표기: ‘해쓱하다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘해쓱하다’"
+    safeFix: true
+    replacements:
+      - from: "핼쓱하다"
+        to: "해쓱하다"
+    examples:
+      incorrect:
+        - "핼쓱하다"
+      correct:
+        - "해쓱하다"
+  - id: spelling.lexical.umcheurida
+    title: "움츠리다 표기"
+    description: "권장 표기: ‘움츠리다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘움츠리다’"
+    safeFix: true
+    replacements:
+      - from: "움추리다"
+        to: "움츠리다"
+    examples:
+      incorrect:
+        - "움추리다"
+      correct:
+        - "움츠리다"
+  - id: spelling.lexical.aedalpeuda
+    title: "애달프다 표기"
+    description: "권장 표기: ‘애달프다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘애달프다’"
+    safeFix: true
+    replacements:
+      - from: "애닯다"
+        to: "애달프다"
+    examples:
+      incorrect:
+        - "애닯다"
+      correct:
+        - "애달프다"
+  - id: spelling.lexical.iljjiki
+    title: "일찍이 표기"
+    description: "권장 표기: ‘일찍이’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘일찍이’"
+    safeFix: true
+    replacements:
+      - from: "일찌기"
+        to: "일찍이"
+    examples:
+      incorrect:
+        - "일찌기"
+      correct:
+        - "일찍이"
+  - id: spelling.lexical.dakdalhada
+    title: "닦달하다 표기"
+    description: "권장 표기: ‘닦달하다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘닦달하다’"
+    safeFix: true
+    replacements:
+      - from: "닥달하다"
+        to: "닦달하다"
+    examples:
+      incorrect:
+        - "닥달하다"
+      correct:
+        - "닦달하다"
+  - id: spelling.lexical.dwichidakkeori
+    title: "뒤치다꺼리 표기"
+    description: "권장 표기: ‘뒤치다꺼리’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘뒤치다꺼리’"
+    safeFix: true
+    replacements:
+      - from: "뒤치닥거리"
+        to: "뒤치다꺼리"
+    examples:
+      incorrect:
+        - "뒤치닥거리"
+      correct:
+        - "뒤치다꺼리"
+  - id: spelling.lexical.heoguhan-nal
+    title: "허구한 날 표기"
+    description: "권장 표기: ‘허구한 날’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘허구한 날’"
+    safeFix: true
+    replacements:
+      - from: "허구헌날"
+        to: "허구한 날"
+    examples:
+      incorrect:
+        - "허구헌날"
+      correct:
+        - "허구한 날"
+  - id: spelling.lexical.hyeolhyeoldansin
+    title: "혈혈단신 표기"
+    description: "권장 표기: ‘혈혈단신’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘혈혈단신’"
+    safeFix: true
+    replacements:
+      - from: "홀홀단신"
+        to: "혈혈단신"
+    examples:
+      incorrect:
+        - "홀홀단신"
+      correct:
+        - "혈혈단신"
+  - id: spelling.lexical.gwebyeon
+    title: "궤변 표기"
+    description: "권장 표기: ‘궤변’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘궤변’"
+    safeFix: true
+    replacements:
+      - from: "괴변"
+        to: "궤변"
+    examples:
+      incorrect:
+        - "괴변"
+      correct:
+        - "궤변"
+  - id: spelling.lexical.eolmakeum
+    title: "얼마큼 표기"
+    description: "권장 표기: ‘얼마큼’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘얼마큼’"
+    safeFix: true
+    replacements:
+      - from: "얼만큼"
+        to: "얼마큼"
+    examples:
+      incorrect:
+        - "얼만큼"
+      correct:
+        - "얼마큼"
+  - id: spelling.lexical.osundosun
+    title: "오순도순 표기"
+    description: "권장 표기: ‘오순도순’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘오순도순’"
+    safeFix: true
+    replacements:
+      - from: "오손도손"
+        to: "오순도순"
+    examples:
+      incorrect:
+        - "오손도손"
+      correct:
+        - "오순도순"
+  - id: spelling.lexical.ukyeoneohda
+    title: "욱여넣다 표기"
+    description: "권장 표기: ‘욱여넣다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘욱여넣다’"
+    safeFix: true
+    replacements:
+      - from: "우겨넣다"
+        to: "욱여넣다"
+    examples:
+      incorrect:
+        - "우겨넣다"
+      correct:
+        - "욱여넣다"
+  - id: spelling.lexical.chireotda
+    title: "치렀다 표기"
+    description: "권장 표기: ‘치렀다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘치렀다’"
+    safeFix: true
+    replacements:
+      - from: "치뤘다"
+        to: "치렀다"
+    examples:
+      incorrect:
+        - "치뤘다"
+      correct:
+        - "치렀다"
+  - id: spelling.lexical.damgatda
+    title: "담갔다 표기"
+    description: "권장 표기: ‘담갔다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘담갔다’"
+    safeFix: true
+    replacements:
+      - from: "담궜다"
+        to: "담갔다"
+    examples:
+      incorrect:
+        - "담궜다"
+      correct:
+        - "담갔다"
+  - id: spelling.lexical.jamgatda
+    title: "잠갔다 표기"
+    description: "권장 표기: ‘잠갔다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘잠갔다’"
+    safeFix: true
+    replacements:
+      - from: "잠궜다"
+        to: "잠갔다"
+    examples:
+      incorrect:
+        - "잠궜다"
+      correct:
+        - "잠갔다"
+  - id: spelling.lexical.kkeorimchikhada
+    title: "꺼림칙하다 표기"
+    description: "권장 표기: ‘꺼림칙하다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘꺼림칙하다’"
+    safeFix: true
+    replacements:
+      - from: "꺼림직하다"
+        to: "꺼림칙하다"
+    examples:
+      incorrect:
+        - "꺼림직하다"
+      correct:
+        - "꺼림칙하다"
+  - id: spelling.lexical.gaekjjeokda
+    title: "객쩍다 표기"
+    description: "권장 표기: ‘객쩍다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘객쩍다’"
+    safeFix: true
+    replacements:
+      - from: "객적다"
+        to: "객쩍다"
+    examples:
+      incorrect:
+        - "객적다"
+      correct:
+        - "객쩍다"
+  - id: spelling.lexical.silhjeungi-nada
+    title: "싫증이 나다 표기"
+    description: "권장 표기: ‘싫증이 나다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘싫증이 나다’"
+    safeFix: true
+    replacements:
+      - from: "실증이 나다"
+        to: "싫증이 나다"
+    examples:
+      incorrect:
+        - "실증이 나다"
+      correct:
+        - "싫증이 나다"
+  - id: spelling.lexical.geondeurida
+    title: "건드리다 표기"
+    description: "권장 표기: ‘건드리다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘건드리다’"
+    safeFix: true
+    replacements:
+      - from: "건들이다"
+        to: "건드리다"
+    examples:
+      incorrect:
+        - "건들이다"
+      correct:
+        - "건드리다"
+  - id: spelling.lexical.deulyeodaboda
+    title: "들여다보다 표기"
+    description: "권장 표기: ‘들여다보다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘들여다보다’"
+    safeFix: true
+    replacements:
+      - from: "드려다보다"
+        to: "들여다보다"
+    examples:
+      incorrect:
+        - "드려다보다"
+      correct:
+        - "들여다보다"
+  - id: spelling.lexical.naerorahada
+    title: "내로라하다 표기"
+    description: "권장 표기: ‘내로라하다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘내로라하다’"
+    safeFix: true
+    replacements:
+      - from: "내노라하다"
+        to: "내로라하다"
+    examples:
+      incorrect:
+        - "내노라하다"
+      correct:
+        - "내로라하다"
+  - id: spelling.lexical.putnaegi
+    title: "풋내기 표기"
+    description: "권장 표기: ‘풋내기’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘풋내기’"
+    safeFix: true
+    replacements:
+      - from: "풋나기"
+        to: "풋내기"
+    examples:
+      incorrect:
+        - "풋나기"
+      correct:
+        - "풋내기"
+  - id: spelling.lexical.omeurida
+    title: "오므리다 표기"
+    description: "권장 표기: ‘오므리다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘오므리다’"
+    safeFix: true
+    replacements:
+      - from: "오무리다"
+        to: "오므리다"
+    examples:
+      incorrect:
+        - "오무리다"
+      correct:
+        - "오므리다"
+  - id: spelling.lexical.umkeum
+    title: "움큼 표기"
+    description: "권장 표기: ‘움큼’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘움큼’"
+    safeFix: true
+    replacements:
+      - from: "웅큼"
+        to: "움큼"
+    examples:
+      incorrect:
+        - "웅큼"
+      correct:
+        - "움큼"
+  - id: spelling.lexical.eure
+    title: "으레 표기"
+    description: "권장 표기: ‘으레’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘으레’"
+    safeFix: true
+    replacements:
+      - from: "으례"
+        to: "으레"
+    examples:
+      incorrect:
+        - "으례"
+      correct:
+        - "으레"
+  - id: spelling.lexical.daesup
+    title: "대숲 표기"
+    description: "권장 표기: ‘대숲’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘대숲’"
+    safeFix: true
+    replacements:
+      - from: "댓숲"
+        to: "대숲"
+    examples:
+      incorrect:
+        - "댓숲"
+      correct:
+        - "대숲"
+  - id: spelling.lexical.kkeopjiljjae
+    title: "껍질째 표기"
+    description: "권장 표기: ‘껍질째’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘껍질째’"
+    safeFix: true
+    replacements:
+      - from: "껍질채"
+        to: "껍질째"
+    examples:
+      incorrect:
+        - "껍질채"
+      correct:
+        - "껍질째"
+  - id: spelling.lexical.yosae
+    title: "요새 표기"
+    description: "권장 표기: ‘요새’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘요새’"
+    safeFix: true
+    replacements:
+      - from: "요세"
+        to: "요새"
+    examples:
+      incorrect:
+        - "요세"
+      correct:
+        - "요새"
+  - id: spelling.lexical.mirunamu
+    title: "미루나무 표기"
+    description: "권장 표기: ‘미루나무’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘미루나무’"
+    safeFix: true
+    replacements:
+      - from: "미류나무"
+        to: "미루나무"
+    examples:
+      incorrect:
+        - "미류나무"
+      correct:
+        - "미루나무"
+  - id: spelling.lexical.matbogi
+    title: "맛보기 표기"
+    description: "권장 표기: ‘맛보기’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘맛보기’"
+    safeFix: true
+    replacements:
+      - from: "맛배기"
+        to: "맛보기"
+    examples:
+      incorrect:
+        - "맛배기"
+      correct:
+        - "맛보기"
+  - id: spelling.lexical.napjakhada
+    title: "납작하다 표기"
+    description: "권장 표기: ‘납작하다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘납작하다’"
+    safeFix: true
+    replacements:
+      - from: "납짝하다"
+        to: "납작하다"
+    examples:
+      incorrect:
+        - "납짝하다"
+      correct:
+        - "납작하다"
+  - id: spelling.lexical.neolbjeokhada
+    title: "넓적하다 표기"
+    description: "권장 표기: ‘넓적하다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘넓적하다’"
+    safeFix: true
+    replacements:
+      - from: "넙적하다"
+        to: "넓적하다"
+    examples:
+      incorrect:
+        - "넙적하다"
+      correct:
+        - "넓적하다"
+  - id: spelling.lexical.jjalmakhada
+    title: "짤막하다 표기"
+    description: "권장 표기: ‘짤막하다’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "권장 표기: ‘짤막하다’"
+    safeFix: true
+    replacements:
+      - from: "짧막하다"
+        to: "짤막하다"
+    examples:
+      incorrect:
+        - "짧막하다"
+      correct:
+        - "짤막하다"

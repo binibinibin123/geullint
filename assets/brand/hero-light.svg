@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">GeulLint 밝은 테마 소개 그림</title>
+  <desc id="desc">오픈소스 한국어 맞춤법 검사기로 맞춤법·띄어쓰기·문법·문체를 로컬에서 교정하는 장면</desc>
+  <defs>
+    <pattern id="dots" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" fill="#18211c" opacity=".18"/></pattern>
+  </defs>
+  <rect width="1200" height="420" rx="28" fill="#f2f0e8"/>
+  <rect width="1200" height="420" rx="28" fill="url(#dots)"/>
+  <path d="M0 330 1200 268v152H0z" fill="#dfff38"/>
+  <g transform="translate(72 56)">
+    <rect width="58" height="58" rx="12" fill="#18211c"/>
+    <path d="M12 13h21v7H20v9h-7zm1 22h7v13h16v7H13z" fill="#f2f0e8"/>
+    <path d="M38 12h8v22h-8zm-7 11h22v7H31z" fill="#ff6230"/>
+    <path d="m29 40 6 6 12-14 5 4-17 19-11-11z" fill="#dfff38"/>
+  </g>
+  <text x="151" y="92" fill="#18211c" font-family="Georgia, 'Malgun Gothic', serif" font-size="36" font-weight="800">글은 로컬에, 교정은 즉시.</text>
+  <text x="151" y="122" fill="#6a7069" font-family="'Malgun Gothic', sans-serif" font-size="15" font-weight="700">오픈소스 한국어 맞춤법 검사기 · 맞춤법·띄어쓰기·문법·문체</text>
+  <g transform="translate(72 168)">
+    <rect width="645" height="180" fill="#fffefa" stroke="#18211c" stroke-width="2"/>
+    <text x="28" y="48" fill="#18211c" font-family="'Malgun Gothic', sans-serif" font-size="27">오늘이 <tspan fill="#ff6230" text-decoration="underline">몇일</tspan>인지 확인해 주세요.</text>
+    <rect x="28" y="77" width="565" height="72" fill="#18211c"/>
+    <text x="49" y="107" fill="#dfff38" font-family="'Cascadia Mono', monospace" font-size="12" font-weight="700">SPELLING.LEXICAL.MYEOCHIL</text>
+    <text x="49" y="135" fill="#f2f0e8" font-family="'Malgun Gothic', sans-serif" font-size="18">‘몇일’ → ‘며칠’로 고치세요.</text>
+  </g>
+  <g transform="translate(760 60)">
+    <rect width="360" height="285" rx="4" fill="#18211c"/>
+    <text x="26" y="42" fill="#ffb4ce" font-family="'Cascadia Mono', monospace" font-size="12" font-weight="700">PRIVATE BY DEFAULT</text>
+    <text x="26" y="90" fill="#f2f0e8" font-family="'Malgun Gothic', sans-serif" font-size="26" font-weight="700">문장은 이 기기 밖으로</text>
+    <text x="26" y="125" fill="#f2f0e8" font-family="'Malgun Gothic', sans-serif" font-size="26" font-weight="700">나가지 않습니다.</text>
+    <path d="M31 178h250" stroke="#637169"/>
+    <circle cx="44" cy="215" r="9" fill="#4ca75b"/>
+    <text x="67" y="220" fill="#dfff38" font-family="'Cascadia Mono', monospace" font-size="13" font-weight="700">NETWORK: 0 REQUESTS</text>
+    <text x="31" y="260" fill="#c2c7c1" font-family="'Malgun Gothic', sans-serif" font-size="14">API 키 · 계정 · 텔레메트리 없음</text>
+  </g>
+</svg>

@@ -1,0 +1,26 @@
+{
+  "name": "geullint-linux-x64",
+  "version": "0.2.0-alpha.1",
+  "description": "Linux x64 binary for GeulLint",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/binibinibin123/geullint.git"
+  },
+  "homepage": "https://github.com/binibinibin123/geullint#readme",
+  "bugs": {
+    "url": "https://github.com/binibinibin123/geullint/issues"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "bin",
+    "NOTICE",
+    "LICENSES"
+  ],
+  "preferUnplugged": true
+}

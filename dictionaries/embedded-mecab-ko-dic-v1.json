@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "name": "GeulLint embedded Korean morphology dictionary",
+  "dictionary": {
+    "package": "lindera-ko-dic",
+    "version": "4.0.1",
+    "crateSha256": "f52b0d8ee301729759af2dcb04246b3eb5fa1491aa235369156f034aaf709d32"
+  },
+  "runtime": {
+    "package": "lindera",
+    "version": "4.0.1",
+    "crateSha256": "557225b8f5da29dee3f0a320a9f180813fc759b41267acea94002b520b6a1bb9"
+  },
+  "source": {
+    "name": "Eunjeon mecab-ko-dic",
+    "version": "mecab-ko-dic-2.1.1-20180720",
+    "sourceUrl": "https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/mecab-ko-dic-2.1.1-20180720.tar.gz",
+    "license": "Apache-2.0"
+  }
+}

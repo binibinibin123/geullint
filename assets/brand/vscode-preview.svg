@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">GeulLint VS Code extension preview</title>
+  <desc id="desc">A Korean document with inline GeulLint diagnostics, quick fixes, and a searchable curated rule catalogue.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="22" stdDeviation="22" flood-color="#07100b" flood-opacity=".28"/>
+    </filter>
+    <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.15" fill="#18211c" opacity=".17"/>
+    </pattern>
+  </defs>
+  <rect width="1440" height="900" fill="#f1efe6"/>
+  <rect width="1440" height="900" fill="url(#dots)"/>
+  <text x="78" y="78" fill="#ff5b35" font-family="Arial, sans-serif" font-size="15" font-weight="800" letter-spacing="3">WRITE LOCALLY · CHECK INSTANTLY</text>
+  <text x="78" y="132" fill="#18211c" font-family="'Malgun Gothic', Arial, sans-serif" font-size="45" font-weight="900">편집기의 흐름을 끊지 않는 한국어 점검</text>
+  <g filter="url(#shadow)">
+    <rect x="76" y="174" width="1288" height="650" rx="13" fill="#171c1a"/>
+    <rect x="76" y="174" width="1288" height="38" rx="13" fill="#2b312e"/>
+    <rect x="76" y="198" width="1288" height="14" fill="#2b312e"/>
+    <circle cx="99" cy="193" r="6" fill="#ff5b35"/>
+    <circle cx="119" cy="193" r="6" fill="#ffc84a"/>
+    <circle cx="139" cy="193" r="6" fill="#67ce78"/>
+    <text x="704" y="198" text-anchor="middle" fill="#b9c1bc" font-family="Arial, sans-serif" font-size="12">draft.md — GeulLint</text>
+    <rect x="76" y="212" width="48" height="612" fill="#202622"/>
+    <rect x="124" y="212" width="230" height="612" fill="#252b28"/>
+    <rect x="354" y="212" width="1010" height="42" fill="#202622"/>
+    <path d="M93 238h18M93 245h18M93 252h18M93 314h18M93 321h18M93 328h18" stroke="#829087" stroke-width="2"/>
+    <rect x="90" y="281" width="20" height="20" rx="5" fill="#dfff38"/>
+    <text x="100" y="296" text-anchor="middle" fill="#18211c" font-family="'Malgun Gothic',sans-serif" font-size="12" font-weight="900">글</text>
+    <text x="145" y="243" fill="#c7d0ca" font-family="Arial,sans-serif" font-size="11" font-weight="700">EXPLORER</text>
+    <text x="145" y="280" fill="#eef1ef" font-family="Arial,sans-serif" font-size="12" font-weight="700">GEULLINT-DEMO</text>
+    <text x="166" y="313" fill="#d3dbd6" font-family="Arial,sans-serif" font-size="12">▾ docs</text>
+    <rect x="145" y="326" width="209" height="29" fill="#343c38"/>
+    <text x="180" y="346" fill="#ffffff" font-family="Arial,sans-serif" font-size="12"># draft.md</text>
+    <text x="166" y="379" fill="#aeb9b2" font-family="Arial,sans-serif" font-size="12">◇ .geullint.toml</text>
+    <text x="166" y="410" fill="#aeb9b2" font-family="Arial,sans-serif" font-size="12">◇ README.md</text>
+    <rect x="354" y="212" width="174" height="42" fill="#171c1a"/>
+    <text x="378" y="238" fill="#eef1ef" font-family="Arial,sans-serif" font-size="12"># draft.md</text>
+    <path d="M354 253h174" stroke="#dfff38" stroke-width="2"/>
+    <rect x="354" y="254" width="1010" height="424" fill="#171c1a"/>
+    <rect x="354" y="678" width="1010" height="146" fill="#202622"/>
+    <rect x="354" y="678" width="1010" height="1" fill="#414b45"/>
+    <g font-family="'Malgun Gothic',Arial,sans-serif" font-size="19">
+      <text x="390" y="304" fill="#66736b" font-family="monospace" font-size="14">1</text>
+      <text x="430" y="304" fill="#dfe7e1"># 회의 후속 작업</text>
+      <text x="390" y="347" fill="#66736b" font-family="monospace" font-size="14">2</text>
+      <text x="390" y="390" fill="#66736b" font-family="monospace" font-size="14">3</text>
+      <text x="430" y="390" fill="#dfe7e1">오늘이 몇일인지 확인해 주세요.</text>
+      <path d="M495 398q7-7 14 0t14 0t14 0t14 0" fill="none" stroke="#ff5b35" stroke-width="2"/>
+      <text x="390" y="433" fill="#66736b" font-family="monospace" font-size="14">4</text>
+      <text x="430" y="433" fill="#dfe7e1">일이 되서 알려드리려고 책을 봤습니다.</text>
+      <path d="M481 441q7-7 14 0t14 0t14 0" fill="none" stroke="#ff5b35" stroke-width="2"/>
+      <path d="M641 441q7-7 14 0t14 0t14 0t14 0t14 0" fill="none" stroke="#dfff38" stroke-width="2"/>
+    </g>
+    <rect x="468" y="455" width="354" height="104" rx="5" fill="#f7f5ed"/>
+    <rect x="468" y="455" width="6" height="104" fill="#ff5b35"/>
+    <text x="493" y="484" fill="#18211c" font-family="'Malgun Gothic',sans-serif" font-size="14" font-weight="800">‘며칠’로 고치시겠어요?</text>
+    <text x="493" y="510" fill="#56625b" font-family="'Malgun Gothic',sans-serif" font-size="12">날짜를 물을 때는 ‘몇 일’이 아니라 ‘며칠’을 씁니다.</text>
+    <rect x="493" y="525" width="103" height="24" rx="3" fill="#dfff38"/>
+    <text x="545" y="542" text-anchor="middle" fill="#18211c" font-family="'Malgun Gothic',sans-serif" font-size="11" font-weight="800">빠른 수정 적용</text>
+    <rect x="904" y="280" width="394" height="304" rx="7" fill="#f8f6ee"/>
+    <rect x="904" y="280" width="394" height="45" rx="7" fill="#18211c"/>
+    <text x="927" y="309" fill="#dfff38" font-family="'Malgun Gothic',sans-serif" font-size="14" font-weight="800">GeulLint: 규칙 목록 열기</text>
+    <rect x="924" y="344" width="354" height="42" rx="4" fill="#ffffff" stroke="#536058"/>
+    <text x="942" y="370" fill="#49544e" font-family="'Malgun Gothic',sans-serif" font-size="13">며칠</text>
+    <text x="924" y="412" fill="#ff5b35" font-family="monospace" font-size="11" font-weight="800">CURATED ALPHA RULES</text>
+    <rect x="916" y="429" width="370" height="66" fill="#dfff38"/>
+    <text x="936" y="454" fill="#18211c" font-family="'Malgun Gothic',sans-serif" font-size="14" font-weight="800">며칠 / 몇 일</text>
+    <text x="936" y="478" fill="#536058" font-family="monospace" font-size="11">spelling.myeochil</text>
+    <text x="936" y="523" fill="#18211c" font-family="'Malgun Gothic',sans-serif" font-size="13" font-weight="700">몇일 → 며칠</text>
+    <text x="936" y="550" fill="#68746d" font-family="'Malgun Gothic',sans-serif" font-size="12">Enter를 눌러 규칙 문서를 엽니다</text>
+    <text x="377" y="706" fill="#ff9db9" font-family="Arial,sans-serif" font-size="11" font-weight="800">PROBLEMS 3</text>
+    <text x="474" y="706" fill="#9aa69e" font-family="Arial,sans-serif" font-size="11">OUTPUT</text>
+    <text x="552" y="706" fill="#9aa69e" font-family="Arial,sans-serif" font-size="11">TERMINAL</text>
+    <circle cx="384" cy="738" r="7" fill="#ff5b35"/>
+    <text x="402" y="743" fill="#dce4df" font-family="'Malgun Gothic',sans-serif" font-size="12">날짜를 물을 때는 ‘며칠’을 씁니다.</text>
+    <text x="402" y="765" fill="#7f8b84" font-family="monospace" font-size="10">draft.md [Ln 3, Col 5] · spelling.myeochil</text>
+    <circle cx="384" cy="793" r="7" fill="#dfff38"/>
+    <text x="402" y="798" fill="#dce4df" font-family="'Malgun Gothic',sans-serif" font-size="12">‘돼서’가 올바른 표기입니다.</text>
+    <text x="402" y="817" fill="#7f8b84" font-family="monospace" font-size="10">draft.md [Ln 4, Col 4] · spelling.dwaeseo</text>
+  </g>
+  <rect x="1130" y="796" width="234" height="47" fill="#ff5b35"/>
+  <text x="1247" y="826" text-anchor="middle" fill="#fff8ee" font-family="Arial,sans-serif" font-size="13" font-weight="900" letter-spacing="1">LOCAL · EARLY ALPHA</text>
+</svg>

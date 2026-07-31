@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#18211c" />
+    <meta name="description" content="글을 외부 서버로 보내지 않고 맞춤법·띄어쓰기·문법·문체를 검사하는 오픈소스 한국어 맞춤법 검사기 GeulLint" />
+    <title>GeulLint — 오픈소스 한국어 맞춤법 검사기</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2318211c'/%3E%3Cpath d='M15 16h23v8H24v9h13v8H24v7h17' fill='none' stroke='%23dfff38' stroke-width='6'/%3E%3Cpath d='m38 37 5 5 9-13' fill='none' stroke='%23ff5b35' stroke-width='5'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./app.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">검사기로 바로 이동</a>
+    <main class="shell">
+      <header class="masthead">
+        <a class="wordmark" href="https://github.com/binibinibin123/geullint" aria-label="GeulLint GitHub 저장소">
+          <span class="mini-mark" aria-hidden="true">글✓</span><span>GeulLint</span>
+        </a>
+        <nav aria-label="주요 메뉴">
+          <a href="#workspace" data-i18n="navTry">직접 검사</a>
+          <a href="#rules" data-i18n="navRules">규칙</a>
+          <a href="#install" data-i18n="navInstall">설치</a>
+        </nav>
+        <div class="header-tools">
+          <label class="sr-only" for="language">언어</label>
+          <select id="language" aria-label="Interface language">
+            <option value="ko">한국어</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="zh-CN">简体中文</option>
+          </select>
+          <div class="local-indicator"><i></i><span data-i18n="localEngine">브라우저 로컬 엔진</span></div>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy-block">
+          <p class="kicker" data-i18n="kicker">오픈소스 한국어 맞춤법 검사기</p>
+          <h1 id="page-title"><span data-i18n="titleLine">글은 로컬에,</span><br /><em data-i18n="titleAccent">교정은 즉시.</em></h1>
+          <p class="hero-copy" data-i18n="heroCopy">맞춤법·띄어쓰기·문법·문체를 바로 검사하세요. 문장은 외부 서버로 전송되지 않고 이 브라우저 안에서만 처리됩니다.</p>
+        </div>
+        <div class="hero-proof" aria-label="제품 수치">
+          <div><strong>ALPHA</strong><span data-i18n="metricRules">검증 중인 핵심 규칙</span></div>
+          <div><strong>LOCAL</strong><span data-i18n="metricCases">브라우저 안에서 실행</span></div>
+          <div><strong>0</strong><span data-i18n="metricNetwork">네트워크 요청</span></div>
+        </div>
+      </section>
+
+      <section class="workspace" id="workspace" aria-label="문장 점검기">
+        <div class="editor-panel panel">
+          <div class="panel-head">
+            <div><p class="panel-index" data-i18n="writeIndex">01 / WRITE</p><h2 data-i18n="writeTitle">검사할 문장</h2></div>
+            <button class="text-button" id="sample" type="button" data-i18n="sample">예시 불러오기</button>
+          </div>
+          <label class="sr-only" for="editor" data-i18n="editorLabel">검사할 한국어 문장</label>
+          <textarea id="editor" spellcheck="false">오늘이 몇일이지? 일이 되서 할려고 책를 봤다.</textarea>
+          <div class="editor-foot"><span id="character-count">0자</span><span><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span></div>
+        </div>
+
+        <div class="control-panel panel">
+          <p class="panel-index" data-i18n="tuneIndex">02 / TUNE</p>
+          <h2 data-i18n="tuneTitle">점검 강도</h2>
+          <label for="profile" data-i18n="profileLabel">규칙 프로필</label>
+          <select id="profile">
+            <option value="default">Default — 확실한 오류</option>
+            <option value="strict">Strict — 더 넓은 점검</option>
+            <option value="editorial">Editorial — 문장 다듬기 포함</option>
+          </select>
+          <label for="source-kind" data-i18n="sourceLabel">입력 형식</label>
+          <select id="source-kind">
+            <option value="plain_text">Plain text</option>
+            <option value="markdown">Markdown</option>
+            <option value="javascript">JavaScript comments</option>
+            <option value="typescript">TypeScript comments</option>
+            <option value="python">Python comments</option>
+            <option value="rust">Rust comments</option>
+          </select>
+          <button class="scan-button" id="scan" type="button"><span data-i18n="scan">문장 점검</span><b aria-hidden="true">↗</b></button>
+          <p class="privacy-note" data-i18n="privacy">모든 검사는 이 브라우저에서만 실행됩니다. 입력 내용은 저장하거나 전송하지 않습니다.</p>
+        </div>
+
+        <section class="correction-panel panel" id="correction-panel" aria-labelledby="correction-heading">
+          <div class="panel-head">
+            <div><p class="panel-index" data-i18n="correctionIndex">03 / CORRECTED</p><h2 id="correction-heading" data-i18n="correctionTitle">교정된 문장</h2></div>
+            <span class="correction-status" id="correction-status" role="status" aria-live="polite" data-i18n="correctionLoading">준비 중</span>
+          </div>
+          <label class="sr-only" for="corrected-output" data-i18n="correctionLabel">안전한 교정이 반영된 문장</label>
+          <textarea id="corrected-output" readonly aria-busy="true"></textarea>
+          <div class="correction-actions">
+            <button class="correction-action secondary" id="copy-correction" type="button" data-i18n="copyCorrection" disabled>교정문 복사</button>
+            <button class="correction-action primary" id="apply-correction" type="button" data-i18n="applyCorrection" disabled>원문에 반영</button>
+          </div>
+        </section>
+
+        <section class="result-panel panel" aria-labelledby="result-heading">
+          <div class="panel-head">
+            <div><p class="panel-index" data-i18n="findingsIndex">04 / FINDINGS</p><h2 id="result-heading" data-i18n="findingsTitle">점검 결과</h2></div>
+            <span class="finding-count" id="finding-count">준비 중</span>
+          </div>
+          <div id="results" aria-live="polite" aria-busy="true"><p class="loading" data-i18n="engineLoading">오프라인 엔진을 준비하고 있습니다…</p></div>
+        </section>
+      </section>
+
+      <section class="rule-section" id="rules" aria-labelledby="rule-heading">
+        <div class="section-intro">
+          <p class="panel-index" data-i18n="ruleIndex">05 / RULE INDEX</p>
+          <h2 id="rule-heading" data-i18n="ruleTitle">검증된 규칙 모두 보기</h2>
+          <p data-i18n="ruleCopy">규칙 ID·분류·잘못된 표현으로 검색하세요. 카탈로그도 현재 브라우저의 WASM 파일에서 읽습니다.</p>
+        </div>
+        <div class="rule-browser panel">
+          <label for="rule-search" data-i18n="ruleSearchLabel">규칙 검색</label>
+          <input id="rule-search" type="search" autocomplete="off" data-i18n-placeholder="ruleSearchPlaceholder" placeholder="예: 몇일, spacing, GitHub" />
+          <p class="rule-count" id="rule-count" aria-live="polite">규칙 불러오는 중</p>
+          <div class="rule-list" id="rule-list"></div>
+        </div>
+      </section>
+
+      <section class="install-section" id="install" aria-labelledby="install-heading">
+        <div>
+          <p class="panel-index" data-i18n="installIndex">06 / INSTALL</p>
+          <h2 id="install-heading" data-i18n="installTitle">저장소에 30초 만에 연결</h2>
+          <p data-i18n="installCopy">Release 체크섬을 검증하는 설치기로 Rust나 API 키 없이 시작하세요.</p>
+        </div>
+        <pre><code><span># Windows PowerShell</span>
+irm https://raw.githubusercontent.com/binibinibin123/geullint/master/install.ps1 | iex
+
+<span># macOS / Linux</span>
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/master/install.sh | sh</code></pre>
+        <div class="cta-row">
+          <a class="cta primary" href="https://github.com/binibinibin123/geullint#30초-시작" data-i18n="installerButton">설치 안내</a>
+          <a class="cta" href="https://github.com/binibinibin123/geullint/releases" data-i18n="releaseButton">GitHub Release</a>
+          <a class="cta" href="https://github.com/binibinibin123/geullint" data-i18n="repoButton">소스와 문서</a>
+        </div>
+      </section>
+
+      <footer>
+        <span>GEULLINT · MIT · NO TELEMETRY</span>
+        <span>CLI / LSP / VS CODE / WASM</span>
+      </footer>
+    </main>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

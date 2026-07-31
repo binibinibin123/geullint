@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">GeulLint 글자 검사 표식</title>
+  <desc id="desc">먹색 정사각형 안에 한글 자소와 연두색 교정 표시가 결합된 아이콘</desc>
+  <rect width="128" height="128" rx="22" fill="#18211c"/>
+  <path d="M27 28h45v13H41v19H28zm1 43h13v29h34v13H28z" fill="#f2f0e8"/>
+  <path d="M82 27h17v48H82zM68 51h46v15H68z" fill="#ff6230"/>
+  <path d="m64 83 13 13 25-29 10 9-34 39-24-23z" fill="#dfff38"/>
+</svg>

@@ -1,0 +1,19 @@
+version: 1
+language: ko
+rules:
+  - id: spelling.confusable.waen-il
+    title: "웬일 표기"
+    description: "뜻밖의 일을 나타내는 ‘웬일’을 바르게 씁니다."
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "‘왠일’은 ‘웬일’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: 왠일
+        to: 웬일
+    examples:
+      incorrect:
+        - 왠일
+      correct:
+        - 웬일

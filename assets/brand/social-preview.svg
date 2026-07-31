@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">GeulLint GitHub 소셜 미리보기</title>
+  <desc id="desc">오픈소스 한국어 맞춤법 검사기로 맞춤법·띄어쓰기·문법·문체를 로컬에서 교정하는 소개 카드</desc>
+  <defs>
+    <pattern id="dots" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="#f2f0e8" opacity=".13"/></pattern>
+  </defs>
+  <rect width="1280" height="640" fill="#18211c"/>
+  <rect width="1280" height="640" fill="url(#dots)"/>
+  <path d="m0 510 1280-112v242H0z" fill="#dfff38"/>
+  <g transform="translate(76 70)">
+    <rect width="112" height="112" rx="20" fill="#f2f0e8"/>
+    <path d="M24 25h40v12H37v18H25zm1 42h12v27h31v12H25z" fill="#18211c"/>
+    <path d="M74 24h16v44H74zM61 46h43v14H61z" fill="#ff6230"/>
+    <path d="m57 78 12 12 23-27 10 9-32 37-22-22z" fill="#18211c"/>
+  </g>
+  <text x="220" y="138" fill="#f2f0e8" font-family="Georgia, 'Malgun Gothic', serif" font-size="64" font-weight="800" letter-spacing="-3">GeulLint</text>
+  <text x="79" y="276" fill="#f2f0e8" font-family="Georgia, 'Malgun Gothic', serif" font-size="68" font-weight="800">글은 로컬에,</text>
+  <text x="79" y="354" fill="#ff6230" font-family="Georgia, 'Malgun Gothic', serif" font-size="68" font-weight="800">교정은 즉시.</text>
+  <text x="84" y="422" fill="#c2c7c1" font-family="'Malgun Gothic', sans-serif" font-size="22">오픈소스 한국어 맞춤법 검사기 · 맞춤법·띄어쓰기·문법·문체</text>
+  <g transform="translate(805 78)">
+    <rect width="392" height="341" fill="#f2f0e8"/>
+    <text x="28" y="48" fill="#ff6230" font-family="'Cascadia Mono', monospace" font-size="14" font-weight="800">LOCAL DIAGNOSTIC</text>
+    <text x="28" y="105" fill="#18211c" font-family="'Malgun Gothic', sans-serif" font-size="27">오늘이 <tspan fill="#ff6230">몇일</tspan>인지 확인해요.</text>
+    <path d="M112 118h54" stroke="#ff6230" stroke-width="5"/>
+    <rect x="28" y="159" width="336" height="126" fill="#18211c"/>
+    <text x="48" y="192" fill="#dfff38" font-family="'Cascadia Mono', monospace" font-size="11" font-weight="700">SPELLING.LEXICAL.MYEOCHIL</text>
+    <text x="48" y="232" fill="#f2f0e8" font-family="'Malgun Gothic', sans-serif" font-size="20">몇일 → 며칠</text>
+    <text x="48" y="265" fill="#c2c7c1" font-family="'Malgun Gothic', sans-serif" font-size="14">안전 수정 · 외부 전송 없음</text>
+    <circle cx="44" cy="318" r="7" fill="#4ca75b"/>
+    <text x="61" y="323" fill="#397343" font-family="'Cascadia Mono', monospace" font-size="12" font-weight="700">OFFLINE ENGINE READY</text>
+  </g>
+  <text x="81" y="576" fill="#18211c" font-family="'Malgun Gothic', sans-serif" font-size="19" font-weight="800">브라우저 · VS Code · CLI · CI   |   EARLY ALPHA · MIT</text>
+</svg>

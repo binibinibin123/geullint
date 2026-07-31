@@ -1,0 +1,354 @@
+name: Release packages
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version without the v prefix (for example 0.2.0-alpha.1)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  attestations: write
+  id-token: write
+
+jobs:
+  validate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.96.0
+      - id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            release_version="${GITHUB_REF_NAME#v}"
+          else
+            release_version="$INPUT_VERSION"
+            git rev-parse --verify "refs/tags/v${release_version}" >/dev/null
+          fi
+
+          cargo_version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "geullint-cli") | .version')"
+          if [[ "$release_version" != "$cargo_version" ]]; then
+            echo "Tag version $release_version does not match Cargo version $cargo_version." >&2
+            exit 1
+          fi
+
+          for package in packages/npm/*/package.json; do
+            package_version="$(node -p "require('./' + process.argv[1]).version" "$package")"
+            if [[ "$package_version" != "$release_version" ]]; then
+              echo "$package has version $package_version, expected $release_version." >&2
+              exit 1
+            fi
+          done
+
+          extension_version="$(node -p "require('./extensions/vscode-geullint/package.json').version")"
+          if [[ "$extension_version" != "$release_version" ]]; then
+            echo "VS Code extension has version $extension_version, expected $release_version." >&2
+            exit 1
+          fi
+
+          test -f "docs/quality-report-v${release_version}.md"
+
+          echo "version=$release_version" >> "$GITHUB_OUTPUT"
+
+  build-platform-artifacts:
+    needs: validate-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            package_name: geullint-win32-x64
+            target_name: win32-x64
+            binary_name: geullint.exe
+            archive_extension: zip
+          - runner: windows-11-arm
+            package_name: geullint-win32-arm64
+            target_name: win32-arm64
+            binary_name: geullint.exe
+            archive_extension: zip
+          - runner: macos-15-intel
+            package_name: geullint-darwin-x64
+            target_name: darwin-x64
+            binary_name: geullint
+            archive_extension: tar.gz
+          - runner: macos-15
+            package_name: geullint-darwin-arm64
+            target_name: darwin-arm64
+            binary_name: geullint
+            archive_extension: tar.gz
+          - runner: ubuntu-latest
+            package_name: geullint-linux-x64
+            target_name: linux-x64
+            binary_name: geullint
+            archive_extension: tar.gz
+          - runner: ubuntu-24.04-arm
+            package_name: geullint-linux-arm64
+            target_name: linux-arm64
+            binary_name: geullint
+            archive_extension: tar.gz
+    runs-on: ${{ matrix.runner }}
+    env:
+      RELEASE_VERSION: ${{ needs.validate-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.96.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Build and stage the native npm package
+        shell: pwsh
+        run: |
+          cargo build --release -p geullint-cli
+
+          $packageDirectory = "packages/npm/${{ matrix.package_name }}"
+          $binaryDirectory = Join-Path $packageDirectory "bin"
+          New-Item -ItemType Directory -Force -Path $binaryDirectory | Out-Null
+          Copy-Item "target/release/${{ matrix.binary_name }}" (Join-Path $binaryDirectory "${{ matrix.binary_name }}")
+          Copy-Item THIRD_PARTY_NOTICES.md (Join-Path $packageDirectory "NOTICE")
+          $packageLicenseDirectory = Join-Path $packageDirectory "LICENSES"
+          New-Item -ItemType Directory -Force -Path $packageLicenseDirectory | Out-Null
+          Copy-Item "LICENSES/Apache-2.0.txt" (Join-Path $packageLicenseDirectory "Apache-2.0.txt")
+
+      - name: Create a compressed fallback archive and checksum
+        id: archive
+        shell: pwsh
+        run: |
+          $archiveStem = "geullint-v$env:RELEASE_VERSION-${{ matrix.target_name }}"
+          $stagingDirectory = Join-Path "release-staging" $archiveStem
+          New-Item -ItemType Directory -Force -Path $stagingDirectory | Out-Null
+          Copy-Item "target/release/${{ matrix.binary_name }}" (Join-Path $stagingDirectory "${{ matrix.binary_name }}")
+          Copy-Item LICENSE (Join-Path $stagingDirectory "LICENSE")
+          Copy-Item THIRD_PARTY_NOTICES.md (Join-Path $stagingDirectory "NOTICE")
+          Copy-Item -Recurse -Force LICENSES (Join-Path $stagingDirectory "LICENSES")
+
+          New-Item -ItemType Directory -Force -Path release-artifacts | Out-Null
+          if ("${{ matrix.archive_extension }}" -eq "zip") {
+            $archive = "release-artifacts/$archiveStem.zip"
+            Compress-Archive -Path $stagingDirectory -DestinationPath $archive
+          } else {
+            $archive = "release-artifacts/$archiveStem.tar.gz"
+            tar -C release-staging -czf $archive $archiveStem
+          }
+
+          $hash = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
+          "$hash  $(Split-Path -Leaf $archive)" | Set-Content -NoNewline "$archive.sha256"
+          "archive=$archive" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Smoke-test the checksummed release archive
+        run: node scripts/release-smoke.mjs "${{ steps.archive.outputs.archive }}" "${{ steps.archive.outputs.archive }}.sha256" "${{ matrix.binary_name }}"
+
+      - name: Generate a binary SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          file: target/release/${{ matrix.binary_name }}
+          format: spdx-json
+          output-file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-${{ matrix.target_name }}.spdx.json
+          upload-artifact: false
+      - name: Attest the native binary and its SBOM
+        uses: actions/attest@v4
+        with:
+          subject-path: target/release/${{ matrix.binary_name }}
+          sbom-path: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-${{ matrix.target_name }}.spdx.json
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ matrix.target_name }}
+          path: release-artifacts/*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: npm-${{ matrix.target_name }}
+          path: packages/npm/${{ matrix.package_name }}
+          if-no-files-found: error
+
+  publish-platform-packages:
+    needs: [validate-version, build-platform-artifacts]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package_name: geullint-win32-x64
+            target_name: win32-x64
+          - package_name: geullint-win32-arm64
+            target_name: win32-arm64
+          - package_name: geullint-darwin-x64
+            target_name: darwin-x64
+          - package_name: geullint-darwin-arm64
+            target_name: darwin-arm64
+          - package_name: geullint-linux-x64
+            target_name: linux-x64
+          - package_name: geullint-linux-arm64
+            target_name: linux-arm64
+    runs-on: ubuntu-latest
+    env:
+      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      RELEASE_VERSION: ${{ needs.validate-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@v8
+        with:
+          name: npm-${{ matrix.target_name }}
+          path: packages/npm/${{ matrix.package_name }}
+      - name: Publish the native npm package when credentials are configured
+        if: env.HAS_NPM_TOKEN == 'true'
+        working-directory: packages/npm/${{ matrix.package_name }}
+        shell: bash
+        run: |
+          if [[ "$RELEASE_VERSION" == *-* ]]; then
+            npm publish --access public --tag next
+          else
+            npm publish --access public
+          fi
+
+  publish-launcher:
+    needs: [validate-version, publish-platform-packages]
+    runs-on: ubuntu-latest
+    env:
+      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      RELEASE_VERSION: ${{ needs.validate-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Publish the geullint launcher package
+        if: env.HAS_NPM_TOKEN == 'true'
+        working-directory: packages/npm/geullint
+        shell: bash
+        run: |
+          if [[ "$RELEASE_VERSION" == *-* ]]; then
+            npm publish --access public --tag next
+          else
+            npm publish --access public
+          fi
+
+  package-vscode-extension:
+    needs: validate-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            target_name: win32-x64
+            binary_name: geullint-lsp.exe
+          - runner: windows-11-arm
+            target_name: win32-arm64
+            binary_name: geullint-lsp.exe
+          - runner: macos-15-intel
+            target_name: darwin-x64
+            binary_name: geullint-lsp
+          - runner: macos-15
+            target_name: darwin-arm64
+            binary_name: geullint-lsp
+          - runner: ubuntu-latest
+            target_name: linux-x64
+            binary_name: geullint-lsp
+          - runner: ubuntu-24.04-arm
+            target_name: linux-arm64
+            binary_name: geullint-lsp
+    runs-on: ${{ matrix.runner }}
+    env:
+      RELEASE_VERSION: ${{ needs.validate-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.96.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: extensions/vscode-geullint/package-lock.json
+      - name: Build and bundle the offline language server
+        shell: pwsh
+        run: |
+          cargo build --release -p geullint-lsp
+          $serverDirectory = "extensions/vscode-geullint/server/${{ matrix.target_name }}"
+          New-Item -ItemType Directory -Force -Path $serverDirectory | Out-Null
+          Copy-Item "target/release/${{ matrix.binary_name }}" (Join-Path $serverDirectory "${{ matrix.binary_name }}")
+          Copy-Item THIRD_PARTY_NOTICES.md "extensions/vscode-geullint/THIRD_PARTY_NOTICES.md"
+          Copy-Item -Recurse -Force LICENSES "extensions/vscode-geullint/LICENSES"
+      - name: Package the platform-matched VSIX
+        working-directory: extensions/vscode-geullint
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path ../../release-artifacts | Out-Null
+          npm ci
+          npm run compile
+          npx vsce package --no-dependencies --out "../../release-artifacts/geullint-v$env:RELEASE_VERSION-vscode-${{ matrix.target_name }}.vsix"
+      - name: Generate a VSIX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.vsix
+          format: spdx-json
+          output-file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.spdx.json
+          upload-artifact: false
+      - name: Attest the VSIX and its SBOM
+        uses: actions/attest@v4
+        with:
+          subject-path: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.vsix
+          sbom-path: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.spdx.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-vscode-${{ matrix.target_name }}
+          path: release-artifacts/*
+          if-no-files-found: error
+
+  create-github-release:
+    needs: [validate-version, build-platform-artifacts, package-vscode-extension]
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: ${{ needs.validate-version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+      - name: Add one-command installers
+        shell: bash
+        run: cp install.sh install.ps1 release-assets/
+      - name: Publish the checksummed cross-platform release
+        shell: bash
+        run: |
+          release_tag="v${RELEASE_VERSION}"
+          release_title="GeulLint v${RELEASE_VERSION}"
+          release_notes="First public alpha of GeulLint. Includes the offline Korean checker, one-command installers, native archives for Windows, macOS, and Linux, and platform-matched VS Code extensions. Quality report: https://github.com/binibinibin123/geullint/blob/v${RELEASE_VERSION}/docs/quality-report-v${RELEASE_VERSION}.md. Browser demo: https://binibinibin123.github.io/geullint/"
+          release_flags=()
+          if [[ "${RELEASE_VERSION}" == *-* ]]; then
+            release_flags+=(--prerelease)
+          fi
+
+          if gh release view "$release_tag" >/dev/null 2>&1; then
+            gh release upload "$release_tag" release-assets/* --clobber
+            gh release edit "$release_tag" --title "$release_title" --notes "$release_notes" "${release_flags[@]}"
+          else
+            gh release create "$release_tag" release-assets/* \
+              --title "$release_title" \
+              --notes "$release_notes" \
+              "${release_flags[@]}"
+          fi

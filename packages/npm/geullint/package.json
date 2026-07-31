@@ -1,0 +1,35 @@
+{
+  "name": "geullint",
+  "version": "0.2.0-alpha.1",
+  "description": "Offline Korean grammar and spelling linter for repositories",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/binibinibin123/geullint.git"
+  },
+  "homepage": "https://github.com/binibinibin123/geullint#readme",
+  "bugs": {
+    "url": "https://github.com/binibinibin123/geullint/issues"
+  },
+  "type": "module",
+  "bin": {
+    "geullint": "bin/geullint.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "optionalDependencies": {
+    "geullint-win32-x64": "0.2.0-alpha.1",
+    "geullint-win32-arm64": "0.2.0-alpha.1",
+    "geullint-darwin-x64": "0.2.0-alpha.1",
+    "geullint-darwin-arm64": "0.2.0-alpha.1",
+    "geullint-linux-x64": "0.2.0-alpha.1",
+    "geullint-linux-arm64": "0.2.0-alpha.1"
+  }
+}

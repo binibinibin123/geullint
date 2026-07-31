@@ -1,0 +1,20 @@
+version: 1
+language: ko
+rules:
+  - id: advanced.honorific.jeo-jasin
+    title: "저 자신 지칭"
+    description: "주어가 ‘저’인 문맥에서 재귀 대명사 ‘저 자신’을 제안합니다."
+    severity: info
+    confidence: low
+    profile: editorial
+    defaultEnabled: false
+    message: "이 문맥에서는 ‘저 자신’이 자연스러운지 검토하세요."
+    safeFix: false
+    replacements:
+      - from: 제가 제 자신을
+        to: 제가 저 자신을
+    examples:
+      incorrect:
+        - 제가 제 자신을
+      correct:
+        - 제가 저 자신을

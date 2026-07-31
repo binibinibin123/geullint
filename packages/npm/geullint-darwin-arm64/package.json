@@ -1,0 +1,26 @@
+{
+  "name": "geullint-darwin-arm64",
+  "version": "0.2.0-alpha.1",
+  "description": "macOS Apple Silicon binary for GeulLint",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/binibinibin123/geullint.git"
+  },
+  "homepage": "https://github.com/binibinibin123/geullint#readme",
+  "bugs": {
+    "url": "https://github.com/binibinibin123/geullint/issues"
+  },
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "files": [
+    "bin",
+    "NOTICE",
+    "LICENSES"
+  ],
+  "preferUnplugged": true
+}

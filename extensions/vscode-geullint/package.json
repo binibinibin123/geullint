@@ -1,0 +1,122 @@
+{
+  "name": "geullint",
+  "displayName": "GeulLint",
+  "description": "완전 오프라인 한국어 맞춤법·문법 린터",
+  "version": "0.2.0-alpha.1",
+  "publisher": "geullint",
+  "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/binibinibin123/geullint"
+  },
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "korean",
+    "korean grammar",
+    "spelling",
+    "offline",
+    "linter"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact",
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact",
+    "onLanguage:python",
+    "onLanguage:rust",
+    "onLanguage:plaintext",
+    "onCommand:geullint.openRuleCatalog"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "geullint.openRuleCatalog",
+        "title": "GeulLint: 규칙 목록 열기"
+      }
+    ],
+    "configuration": {
+      "title": "GeulLint",
+      "properties": {
+        "geullint.serverPath": {
+          "type": "string",
+          "default": "",
+          "description": "geullint-lsp 실행 파일의 절대 경로입니다. 비워 두면 번들 서버 또는 PATH에서 찾습니다."
+        },
+        "geullint.profile": {
+          "type": "string",
+          "default": "default",
+          "enum": [
+            "default",
+            "strict",
+            "editorial"
+          ],
+          "scope": "resource",
+          "description": "검사 규칙 묶음입니다. default는 고신뢰 규칙, strict는 더 엄격한 검사, editorial은 문체 제안까지 포함합니다."
+        },
+        "geullint.userDictionary": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "scope": "resource",
+          "description": "프로젝트 고유명사·제품명 등 맞는 표기로 인정할 단어 목록입니다."
+        },
+        "geullint.dictionaryOverlay": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "scope": "resource",
+          "description": "버전 관리하는 사전 overlay에서 가져온 표제어 목록입니다."
+        },
+        "geullint.dictionaryOverlayPaths": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "scope": "resource",
+          "description": "geullint-overlay-v1 사전 overlay 파일 경로 목록입니다. 상대 경로는 첫 워크스페이스 폴더를 기준으로 해석합니다."
+        },
+        "geullint.rulePacks": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "scope": "resource",
+          "description": "프로젝트 전용 GeulLint 규칙 팩 YAML의 로컬 파일 경로 목록입니다."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "check": "tsc --noEmit -p .",
+    "test": "npm run compile && node --test dist/test/*.test.js",
+    "package": "npm run compile && vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "@types/vscode": "^1.93.0",
+    "@vscode/vsce": "^3.9.2",
+    "typescript": "^5.8.3"
+  }
+}
