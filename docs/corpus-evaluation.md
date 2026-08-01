@@ -111,6 +111,24 @@ Windows PowerShell에서 해시를 만들려면 다음 명령을 씁니다.
 (Get-FileHash -Algorithm SHA256 .\gold-corpus.jsonl).Hash.ToLower()
 ```
 
+## 저장소의 안전 회귀 코퍼스
+
+[`corpus/safety-regressions-v1.jsonl`](../corpus/safety-regressions-v1.jsonl)은 GeulLint가 직접 작성하고 MIT로 배포하는 적대적 회귀 모음입니다. 오류 72건과 정상 반례 72건을 8개 장르에 각각 18건씩 배치하고 44개 규칙 ID를 다룹니다. plain text뿐 아니라 Markdown, Python, JavaScript, TypeScript, Rust 입력도 포함합니다.
+
+구조 게이트는 [`safety-regressions-v1.policy.json`](../corpus/safety-regressions-v1.policy.json)에 고정되어 있습니다. 정확히 144건인지, 정규화 중복이 없는지, 문자 3-gram 유사도가 한계를 넘지 않는지, 장르·입력 종류·프로필·고위험 규칙 표본이 빠지지 않았는지를 먼저 검사합니다. manifest는 코퍼스 전체 바이트의 SHA-256과 저장소 출처를 고정합니다.
+
+오류 주석은 `original`이 문장에 정확히 한 번 나타나야 합니다. 명시적 `range`가 없으면 평가기가 이 위치에서 UTF-8 바이트 범위를 결정하고 실제 진단의 범위·규칙 ID·제안을 대조합니다. `expectedFixedText`가 원문과 다르면 첫 제안을 적용한 결과와 정확히 같아야 하며, 검토 전용 진단은 원문을 그대로 기대할 수 있습니다. 따라서 범위가 맞아도 엉뚱한 교정문을 만드는 회귀는 출시 게이트를 통과하지 못합니다.
+
+```bash
+node scripts/validate-safety-corpus.mjs \
+  --corpus corpus/safety-regressions-v1.jsonl \
+  --policy corpus/safety-regressions-v1.policy.json \
+  --cli target/debug/geullint
+target/debug/geullint --corpus-manifest corpus/safety-regressions-v1.manifest.json
+```
+
+이 모음은 실제 사용자 문서에서 독립적으로 표본을 뽑고 외부 검토자가 주석한 gold corpus가 아닙니다. 회귀 방지 범위와 현재 구현의 일치 여부만 보여 주며, 한국어 전반의 정밀도·재현율을 증명하지 않습니다.
+
 ## 저장소의 seed 코퍼스
 
 [`corpus/seed-v1.jsonl`](../corpus/seed-v1.jsonl)은 현재 공개 규칙 ID가 적어도 한 번은 실제로 실행되는지 확인하는 smoke corpus입니다. 한 문장에서 둘 이상의 진단이 나올 수 있으므로 사례 수와 진단 수는 같지 않을 수 있습니다. 이 파일은 저장소의 MIT 코드와 함께 관리하지만, **정밀도·재현율을 주장할 수 있는 독립 공개 gold corpus가 아닙니다.**

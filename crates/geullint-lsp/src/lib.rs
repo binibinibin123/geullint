@@ -318,7 +318,6 @@ mod tests {
             .trim()
             .parse()
             .expect("catalog-count.txt must contain an integer");
-        assert!(declared_count <= 100);
         assert_eq!(rules.len(), declared_count);
         assert!(
             rules

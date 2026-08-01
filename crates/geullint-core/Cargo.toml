@@ -7,26 +7,18 @@ license.workspace = true
 repository.workspace = true
 
 [features]
-default = ["morphology", "source-parsing"]
+default = []
 morphology = ["dep:lindera"]
-source-parsing = [
-  "dep:tree-sitter",
-  "dep:tree-sitter-javascript",
-  "dep:tree-sitter-python",
-  "dep:tree-sitter-rust",
-  "dep:tree-sitter-typescript",
-]
 
 [dependencies]
+aho-corasick.workspace = true
 lindera = { version = "4.0.1", default-features = false, features = ["embed-ko-dic"], optional = true }
 serde.workspace = true
 serde_yaml = "0.9.34"
 thiserror.workspace = true
-tree-sitter = { version = "0.26.11", optional = true }
-tree-sitter-javascript = { version = "0.25.0", optional = true }
-tree-sitter-python = { version = "0.25.0", optional = true }
-tree-sitter-rust = { version = "0.24.0", optional = true }
-tree-sitter-typescript = { version = "0.23.2", optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
 
 [lints]
 workspace = true

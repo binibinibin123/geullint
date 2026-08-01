@@ -34,20 +34,27 @@ test("ships a separate corrected sentence with copy and apply actions", () => {
     "copy-correction",
     "apply-correction",
     "correction-status",
+    "include-review-corrections",
   ]) {
     assert.match(index, new RegExp(`id="${id}"`));
   }
   assert.match(index, /readonly/);
   assert.match(index, /aria-labelledby="correction-heading"/);
   assert.match(app, /data\.response\.fixedText/);
+  assert.match(app, /data\.response\.reviewFixedText/);
+  assert.match(app, /includeReviewFixes:\s*includeReviewCorrections\.checked/u);
+  assert.match(worker, /includeReviewFixes:\s*data\.includeReviewFixes/u);
   assert.match(app, /editor\.value\s*!==\s*requestedText/);
   assert.match(app, /navigator\.clipboard\.writeText/);
   assert.match(app, /editor\.value\s*=\s*correctedOutput\.value/);
+  assert.match(app, /reviewFixedText/);
+  assert.match(app, /includeReviewCorrections\.addEventListener\("change"/);
   for (const key of [
     "correctionTitle",
     "copyCorrection",
     "applyCorrection",
     "correctionApplied",
+    "correctionReviewApplied",
     "correctionUnchanged",
     "correctionReview",
     "correctionNeedsScan",
@@ -56,6 +63,11 @@ test("ships a separate corrected sentence with copy and apply actions", () => {
   ]) {
     assert.match(i18n, new RegExp(`${key}:`));
   }
+});
+
+test("starts the human-facing demo with editorial review suggestions visible", () => {
+  assert.match(index, /<option value="editorial" selected>/u);
+  assert.match(index, /id="include-review-corrections" type="checkbox" checked/u);
 });
 
 test("sends text only to a local Web Worker and never to a network endpoint", () => {
@@ -97,6 +109,9 @@ test("deploys the generated static playground through GitHub Pages", () => {
 test("advertises only installation paths that exist at release time", () => {
   assert.match(index, /install\.ps1/u);
   assert.match(index, /install\.sh/u);
+  assert.match(index, /geullint\/v0\.3\.0-alpha\.1\/install\.ps1/u);
+  assert.match(index, /geullint\/v0\.3\.0-alpha\.1\/install\.sh/u);
+  assert.match(index, /GEULLINT_VERSION=0\.3\.0-alpha\.1/u);
   assert.doesNotMatch(index, /npm install --save-dev geullint/u);
   assert.doesNotMatch(index, /npmjs\.com\/package\/geullint/u);
 });

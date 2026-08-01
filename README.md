@@ -49,11 +49,11 @@
 | CI에서 품질 지키기 | 문서 품질 저하를 자동 차단하고 SARIF 결과 생성 |
 | 내 표현에 맞추기 | 사용자 사전, dictionary overlay, 프로젝트 rule pack 추가 |
 
-현재 버전은 **v0.2.0-alpha.1**이며 핵심 규칙 100개를 제공합니다. 문장·진단·텔레메트리는 외부로 전송하지 않습니다.
+현재 공개 버전은 **v0.3.0-alpha.1**입니다. 문장·진단·텔레메트리는 외부로 전송하지 않습니다.
 
 ## 무엇이 다른가
 
-GeulLint는 브라우저·편집기·터미널에서 **완전히 로컬로** 실행되는 한국어 맞춤법·문법 검사기입니다. 어디서 사용하든 같은 Rust 규칙 엔진이 같은 규칙 ID와 교정 결과를 제공합니다.
+GeulLint는 브라우저·편집기·터미널에서 **완전히 로컬로** 실행되는 한국어 맞춤법·문법 검사기입니다. 같은 입력·입력 종류·프로필에서는 어느 환경에서도 같은 Rust 규칙 엔진이 같은 규칙 ID와 교정 결과를 제공합니다.
 
 | | GeulLint |
 | --- | --- |
@@ -70,24 +70,25 @@ GeulLint는 브라우저·편집기·터미널에서 **완전히 로컬로** 실
 
 ### Windows
 
-아래 설치 스크립트는 최신 Release의 체크섬을 검증하고 사용자 디렉터리에 설치합니다. 실행 전 [원문](install.ps1)을 읽을 수 있습니다.
+아래 명령은 v0.3.0-alpha.1 설치 스크립트와 Release를 함께 고정하고, 체크섬을 검증한 뒤 사용자 디렉터리에 설치합니다. 실행 전 [원문](install.ps1)을 읽을 수 있습니다.
 
 ```powershell
-irm https://raw.githubusercontent.com/binibinibin123/geullint/master/install.ps1 | iex
+$env:GEULLINT_VERSION='0.3.0-alpha.1'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.ps1 | iex
 geullint .
 ```
 
 ### macOS · Linux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/master/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.sh | GEULLINT_VERSION=0.3.0-alpha.1 sh
 geullint .
 ```
 
 Rust 도구 체인이 이미 있다면 소스에서 고정 설치할 수도 있습니다.
 
 ```bash
-cargo install --git https://github.com/binibinibin123/geullint --tag v0.2.0-alpha.1 --locked geullint-cli
+cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.1 --locked geullint-cli
 ```
 
 수동 압축 파일은 [GitHub Releases](https://github.com/binibinibin123/geullint/releases)의 대안(fallback)입니다. 사용자가 개별 실행 파일을 찾아 설치하는 방식을 기본 경로로 삼지 않습니다.
@@ -105,8 +106,8 @@ cargo install --git https://github.com/binibinibin123/geullint --tag v0.2.0-alph
 
 ```text
 $ geullint memo.md
-memo.md:1:5: error [spelling.lexical.myeochil] '몇일'은 '며칠'로 쓰는 것이 맞습니다. → 며칠
-memo.md:2:4: warning [grammar.conjugation.doe-to-dwae] '되서'는 '돼서'로 쓰는 것이 맞습니다. → 돼서
+memo.md:1:5: error [spelling.lexical.myeochil] ‘몇일’은 ‘며칠’로 쓰는 것이 맞습니다. → 며칠
+memo.md:2:4: warning [grammar.conjugation.doe-to-dwae] ‘되/돼’의 활용과 준말 표기를 바로잡으세요. → 돼서
 ```
 
 ```bash
@@ -122,11 +123,13 @@ geullint --corpus-manifest gold.manifest.json
 geullint lsp --stdio
 ```
 
-CI에서는 설치 후 `geullint .` 한 줄을 실행하면 됩니다. 기본 실패 기준은 `error`이며 `--fail-on warning` 또는 `--fail-on info`로 강화할 수 있습니다. 종료 코드는 `0`(통과), `1`(진단 발견), `2`(설정·실행 오류)입니다.
+CI에서는 설치 후 `geullint .` 한 줄을 실행하면 됩니다. 디렉터리 검사는 기존 `.gitignore`와 프로젝트 전용 `.geullintignore` 패턴을 따릅니다. 기본 실패 기준은 `error`이며 `--fail-on warning` 또는 `--fail-on info`로 강화할 수 있습니다. 종료 코드는 `0`(통과), `1`(실패 기준 이상의 진단 발견), `2`(설정·실행 오류)입니다.
 
 ## 규칙과 품질
 
-GeulLint v0.2.0-alpha.1은 현재 **검수 핵심 규칙 100개**를 제공합니다. 이 숫자는 목표가 아니라 상한이며, 오탐이 확인된 규칙은 수를 유지하려고 대체하지 않고 제거하거나 검토 전용으로 낮춥니다.
+규칙 수는 품질 목표가 아닙니다. 공개 카탈로그는 빌드에서 재현되며, 오탐이 확인된 규칙은 수를 유지하려고 대체하지 않고 제거하거나 검토 전용으로 낮춥니다.
+
+최근 개발 범위에는 단어 경계를 보존하는 분석 경로가 포함됩니다. 이 경로는 `돼게 → 되게`, `돼면 → 되면`, `돼고 → 되고`, `돼는 → 되는`처럼 활용형 계열을 검사하며, `감사해용 → 감사해요`는 말투 선택일 수 있어 자동 수정이 아닌 검토 제안으로 표시합니다.
 
 | 영역 | 대표 예시 |
 | --- | --- |
@@ -135,9 +138,9 @@ GeulLint v0.2.0-alpha.1은 현재 **검수 핵심 규칙 100개**를 제공합�
 | 띄어쓰기 | 검증된 의존 명사와 고정 표현 |
 | 기술명 | 선택형 기술 용어 교정 |
 | 문체 | 중복·군더더기·편집 제안 |
-| 문장부호·타이포그래피 | 공백, 괄호, 기호, 전각 문자 |
+| 문장부호 | 쉼표 중복과 문장 부호 앞뒤 공백 |
 
-새로 검수한 철자 규칙 42개에는 서로 다른 오류 문장 84개와 정상 반례 42개가 있습니다. KoLLA v2의 다중 주석자가 모두 정상으로 판정한 외부 제어 문장 249개에서도 이 알파 카탈로그의 오탐은 0건이었습니다. 표본이 작고 오류 정답 코퍼스가 아니므로 이 결과를 정밀도나 재현율로 홍보하지 않습니다. 재현 정보는 [알파 품질 보고서](docs/quality-report-v0.2.0-alpha.1.md)에 공개합니다.
+현재 카탈로그는 113개 규칙입니다. 새 문맥 규칙 11개는 서로 다른 오류 문장 33개와 정상·고유명사 반례 56개를 통과했고, 출시 안전 회귀 144개와 KoLLA v2 정상 제어 문장 249개에서도 확인된 오탐은 0건이었습니다. 모두 제한된 회귀·정상 표본이므로 일반 정밀도나 재현율로 홍보하지 않습니다. 재현 명령과 원본 해시는 [알파 품질 보고서](docs/quality-report-v0.3.0-alpha.1.md)에 공개합니다.
 
 - [현재 규칙 전체 목록](docs/rules.md)
 - [규칙 품질 게이트](docs/quality.md)
@@ -147,7 +150,8 @@ GeulLint v0.2.0-alpha.1은 현재 **검수 핵심 규칙 100개**를 제공합�
 ## VS Code
 
 <p align="center">
-  <img src="assets/screenshots/vscode.png" alt="GeulLint VS Code 확장의 진단, 빠른 수정, 규칙 검색 미리보기" width="100%">
+  <img src="assets/screenshots/vscode.png" alt="GeulLint VS Code 확장의 실제 기능을 바탕으로 한 워크플로 개념도" width="100%"><br>
+  <sub>실제 기능과 규칙 ID를 바탕으로 만든 개념도입니다. VS Code 버전에 따라 화면 배치는 달라질 수 있습니다.</sub>
 </p>
 
 Release에서 운영체제와 CPU에 맞는 **VSIX**를 받아 VS Code의 `Extensions: Install from VSIX...`로 설치하면 됩니다. VSIX 안에 로컬 언어 서버가 들어 있어 Rust, Node.js, API 키가 필요 없습니다.
@@ -181,6 +185,7 @@ Release에서 운영체제와 CPU에 맞는 **VSIX**를 받아 VS Code의 `Exten
 ## 현재 한계
 
 - 규칙 기반 린터이므로 긴 문맥의 의미 판단이나 창작 문체의 정답을 대신하지 않습니다.
+- 범용 OOV 사전은 아직 기본 엔진에 없으므로 등록된 규칙 밖의 임의 오타는 놓칠 수 있습니다.
 - 안전성이 낮은 제안은 자동 수정하지 않거나 `info` 수준으로 표시합니다.
 - matcher contract와 smoke corpus는 엔진 배선 확인용이며 실세계 정확도 수치가 아닙니다.
 - 외부 정상 제어군은 249문장뿐이므로 다양한 장르와 작성자를 대표하지 않습니다.
@@ -194,4 +199,4 @@ Release에서 운영체제와 CPU에 맞는 **VSIX**를 받아 VS Code의 `Exten
 
 ## 라이선스
 
-[MIT](LICENSE) © GeulLint contributors. 내장 형태소 사전과 의존성 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 있습니다.
+[MIT](LICENSE) © GeulLint contributors. 선택적 `morphology` 기능의 사전·의존성 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 있습니다.

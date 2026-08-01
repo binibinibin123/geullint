@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "artifact": "apps/playground/pkg/geullint_wasm_bg.wasm",
+  "maxRawBytes": 650000,
+  "maxGzipBytes": 220000
+}

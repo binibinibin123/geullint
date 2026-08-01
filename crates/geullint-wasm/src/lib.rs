@@ -2,9 +2,7 @@
 
 //! Browser bindings for the fully local `GeulLint` core.
 
-use geullint_core::{
-    Diagnostic, LintConfig, RuleMetadata, SourceKind, apply_safe_fixes, lint_text, rule_catalog,
-};
+use geullint_core::{Diagnostic, Engine, LintConfig, RuleMetadata, SourceKind, rule_catalog};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -16,6 +14,12 @@ pub struct WasmLintRequest {
     pub source_kind: SourceKind,
     #[serde(default)]
     pub config: LintConfig,
+    #[serde(default = "review_fixes_enabled_by_default")]
+    pub include_review_fixes: bool,
+}
+
+const fn review_fixes_enabled_by_default() -> bool {
+    true
 }
 
 impl WasmLintRequest {
@@ -36,6 +40,7 @@ pub struct WasmLintResponse {
     pub version: u8,
     pub diagnostics: Vec<Diagnostic>,
     pub fixed_text: String,
+    pub review_fixed_text: String,
 }
 
 /// The versioned catalogue shared by the native and browser builds.
@@ -50,12 +55,17 @@ pub struct WasmRuleCatalog {
 /// Parses and lints a browser request entirely in the current process.
 #[must_use]
 pub fn evaluate(request: &WasmLintRequest) -> WasmLintResponse {
-    let diagnostics = lint_text(&request.text, request.source_kind, &request.config);
-    let fixed_text = apply_safe_fixes(&request.text, &diagnostics);
+    let engine = Engine::new(request.config.clone());
+    let outcome = engine.check_with_fixes(
+        &request.text,
+        request.source_kind,
+        request.include_review_fixes,
+    );
     WasmLintResponse {
         version: 1,
-        diagnostics,
-        fixed_text,
+        diagnostics: outcome.diagnostics,
+        fixed_text: outcome.fixed_text,
+        review_fixed_text: outcome.review_fixed_text,
     }
 }
 

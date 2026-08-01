@@ -1,0 +1,5 @@
+# Generated rule documentation intentionally contains incorrect examples.
+docs/rules.md
+
+# Matcher tests use incorrect Korean forms inside test comments.
+crates/geullint-core/src/matcher.rs

@@ -1,5 +1,8 @@
 target/
 node_modules/
 extensions/vscode-geullint/dist/
+extensions/vscode-geullint/server/
+extensions/vscode-geullint/LICENSES/
+extensions/vscode-geullint/THIRD_PARTY_NOTICES.md
 apps/playground/pkg/
 *.vsix

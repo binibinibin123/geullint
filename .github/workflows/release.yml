@@ -20,23 +20,53 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      release_ref: ${{ steps.release_ref.outputs.release_ref }}
+      release_sha: ${{ steps.version.outputs.release_sha }}
     steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.96.0
-      - id: version
+      - name: Resolve the requested release tag
+        id: release_ref
         env:
           INPUT_VERSION: ${{ inputs.version }}
         shell: bash
         run: |
-          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
-            release_version="${GITHUB_REF_NAME#v}"
-          else
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             release_version="$INPUT_VERSION"
-            git rev-parse --verify "refs/tags/v${release_version}" >/dev/null
+          else
+            release_version="${GITHUB_REF_NAME#v}"
+          fi
+
+          if [[ ! "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?(\+[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+            echo "Invalid release version: $release_version" >&2
+            exit 1
+          fi
+
+          release_ref=refs/tags/v${release_version}
+          echo "version=$release_version" >> "$GITHUB_OUTPUT"
+          echo "release_ref=$release_ref" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.release_ref.outputs.release_ref }}
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master (2026-08-02)
+        with:
+          toolchain: 1.96.0
+      - id: version
+        env:
+          RELEASE_REF: ${{ steps.release_ref.outputs.release_ref }}
+          RELEASE_VERSION: ${{ steps.release_ref.outputs.version }}
+        shell: bash
+        run: |
+          release_ref="$RELEASE_REF"
+          release_version="$RELEASE_VERSION"
+          release_sha="$(git rev-parse "${release_ref}^{commit}")"
+          if [[ "$release_sha" != "$(git rev-parse HEAD)" ]]; then
+            echo "Checkout does not match $release_ref." >&2
+            exit 1
+          fi
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$release_sha" != "$GITHUB_SHA" ]]; then
+            echo "Release tag moved after this workflow was triggered." >&2
+            exit 1
           fi
 
           cargo_version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "geullint-cli") | .version')"
@@ -62,9 +92,62 @@ jobs:
           test -f "docs/quality-report-v${release_version}.md"
 
           echo "version=$release_version" >> "$GITHUB_OUTPUT"
+          echo "release_sha=$release_sha" >> "$GITHUB_OUTPUT"
+
+  verify-release:
+    needs: validate-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.validate-version.outputs.release_sha }}
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master (2026-08-02)
+        with:
+          toolchain: 1.96.0
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+      - run: cargo fmt --check
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - run: cargo test --workspace --all-features
+      - run: cargo test -p geullint-core --no-default-features
+      - run: node --test packages/npm/geullint/test/geullint.test.js
+      - name: Check the npm launcher package contents
+        working-directory: packages/npm/geullint
+        run: npm pack --dry-run --json
+      - run: node --test scripts/*.test.mjs
+      - name: Check the VS Code extension
+        working-directory: extensions/vscode-geullint
+        run: |
+          npm ci
+          npm run check
+          npm test
+          npm run build
+      - name: Install the locked wasm-bindgen CLI
+        run: cargo install wasm-bindgen-cli --version 0.2.126 --locked
+      - name: Exercise the browser WASM and enforce its size budget
+        run: |
+          node scripts/build-playground.mjs
+          node scripts/wasm-runtime-parity.mjs
+          node scripts/check-wasm-size.mjs
+      - run: cargo build -p geullint-cli
+      - name: Validate the committed Korean safety corpus
+        run: >-
+          node scripts/validate-safety-corpus.mjs
+          --corpus corpus/safety-regressions-v1.jsonl
+          --policy corpus/safety-regressions-v1.policy.json
+          --cli target/debug/geullint
+      - name: Evaluate exact diagnostics and corrected text
+        run: target/debug/geullint --corpus-manifest corpus/safety-regressions-v1.manifest.json
+      - name: Check the minimum supported Rust version
+        run: |
+          rustup toolchain install 1.88.0 --profile minimal
+          cargo +1.88.0 check --workspace --all-targets --all-features --locked
 
   build-platform-artifacts:
-    needs: validate-version
+    needs: [validate-version, verify-release]
     strategy:
       fail-fast: false
       matrix:
@@ -103,22 +186,25 @@ jobs:
     env:
       RELEASE_VERSION: ${{ needs.validate-version.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.validate-version.outputs.release_sha }}
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master (2026-08-02)
         with:
           toolchain: 1.96.0
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
       - name: Build and stage the native npm package
         shell: pwsh
         run: |
-          cargo build --release -p geullint-cli
+          cargo build --release --locked -p geullint-cli
 
           $packageDirectory = "packages/npm/${{ matrix.package_name }}"
           $binaryDirectory = Join-Path $packageDirectory "bin"
           New-Item -ItemType Directory -Force -Path $binaryDirectory | Out-Null
           Copy-Item "target/release/${{ matrix.binary_name }}" (Join-Path $binaryDirectory "${{ matrix.binary_name }}")
+          Copy-Item LICENSE (Join-Path $packageDirectory "LICENSE")
           Copy-Item THIRD_PARTY_NOTICES.md (Join-Path $packageDirectory "NOTICE")
           $packageLicenseDirectory = Join-Path $packageDirectory "LICENSES"
           New-Item -ItemType Directory -Force -Path $packageLicenseDirectory | Out-Null
@@ -152,32 +238,32 @@ jobs:
       - name: Smoke-test the checksummed release archive
         run: node scripts/release-smoke.mjs "${{ steps.archive.outputs.archive }}" "${{ steps.archive.outputs.archive }}.sha256" "${{ matrix.binary_name }}"
 
-      - name: Generate a binary SBOM
-        uses: anchore/sbom-action@v0
+      - name: Generate an SBOM for the downloadable archive
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
-          file: target/release/${{ matrix.binary_name }}
+          file: ${{ steps.archive.outputs.archive }}
           format: spdx-json
           output-file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-${{ matrix.target_name }}.spdx.json
           upload-artifact: false
-      - name: Attest the native binary and its SBOM
-        uses: actions/attest@v4
+      - name: Attest the downloadable archive and its SBOM
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4
         with:
-          subject-path: target/release/${{ matrix.binary_name }}
+          subject-path: ${{ steps.archive.outputs.archive }}
           sbom-path: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-${{ matrix.target_name }}.spdx.json
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-${{ matrix.target_name }}
           path: release-artifacts/*
           if-no-files-found: error
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: npm-${{ matrix.target_name }}
           path: packages/npm/${{ matrix.package_name }}
           if-no-files-found: error
 
   publish-platform-packages:
-    needs: [validate-version, build-platform-artifacts]
+    needs: [validate-version, verify-release, build-platform-artifacts]
     strategy:
       fail-fast: false
       matrix:
@@ -200,15 +286,21 @@ jobs:
       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       RELEASE_VERSION: ${{ needs.validate-version.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.validate-version.outputs.release_sha }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: npm-${{ matrix.target_name }}
           path: packages/npm/${{ matrix.package_name }}
+      - name: Restore executable mode on the downloaded Unix binary
+        if: startsWith(matrix.target_name, 'darwin-') || startsWith(matrix.target_name, 'linux-')
+        shell: bash
+        run: chmod 0755 "packages/npm/${{ matrix.package_name }}/bin/geullint"
       - name: Publish the native npm package when credentials are configured
         if: env.HAS_NPM_TOKEN == 'true'
         working-directory: packages/npm/${{ matrix.package_name }}
@@ -221,15 +313,17 @@ jobs:
           fi
 
   publish-launcher:
-    needs: [validate-version, publish-platform-packages]
+    needs: [validate-version, verify-release, publish-platform-packages]
     runs-on: ubuntu-latest
     env:
       HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       RELEASE_VERSION: ${{ needs.validate-version.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.validate-version.outputs.release_sha }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
@@ -245,7 +339,7 @@ jobs:
           fi
 
   package-vscode-extension:
-    needs: validate-version
+    needs: [validate-version, verify-release]
     strategy:
       fail-fast: false
       matrix:
@@ -272,11 +366,13 @@ jobs:
     env:
       RELEASE_VERSION: ${{ needs.validate-version.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.validate-version.outputs.release_sha }}
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master (2026-08-02)
         with:
           toolchain: 1.96.0
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
           cache: npm
@@ -284,7 +380,7 @@ jobs:
       - name: Build and bundle the offline language server
         shell: pwsh
         run: |
-          cargo build --release -p geullint-lsp
+          cargo build --release --locked -p geullint-lsp
           $serverDirectory = "extensions/vscode-geullint/server/${{ matrix.target_name }}"
           New-Item -ItemType Directory -Force -Path $serverDirectory | Out-Null
           Copy-Item "target/release/${{ matrix.binary_name }}" (Join-Path $serverDirectory "${{ matrix.binary_name }}")
@@ -296,48 +392,104 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path ../../release-artifacts | Out-Null
           npm ci
-          npm run compile
-          npx vsce package --no-dependencies --out "../../release-artifacts/geullint-v$env:RELEASE_VERSION-vscode-${{ matrix.target_name }}.vsix"
+          npm run build
+          $vsix = "../../release-artifacts/geullint-v$env:RELEASE_VERSION-vscode-${{ matrix.target_name }}.vsix"
+          npx vsce package --no-dependencies --out $vsix
+          node ../../scripts/vsix-smoke.mjs $vsix "${{ matrix.target_name }}" "${{ matrix.binary_name }}"
+          $hash = (Get-FileHash -Algorithm SHA256 $vsix).Hash.ToLowerInvariant()
+          "$hash  $(Split-Path -Leaf $vsix)" | Set-Content -NoNewline "$vsix.sha256"
       - name: Generate a VSIX SBOM
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
           file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.vsix
           format: spdx-json
           output-file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.spdx.json
           upload-artifact: false
       - name: Attest the VSIX and its SBOM
-        uses: actions/attest@v4
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4
         with:
           subject-path: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.vsix
           sbom-path: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.spdx.json
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-vscode-${{ matrix.target_name }}
           path: release-artifacts/*
           if-no-files-found: error
 
   create-github-release:
-    needs: [validate-version, build-platform-artifacts, package-vscode-extension]
+    needs: [validate-version, verify-release, build-platform-artifacts, package-vscode-extension]
     runs-on: ubuntu-latest
     env:
       RELEASE_VERSION: ${{ needs.validate-version.outputs.version }}
+      RELEASE_REF: ${{ needs.validate-version.outputs.release_ref }}
+      RELEASE_SHA: ${{ needs.validate-version.outputs.release_sha }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.validate-version.outputs.release_sha }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: release-*
           path: release-assets
           merge-multiple: true
       - name: Add one-command installers
         shell: bash
-        run: cp install.sh install.ps1 release-assets/
+        run: |
+          cp install.sh install.ps1 release-assets/
+          bash -n release-assets/install.sh
+          (
+            cd release-assets
+            sha256sum install.sh > install.sh.sha256
+            sha256sum install.ps1 > install.ps1.sha256
+          )
+      - name: Parse the PowerShell installer
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "release-assets/install.ps1"),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_ }
+            exit 1
+          }
+      - name: Attest the downloadable installer scripts
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4
+        with:
+          subject-path: |
+            release-assets/install.sh
+            release-assets/install.ps1
+      - name: Extract release notes from the changelog
+        shell: bash
+        run: |
+          awk -v version="$RELEASE_VERSION" '
+            index($0, "## [" version "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+            END { if (!found) exit 42 }
+          ' CHANGELOG.md > release-notes.md
+          test -s release-notes.md
+          cat >> release-notes.md <<EOF
+
+          Quality report: https://github.com/binibinibin123/geullint/blob/v${RELEASE_VERSION}/docs/quality-report-v${RELEASE_VERSION}.md
+
+          Browser demo: https://binibinibin123.github.io/geullint/
+          EOF
       - name: Publish the checksummed cross-platform release
         shell: bash
         run: |
           release_tag="v${RELEASE_VERSION}"
           release_title="GeulLint v${RELEASE_VERSION}"
-          release_notes="First public alpha of GeulLint. Includes the offline Korean checker, one-command installers, native archives for Windows, macOS, and Linux, and platform-matched VS Code extensions. Quality report: https://github.com/binibinibin123/geullint/blob/v${RELEASE_VERSION}/docs/quality-report-v${RELEASE_VERSION}.md. Browser demo: https://binibinibin123.github.io/geullint/"
+          tag_sha="$(git rev-parse "${RELEASE_REF}^{commit}")"
+          if [[ "$tag_sha" != "$RELEASE_SHA" ]]; then
+            echo "$RELEASE_REF moved after validation; refusing to release." >&2
+            exit 1
+          fi
           release_flags=()
           if [[ "${RELEASE_VERSION}" == *-* ]]; then
             release_flags+=(--prerelease)
@@ -345,10 +497,10 @@ jobs:
 
           if gh release view "$release_tag" >/dev/null 2>&1; then
             gh release upload "$release_tag" release-assets/* --clobber
-            gh release edit "$release_tag" --title "$release_title" --notes "$release_notes" "${release_flags[@]}"
+            gh release edit "$release_tag" --title "$release_title" --notes-file release-notes.md "${release_flags[@]}"
           else
             gh release create "$release_tag" release-assets/* \
               --title "$release_title" \
-              --notes "$release_notes" \
+              --notes-file release-notes.md \
               "${release_flags[@]}"
           fi

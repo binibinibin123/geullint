@@ -12,11 +12,11 @@ anyhow.workspace = true
 clap.workspace = true
 geullint-core = { path = "../geullint-core" }
 geullint-lsp = { path = "../geullint-lsp" }
+ignore = "0.4.23"
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 tokio = { version = "1.49.0", features = ["rt-multi-thread"] }
-walkdir = "2.5.0"
 
 [[bin]]
 name = "geullint"

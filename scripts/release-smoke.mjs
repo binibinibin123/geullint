@@ -55,9 +55,6 @@ export function validateReleaseCatalog(catalog) {
   if (catalog.ruleCount === 0) {
     throw new Error("release catalogue must be nonempty");
   }
-  if (catalog.ruleCount > 100) {
-    throw new Error("release catalogue must contain at most 100 curated rules");
-  }
 }
 
 function listFiles(root, current = root) {

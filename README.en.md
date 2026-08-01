@@ -33,11 +33,11 @@ Check a sentence on the web, then bring the same checker into your editor, termi
 | CI | Prevents document-quality regressions and produces SARIF results |
 | Your vocabulary | Adds a user dictionary, dictionary overlays, and project rule packs |
 
-The current release is **v0.2.0-alpha.1** and includes 100 core rules. Writing, diagnostics, and telemetry are never sent to an external service.
+Writing, diagnostics, and telemetry are never sent to an external service. The published alpha release is **v0.3.0-alpha.1**; this repository's rule catalogue evolves independently of a fixed rule-count target.
 
 ## Why GeulLint
 
-GeulLint is a Korean spelling and grammar checker that runs fully offline in the browser, your editor, and the terminal. The same Rust engine produces the same rule IDs and corrections everywhere. It understands Markdown prose and comments in JavaScript, TypeScript, Python, and Rust while leaving code and string literals alone.
+GeulLint is a Korean spelling and grammar checker that runs fully offline in the browser, your editor, and the terminal. For the same text, source kind, and profile, the same Rust engine produces the same rule IDs and corrections everywhere. It scans Markdown prose and comments in JavaScript, TypeScript, Python, and Rust while excluding code and string ranges it recognizes.
 
 | Capability | Included |
 | --- | --- |
@@ -54,21 +54,22 @@ Try the [local WebAssembly playground](https://binibinibin123.github.io/geullint
 **Windows**
 
 ```powershell
-irm https://raw.githubusercontent.com/binibinibin123/geullint/master/install.ps1 | iex
+$env:GEULLINT_VERSION='0.3.0-alpha.1'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.ps1 | iex
 geullint .
 ```
 
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/master/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.sh | GEULLINT_VERSION=0.3.0-alpha.1 sh
 geullint .
 ```
 
 The scripts verify the SHA-256 checksum of the matching GitHub Release. Read [install.ps1](install.ps1) or [install.sh](install.sh) before running it. With a Rust toolchain:
 
 ```bash
-cargo install --git https://github.com/binibinibin123/geullint --tag v0.2.0-alpha.1 --locked geullint-cli
+cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.1 --locked geullint-cli
 ```
 
 Manual archives on [GitHub Releases](https://github.com/binibinibin123/geullint/releases) are the fallback.
@@ -85,19 +86,21 @@ geullint --rule-pack .geullint-rules.yaml docs/
 geullint lsp --stdio
 ```
 
-GeulLint v0.2.0-alpha.1 currently contains **100 curated core rules**. The 42 newly reviewed lexical rules have 84 distinct error sentences and 42 normal counterexamples. The alpha catalogue also produced zero false positives on 249 KoLLA v2 all-annotators-noop controls. This small normal-only audit is not a precision or recall claim; see the [alpha quality report](docs/quality-report-v0.2.0-alpha.1.md).
+Directory scans honor existing `.gitignore` files and project-specific `.geullintignore` patterns.
+
+The rule catalogue is generated from rule metadata and checked examples. A rule count is not a quality claim: tests include error cases and normal counterexamples, but those cases do not establish general precision or recall. Safe automatic corrections are deliberately narrower than review suggestions. See the [quality gates](docs/quality.md) and [corpus evaluation protocol](docs/corpus-evaluation.md) for the evaluation contract.
 
 See the [rule catalogue](docs/rules.md), [quality gates](docs/quality.md), [corpus evaluation protocol](docs/corpus-evaluation.md), and [offline policy](docs/offline.md).
 
 ## VS Code
 
-<p align="center"><img src="assets/screenshots/vscode.png" alt="GeulLint diagnostics, quick fixes, and rule search in VS Code" width="100%"></p>
+<p align="center"><img src="assets/screenshots/vscode.png" alt="Concept view based on GeulLint's actual VS Code diagnostics, quick fixes, and rule search" width="100%"><br><sub>Concept view based on implemented features and real rule IDs. Layout may vary by VS Code version.</sub></p>
 
 Download the platform-matched VSIX from [Releases](https://github.com/binibinibin123/geullint/releases) and choose `Extensions: Install from VSIX...`. The local language server is bundled; no Rust, Node.js, API key, or network service is required.
 
 ## Limits and contributing
 
-GeulLint is a conservative rule-based linter, not a substitute for semantic review or creative editorial judgment. Low-confidence suggestions are informational or intentionally left without an automatic fix. Independent metrics are published only with licensed, hashed, reviewable corpora.
+GeulLint is a conservative rule-based linter, not a substitute for semantic review or creative editorial judgment. It does not yet ship a general OOV dictionary, so typos outside the published rules can be missed. Low-confidence suggestions are informational or intentionally left without an automatic fix. Independent metrics are published only with licensed, hashed, reviewable corpora.
 
 Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), the [architecture](ARCHITECTURE.md), and the [roadmap](ROADMAP.md). Report vulnerabilities through [SECURITY.md](SECURITY.md).
 

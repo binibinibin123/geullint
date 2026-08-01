@@ -15,6 +15,7 @@ addEventListener("message", async ({ data }) => {
       text: data.text,
       sourceKind: data.sourceKind,
       config: data.config,
+      includeReviewFixes: data.includeReviewFixes,
     })));
     postMessage({ id: data.id, response });
   } catch (error) {

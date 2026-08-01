@@ -1,4 +1,4 @@
-# GeulLint 규칙 100개
+# GeulLint 규칙 113개
 
 > 이 파일은 공개 규칙 카탈로그에서 재현 가능하게 생성됩니다.
 
@@ -15,28 +15,52 @@
 - 예: `제가 제 자신을` → `제가 저 자신을`
 
 <a id="grammar.conjugation.doe-to-dwae"></a>
-## `grammar.conjugation.doe-to-dwae` — Doe To Dwae
+## `grammar.conjugation.doe-to-dwae` — ‘되’와 ‘돼’ 활용 구별
 
-‘되서’는 ‘돼서’로 쓰는 것이 맞습니다.
+‘되서’, ‘되요’와 잘못 줄인 ‘됀’, ‘됄’, ‘됌’을 올바른 활용으로 고칩니다.
 
 - 분류: `grammar`
 - 신뢰도: `high`
 - 수정 안전도: `safe`
 - 기본 활성화: `true`
 - 프로필: `default`, `strict`, `editorial`
-- 예: `되서` → `돼서`
+- 예: `됀` → `된`
 
 <a id="grammar.conjugation.dwae-to-doe"></a>
-## `grammar.conjugation.dwae-to-doe` — Dwae To Doe
+## `grammar.conjugation.dwae-to-doe` — ‘돼’와 ‘되’ 활용 구별
 
-‘돼면’은 ‘되면’으로 쓰는 것이 맞습니다.
+‘돼게’, ‘돼면서’, ‘돼도록’처럼 어미 앞에서는 ‘되’를 씁니다.
 
 - 분류: `grammar`
 - 신뢰도: `high`
 - 수정 안전도: `safe`
 - 기본 활성화: `true`
 - 프로필: `default`, `strict`, `editorial`
-- 예: `돼면` → `되면`
+- 예: `돼게` → `되게`
+
+<a id="grammar.copula.anieyo"></a>
+## `grammar.copula.anieyo` — ‘아니에요’ 표기
+
+‘아니다’에 ‘-에요’가 붙은 활용형을 ‘아니에요’로 바로잡습니다.
+
+- 분류: `grammar`
+- 신뢰도: `high`
+- 수정 안전도: `safe`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `아니예요` → `아니에요`
+
+<a id="grammar.ending.colloquial-yong"></a>
+## `grammar.ending.colloquial-yong` — 표준 종결어미 ‘-요’
+
+편집 문체에서 ‘해용’, ‘세용’을 표준 종결어미로 검토하도록 안내합니다.
+
+- 분류: `grammar`
+- 신뢰도: `medium`
+- 수정 안전도: `review`
+- 기본 활성화: `false`
+- 프로필: `editorial`
+- 예: `감사해용` → `감사해요`
 
 <a id="grammar.ending.deun-choice"></a>
 ## `grammar.ending.deun-choice` — 선택의 ‘-든지’
@@ -51,16 +75,28 @@
 - 예: `커피던지 차던지` → `커피든지 차든지`
 
 <a id="grammar.ending.euryeo"></a>
-## `grammar.ending.euryeo` — Euryeo
+## `grammar.ending.euryeo` — 의도·조건의 ‘-려고/-려면’
 
-‘-려고’를 사용하세요.
+검증된 활용형에서 불필요하게 덧붙은 ‘ㄹ’을 바로잡습니다.
 
 - 분류: `grammar`
 - 신뢰도: `high`
 - 수정 안전도: `safe`
 - 기본 활성화: `true`
 - 프로필: `default`, `strict`, `editorial`
-- 예: `할려고` → `하려고`
+- 예: `먹을려고` → `먹으려고`
+
+<a id="grammar.ending.euryeo-context"></a>
+## `grammar.ending.euryeo-context` — ‘갈려고/갈려면’ 문맥 검토
+
+‘갈려고’, ‘갈려면’을 문맥에 따라 ‘가려고’, ‘가려면’으로 검토합니다.
+
+- 분류: `grammar`
+- 신뢰도: `medium`
+- 수정 안전도: `review`
+- 기본 활성화: `false`
+- 프로필: `strict`, `editorial`
+- 예: `갈려고` → `가려고`
 
 <a id="grammar.ending.hal-ge"></a>
 ## `grammar.ending.hal-ge` — 할게 표기
@@ -74,8 +110,32 @@
 - 프로필: `default`, `strict`, `editorial`
 - 예: `할께` → `할게`
 
+<a id="grammar.ending.seumnida"></a>
+## `grammar.ending.seumnida` — 현대 표준 ‘-습니다/-ㅂ니다’
+
+옛 표기 ‘-읍니다/-읍니까’를 받침에 맞는 현대 표준 활용으로 바로잡습니다.
+
+- 분류: `grammar`
+- 신뢰도: `high`
+- 수정 안전도: `safe`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `읽읍니다` → `읽습니다`
+
+<a id="grammar.ending.sipsio"></a>
+## `grammar.ending.sipsio` — 높임 명령형 ‘-십시오’
+
+높임 명령형의 잘못된 ‘-십시요’를 ‘-십시오’로 바로잡습니다.
+
+- 분류: `grammar`
+- 신뢰도: `high`
+- 수정 안전도: `safe`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `확인하십시요` → `확인하십시오`
+
 <a id="grammar.negation.an-before-predicate"></a>
-## `grammar.negation.an-before-predicate` — An Before Predicate
+## `grammar.negation.an-before-predicate` — 부정 부사 ‘안’
 
 부정 부사 ‘안’을 사용하세요.
 
@@ -86,8 +146,20 @@
 - 프로필: `default`, `strict`, `editorial`
 - 예: `않 간다` → `안 간다`
 
+<a id="grammar.negation.anh-doe"></a>
+## `grammar.negation.anh-doe` — 부정 부사 ‘안’과 ‘되다’
+
+‘않되다/않돼다’처럼 잘못 쓴 부정을 ‘안 되다’ 계열로 바로잡습니다.
+
+- 분류: `grammar`
+- 신뢰도: `high`
+- 수정 안전도: `safe`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `않됩니다` → `안 됩니다`
+
 <a id="grammar.negation.ji-anh"></a>
-## `grammar.negation.ji-anh` — Ji Anh
+## `grammar.negation.ji-anh` — ‘-지 않다’ 띄어쓰기
 
 ‘-지 않았다’처럼 보조 용언은 붙여 씁니다.
 
@@ -105,13 +177,13 @@
 
 - 분류: `grammar`
 - 신뢰도: `high`
-- 수정 안전도: `safe`
-- 기본 활성화: `true`
-- 프로필: `default`, `strict`, `editorial`
+- 수정 안전도: `review`
+- 기본 활성화: `false`
+- 프로필: `strict`, `editorial`
 - 예: `책와` → `책과`
 
 <a id="grammar.particle.duplicate"></a>
-## `grammar.particle.duplicate` — Duplicate
+## `grammar.particle.duplicate` — 조사 중복
 
 조사가 중복된 것 같습니다.
 
@@ -120,7 +192,7 @@
 - 수정 안전도: `safe`
 - 기본 활성화: `true`
 - 프로필: `default`, `strict`, `editorial`
-- 예: `를를` → `를`
+- 예: `자료를를 확인했다` → `자료를 확인했다`
 
 <a id="grammar.particle.instrumental-allomorph"></a>
 ## `grammar.particle.instrumental-allomorph` — 부사격 조사 ‘으로/로’
@@ -129,9 +201,9 @@
 
 - 분류: `grammar`
 - 신뢰도: `high`
-- 수정 안전도: `safe`
-- 기본 활성화: `true`
-- 프로필: `default`, `strict`, `editorial`
+- 수정 안전도: `review`
+- 기본 활성화: `false`
+- 프로필: `strict`, `editorial`
 - 예: `책로` → `책으로`
 
 <a id="grammar.particle.object-allomorph"></a>
@@ -141,9 +213,9 @@
 
 - 분류: `grammar`
 - 신뢰도: `high`
-- 수정 안전도: `safe`
-- 기본 활성화: `true`
-- 프로필: `default`, `strict`, `editorial`
+- 수정 안전도: `review`
+- 기본 활성화: `false`
+- 프로필: `strict`, `editorial`
 - 예: `책를` → `책을`
 
 <a id="grammar.particle.subject-allomorph"></a>
@@ -153,9 +225,9 @@
 
 - 분류: `grammar`
 - 신뢰도: `high`
-- 수정 안전도: `safe`
-- 기본 활성화: `true`
-- 프로필: `default`, `strict`, `editorial`
+- 수정 안전도: `review`
+- 기본 활성화: `false`
+- 프로필: `strict`, `editorial`
 - 예: `나무이` → `나무가`
 
 <a id="grammar.particle.topic-allomorph"></a>
@@ -165,9 +237,9 @@
 
 - 분류: `grammar`
 - 신뢰도: `high`
-- 수정 안전도: `safe`
-- 기본 활성화: `true`
-- 프로필: `default`, `strict`, `editorial`
+- 수정 안전도: `review`
+- 기본 활성화: `false`
+- 프로필: `strict`, `editorial`
 - 예: `책는` → `책은`
 
 <a id="punctuation.duplicate.comma"></a>
@@ -183,7 +255,7 @@
 - 예: `,,` → `,`
 
 <a id="punctuation.no-space-before-mark"></a>
-## `punctuation.no-space-before-mark` — No Space Before Mark
+## `punctuation.no-space-before-mark` — 문장 부호 앞 띄어쓰기
 
 문장 부호 앞에는 띄어쓰지 않습니다.
 
@@ -231,7 +303,7 @@
 - 예: `문서를 문서를` → `문서를`
 
 <a id="repetition.ending"></a>
-## `repetition.ending` — Ending
+## `repetition.ending` — 종결 표현 반복
 
 어미가 반복된 것 같습니다.
 
@@ -254,8 +326,68 @@
 - 프로필: `default`, `strict`, `editorial`
 - 예: `데이터 베이스` → `데이터베이스`
 
+<a id="spacing.dependent-noun.beop"></a>
+## `spacing.dependent-noun.beop` — 의존 명사 ‘법’ 띄어쓰기
+
+관형형 뒤에서 일반적인 이치를 나타내는 ‘법’의 띄어쓰기를 검토합니다.
+
+- 분류: `spacing`
+- 신뢰도: `medium`
+- 수정 안전도: `review`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `사는법이다` → `사는 법이다`
+
+<a id="spacing.dependent-noun.chae"></a>
+## `spacing.dependent-noun.chae` — 의존 명사 ‘채’ 띄어쓰기
+
+관형형 뒤에서 상태를 나타내는 ‘채’의 띄어쓰기를 검토합니다.
+
+- 분류: `spacing`
+- 신뢰도: `medium`
+- 수정 안전도: `review`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `입은채로` → `입은 채로`
+
+<a id="spacing.dependent-noun.daero"></a>
+## `spacing.dependent-noun.daero` — 의존 명사 ‘대로’ 띄어쓰기
+
+관형형 뒤에서 양상·방식을 나타내는 ‘대로’의 띄어쓰기를 검토합니다.
+
+- 분류: `spacing`
+- 신뢰도: `medium`
+- 수정 안전도: `review`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `들은대로` → `들은 대로`
+
+<a id="spacing.dependent-noun.de"></a>
+## `spacing.dependent-noun.de` — 의존 명사 ‘데’ 띄어쓰기
+
+관형형 뒤에서 장소·경우를 나타내는 ‘데’의 띄어쓰기를 검토합니다.
+
+- 분류: `spacing`
+- 신뢰도: `medium`
+- 수정 안전도: `review`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `묵을데가` → `묵을 데가`
+
+<a id="spacing.dependent-noun.deut"></a>
+## `spacing.dependent-noun.deut` — 의존 명사 ‘듯’ 띄어쓰기
+
+관형형 뒤에서 짐작을 나타내는 ‘듯’의 띄어쓰기를 검토합니다.
+
+- 분류: `spacing`
+- 신뢰도: `medium`
+- 수정 안전도: `review`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `모르는듯하다` → `모르는 듯하다`
+
 <a id="spacing.dependent-noun.geot"></a>
-## `spacing.dependent-noun.geot` — Geot
+## `spacing.dependent-noun.geot` — 의존 명사 ‘것’ 띄어쓰기
 
 의존 명사 ‘것’은 앞말과 띄어 씁니다.
 
@@ -267,7 +399,7 @@
 - 예: `좋을것 같다` → `좋을 것 같다`
 
 <a id="spacing.dependent-noun.jeok"></a>
-## `spacing.dependent-noun.jeok` — Jeok
+## `spacing.dependent-noun.jeok` — 의존 명사 ‘적’ 띄어쓰기
 
 의존 명사 ‘적’은 앞말과 띄어 씁니다.
 
@@ -279,7 +411,7 @@
 - 예: `본적 있다` → `본 적 있다`
 
 <a id="spacing.dependent-noun.jul"></a>
-## `spacing.dependent-noun.jul` — Jul
+## `spacing.dependent-noun.jul` — 의존 명사 ‘줄’ 띄어쓰기
 
 의존 명사 ‘줄’은 앞말과 띄어 씁니다.
 
@@ -291,7 +423,7 @@
 - 예: `알줄 안다` → `알 줄 안다`
 
 <a id="spacing.dependent-noun.jung"></a>
-## `spacing.dependent-noun.jung` — Jung
+## `spacing.dependent-noun.jung` — 의존 명사 ‘중’ 띄어쓰기
 
 의존 명사 ‘중’은 앞말과 띄어 씁니다.
 
@@ -302,8 +434,20 @@
 - 프로필: `default`, `strict`, `editorial`
 - 예: `하는중` → `하는 중`
 
+<a id="spacing.dependent-noun.mankeum"></a>
+## `spacing.dependent-noun.mankeum` — 의존 명사 ‘만큼’ 띄어쓰기
+
+관형형 뒤에서 정도를 나타내는 ‘만큼’의 띄어쓰기를 검토합니다.
+
+- 분류: `spacing`
+- 신뢰도: `medium`
+- 수정 안전도: `review`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `먹을만큼` → `먹을 만큼`
+
 <a id="spacing.dependent-noun.ppun"></a>
-## `spacing.dependent-noun.ppun` — Ppun
+## `spacing.dependent-noun.ppun` — 의존 명사 ‘뿐’ 띄어쓰기
 
 의존 명사 ‘뿐’은 앞말과 띄어 씁니다.
 
@@ -314,8 +458,20 @@
 - 프로필: `default`, `strict`, `editorial`
 - 예: `기다릴뿐이다` → `기다릴 뿐이다`
 
+<a id="spacing.dependent-noun.ri"></a>
+## `spacing.dependent-noun.ri` — 의존 명사 ‘리’ 띄어쓰기
+
+관형형 뒤에서 가능성을 나타내는 ‘리’의 띄어쓰기를 검토합니다.
+
+- 분류: `spacing`
+- 신뢰도: `medium`
+- 수정 안전도: `review`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `잊을리가 없다` → `잊을 리가 없다`
+
 <a id="spacing.dependent-noun.su"></a>
-## `spacing.dependent-noun.su` — Su
+## `spacing.dependent-noun.su` — 의존 명사 ‘수’ 띄어쓰기
 
 의존 명사 ‘수’는 앞말과 띄어 씁니다.
 
@@ -327,7 +483,7 @@
 - 예: `할수 있다` → `할 수 있다`
 
 <a id="spacing.dependent-noun.ttae"></a>
-## `spacing.dependent-noun.ttae` — Ttae
+## `spacing.dependent-noun.ttae` — 의존 명사 ‘때’ 띄어쓰기
 
 의존 명사 ‘때’는 앞말과 띄어 씁니다.
 
@@ -339,9 +495,9 @@
 - 예: `만날때` → `만날 때`
 
 <a id="spacing.fixed.ppunman-anira"></a>
-## `spacing.fixed.ppunman-anira` — Ppunman Anira
+## `spacing.fixed.ppunman-anira` — ‘뿐만 아니라’ 띄어쓰기
 
-`spacing.fixed.ppunman-anira` 한국어 검사 규칙입니다.
+‘뿐만 아니라’는 띄어 씁니다.
 
 - 분류: `spacing`
 - 신뢰도: `high`
@@ -351,7 +507,7 @@
 - 예: `뿐만아니라` → `뿐만 아니라`
 
 <a id="spacing.fixed.su-bakke"></a>
-## `spacing.fixed.su-bakke` — Su Bakke
+## `spacing.fixed.su-bakke` — ‘수밖에’ 붙여쓰기
 
 ‘수밖에’는 붙여 씁니다.
 
@@ -363,9 +519,9 @@
 - 예: `할 수 밖에` → `할 수밖에`
 
 <a id="spelling.adverb.i-hi"></a>
-## `spelling.adverb.i-hi` — I Hi
+## `spelling.adverb.i-hi` — 부사 ‘-이/-히’ 표기
 
-`spelling.adverb.i-hi` 한국어 검사 규칙입니다.
+부사의 ‘-이/-히’ 표기를 확인하세요.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -375,9 +531,9 @@
 - 예: `깨끗히` → `깨끗이`
 
 <a id="spelling.confusable.oraen-oraet"></a>
-## `spelling.confusable.oraen-oraet` — Oraen Oraet
+## `spelling.confusable.oraen-oraet` — ‘오랜/오랫-’ 표기
 
-`spelling.confusable.oraen-oraet` 한국어 검사 규칙입니다.
+‘오랫만에’는 ‘오랜만에’로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -399,9 +555,9 @@
 - 예: `왠일` → `웬일`
 
 <a id="spelling.confusable.wen-waen"></a>
-## `spelling.confusable.wen-waen` — Wen Waen
+## `spelling.confusable.wen-waen` — ‘웬/왠’ 구별
 
-`spelling.confusable.wen-waen` 한국어 검사 규칙입니다.
+‘왠만’은 ‘웬만’으로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -411,9 +567,9 @@
 - 예: `왠만` → `웬만`
 
 <a id="spelling.conjugation.boe-bwae"></a>
-## `spelling.conjugation.boe-bwae` — Boe Bwae
+## `spelling.conjugation.boe-bwae` — ‘봬요’ 표기
 
-`spelling.conjugation.boe-bwae` 한국어 검사 규칙입니다.
+‘뵈요’는 ‘봬요’로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -423,9 +579,9 @@
 - 예: `뵈요` → `봬요`
 
 <a id="spelling.conjugation.dwaet"></a>
-## `spelling.conjugation.dwaet` — Dwaet
+## `spelling.conjugation.dwaet` — ‘됐’ 표기
 
-`spelling.conjugation.dwaet` 한국어 검사 규칙입니다.
+‘됬’은 ‘됐’으로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -447,9 +603,9 @@
 - 예: `애닯다` → `애달프다`
 
 <a id="spelling.lexical.anseong-matchum"></a>
-## `spelling.lexical.anseong-matchum` — Anseong Matchum
+## `spelling.lexical.anseong-matchum` — 안성맞춤 표기
 
-`spelling.lexical.anseong-matchum` 한국어 검사 규칙입니다.
+‘안성마춤’은 ‘안성맞춤’으로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -471,9 +627,9 @@
 - 예: `치뤘다` → `치렀다`
 
 <a id="spelling.lexical.chojeom"></a>
-## `spelling.lexical.chojeom` — Chojeom
+## `spelling.lexical.chojeom` — 초점 표기
 
-`spelling.lexical.chojeom` 한국어 검사 규칙입니다.
+‘촛점’은 ‘초점’으로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -483,9 +639,9 @@
 - 예: `촛점` → `초점`
 
 <a id="spelling.lexical.daega"></a>
-## `spelling.lexical.daega` — Daega
+## `spelling.lexical.daega` — 대가 표기
 
-`spelling.lexical.daega` 한국어 검사 규칙입니다.
+‘댓가’는 ‘대가’로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -543,9 +699,9 @@
 - 예: `드려다보다` → `들여다보다`
 
 <a id="spelling.lexical.dodaeche"></a>
-## `spelling.lexical.dodaeche` — Dodaeche
+## `spelling.lexical.dodaeche` — 도대체 표기
 
-`spelling.lexical.dodaeche` 한국어 검사 규칙입니다.
+‘도데체’는 ‘도대체’로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -579,9 +735,9 @@
 - 예: `뒷굼치` → `뒤꿈치`
 
 <a id="spelling.lexical.eoieopda"></a>
-## `spelling.lexical.eoieopda` — Eoieopda
+## `spelling.lexical.eoieopda` — 어이없다 표기
 
-`spelling.lexical.eoieopda` 한국어 검사 규칙입니다.
+‘어의없다’는 ‘어이없다’로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -591,9 +747,9 @@
 - 예: `어의없` → `어이없`
 
 <a id="spelling.lexical.eojjaetdeun"></a>
-## `spelling.lexical.eojjaetdeun` — Eojjaetdeun
+## `spelling.lexical.eojjaetdeun` — 어쨌든 표기
 
-`spelling.lexical.eojjaetdeun` 한국어 검사 규칙입니다.
+‘어쨋든’은 ‘어쨌든’으로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -639,9 +795,9 @@
 - 예: `객적다` → `객쩍다`
 
 <a id="spelling.lexical.gaesu"></a>
-## `spelling.lexical.gaesu` — Gaesu
+## `spelling.lexical.gaesu` — 개수 표기
 
-`spelling.lexical.gaesu` 한국어 검사 규칙입니다.
+‘갯수’는 ‘개수’로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -651,9 +807,9 @@
 - 예: `갯수` → `개수`
 
 <a id="spelling.lexical.geokkuro"></a>
-## `spelling.lexical.geokkuro` — Geokkuro
+## `spelling.lexical.geokkuro` — 거꾸로 표기
 
-`spelling.lexical.geokkuro` 한국어 검사 규칙입니다.
+‘꺼꾸로’는 ‘거꾸로’로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -675,9 +831,9 @@
 - 예: `건들이다` → `건드리다`
 
 <a id="spelling.lexical.geumse"></a>
-## `spelling.lexical.geumse` — Geumse
+## `spelling.lexical.geumse` — 금세 표기
 
-`spelling.lexical.geumse` 한국어 검사 규칙입니다.
+‘금새’는 ‘금세’로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -687,9 +843,9 @@
 - 예: `금새` → `금세`
 
 <a id="spelling.lexical.gop-ppaegi"></a>
-## `spelling.lexical.gop-ppaegi` — Gop Ppaegi
+## `spelling.lexical.gop-ppaegi` — 곱빼기 표기
 
-`spelling.lexical.gop-ppaegi` 한국어 검사 규칙입니다.
+‘곱배기’는 ‘곱빼기’로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -747,9 +903,9 @@
 - 예: `핼쓱하다` → `해쓱하다`
 
 <a id="spelling.lexical.hamatteomyeon"></a>
-## `spelling.lexical.hamatteomyeon` — Hamatteomyeon
+## `spelling.lexical.hamatteomyeon` — 하마터면 표기
 
-`spelling.lexical.hamatteomyeon` 한국어 검사 규칙입니다.
+‘하마트면’은 ‘하마터면’으로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -771,9 +927,9 @@
 - 예: `허구헌날` → `허구한 날`
 
 <a id="spelling.lexical.huihanhada"></a>
-## `spelling.lexical.huihanhada` — Huihanhada
+## `spelling.lexical.huihanhada` — 희한하다 표기
 
-`spelling.lexical.huihanhada` 한국어 검사 규칙입니다.
+‘희안’은 ‘희한’으로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -819,9 +975,9 @@
 - 예: `잠궜다` → `잠갔다`
 
 <a id="spelling.lexical.jjagipgi"></a>
-## `spelling.lexical.jjagipgi` — Jjagipgi
+## `spelling.lexical.jjagipgi` — 짜깁기 표기
 
-`spelling.lexical.jjagipgi` 한국어 검사 규칙입니다.
+‘짜집기’는 ‘짜깁기’로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -855,15 +1011,15 @@
 - 예: `째째하다` → `쩨쩨하다`
 
 <a id="spelling.lexical.jjigae"></a>
-## `spelling.lexical.jjigae` — Jjigae
+## `spelling.lexical.jjigae` — 찌개 표기
 
-`spelling.lexical.jjigae` 한국어 검사 규칙입니다.
+음식 이름 ‘찌개’의 표기를 확인하세요.
 
 - 분류: `spelling`
 - 신뢰도: `high`
-- 수정 안전도: `safe`
-- 기본 활성화: `true`
-- 프로필: `default`, `strict`, `editorial`
+- 수정 안전도: `review`
+- 기본 활성화: `false`
+- 프로필: `strict`, `editorial`
 - 예: `찌게` → `찌개`
 
 <a id="spelling.lexical.kkeopjiljjae"></a>
@@ -1059,9 +1215,9 @@
 - 예: `숫가락` → `숟가락`
 
 <a id="spelling.lexical.tongjjaero"></a>
-## `spelling.lexical.tongjjaero` — Tongjjaero
+## `spelling.lexical.tongjjaero` — 통째로 표기
 
-`spelling.lexical.tongjjaero` 한국어 검사 규칙입니다.
+‘통채로’는 ‘통째로’로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -1119,9 +1275,9 @@
 - 예: `윗어른` → `웃어른`
 
 <a id="spelling.lexical.yeokhal"></a>
-## `spelling.lexical.yeokhal` — Yeokhal
+## `spelling.lexical.yeokhal` — 역할 표기
 
-`spelling.lexical.yeokhal` 한국어 검사 규칙입니다.
+‘역활’은 ‘역할’로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -1143,9 +1299,9 @@
 - 예: `요세` → `요새`
 
 <a id="spelling.lexical.yukgaejang"></a>
-## `spelling.lexical.yukgaejang` — Yukgaejang
+## `spelling.lexical.yukgaejang` — 육개장 표기
 
-`spelling.lexical.yukgaejang` 한국어 검사 규칙입니다.
+‘육계장’은 ‘육개장’으로 쓰는 것이 맞습니다.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -1155,9 +1311,9 @@
 - 예: `육계장` → `육개장`
 
 <a id="spelling.loanword.curated"></a>
-## `spelling.loanword.curated` — Curated
+## `spelling.loanword.curated` — 표준 외래어 표기
 
-`spelling.loanword.curated` 한국어 검사 규칙입니다.
+표준 외래어 표기를 확인하세요.
 
 - 분류: `spelling`
 - 신뢰도: `high`
@@ -1167,9 +1323,9 @@
 - 예: `메세지` → `메시지`
 
 <a id="style.redundancy.gajang-choego"></a>
-## `style.redundancy.gajang-choego` — Gajang Choego
+## `style.redundancy.gajang-choego` — ‘가장 최고’ 의미 중복
 
-`style.redundancy.gajang-choego` 한국어 검사 규칙입니다.
+‘가장 최고’는 뜻이 겹칠 수 있습니다. 문맥을 보고 한 표현만 남기세요.
 
 - 분류: `style`
 - 신뢰도: `high`

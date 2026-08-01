@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "name": "GeulLint Korean safety regressions v1",
+  "license": "MIT",
+  "sourceUrl": "https://github.com/binibinibin123/geullint",
+  "corpusPath": "safety-regressions-v1.jsonl",
+  "sha256": "9f87c5c0a09a2d406e168c280039d14b8729b6ce1b82a0bb352a07b0f3df601c"
+}

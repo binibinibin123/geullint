@@ -8,13 +8,14 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.2.0-alpha.1"
+version = "0.3.0-alpha.1"
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
 repository = "https://github.com/binibinibin123/geullint"
 
 [workspace.dependencies]
+aho-corasick = "1.1"
 anyhow = "1.0.100"
 clap = { version = "4.6.4", features = ["derive"] }
 serde = { version = "1.0.229", features = ["derive"] }

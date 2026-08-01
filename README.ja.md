@@ -33,11 +33,11 @@
 | CI | 文書品質の低下を自動で防ぎ、SARIF結果を生成 |
 | 自分の語彙 | ユーザー辞書、dictionary overlay、プロジェクトrule packを追加 |
 
-現在のバージョンは**v0.2.0-alpha.1**で、100件のコアルールを収録しています。文章・診断・テレメトリーを外部サービスへ送信しません。
+文章・診断・テレメトリーを外部サービスへ送信しません。公開済みのアルファ版は**v0.3.0-alpha.1**ですが、このリポジトリのルールカタログは固定の件数目標とは独立して更新されます。
 
 ## 特徴
 
-GeulLintはブラウザー、エディター、ターミナルで完全に**オフライン**動作する韓国語文章校正・文法チェッカーです。同じRustエンジンが、どこでも同じルールIDと修正結果を提供します。Markdown本文とJavaScript・TypeScript・Python・Rustのコメントを検査し、コードや文字列リテラルには触れません。
+GeulLintはブラウザー、エディター、ターミナルで完全に**オフライン**動作する韓国語文章校正・文法チェッカーです。同じ文章・入力種別・プロファイルなら、同じRustエンジンがどの環境でも同じルールIDと修正結果を返します。Markdown本文とJavaScript・TypeScript・Python・Rustのコメントを検査し、認識したコードと文字列の範囲は除外します。
 
 | 項目 | 内容 |
 | --- | --- |
@@ -54,40 +54,43 @@ GeulLintはブラウザー、エディター、ターミナルで完全に**オ�
 **Windows**
 
 ```powershell
-irm https://raw.githubusercontent.com/binibinibin123/geullint/master/install.ps1 | iex
+$env:GEULLINT_VERSION='0.3.0-alpha.1'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.ps1 | iex
 geullint .
 ```
 
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/master/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.sh | GEULLINT_VERSION=0.3.0-alpha.1 sh
 geullint .
 ```
 
 スクリプトはGitHub ReleaseのSHA-256を検証します。実行前に[install.ps1](install.ps1)または[install.sh](install.sh)を確認できます。Rust環境がある場合：
 
 ```bash
-cargo install --git https://github.com/binibinibin123/geullint --tag v0.2.0-alpha.1 --locked geullint-cli
+cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.1 --locked geullint-cli
 ```
 
 手動アーカイブは[GitHub Releases](https://github.com/binibinibin123/geullint/releases)のfallbackです。
 
+ディレクトリー検査では、既存の`.gitignore`とプロジェクト固有の`.geullintignore`パターンを適用します。
+
 ## ルールと品質
 
-GeulLint v0.2.0-alpha.1は現在**100件の検証コアルール**を提供します。新たに確認した42件の語彙ルールには、84件の異なる誤用文と42件の正常な反例があります。また、KoLLA v2で全注釈者が正常と判定した249文では誤検出0件でした。小規模な正常文のみの監査であり、precision・recallの主張ではありません。詳細は[アルファ品質報告](docs/quality-report-v0.2.0-alpha.1.md)をご覧ください。
+ルールカタログは、ルールメタデータと検証例から生成されます。ルール数は品質の主張ではありません。テストには誤用例と正常な反例が含まれますが、それだけで一般的なprecision・recallを示すことはできません。安全な自動修正は、確認が必要な提案より意図的に限定されます。評価の契約は[品質ゲート](docs/quality.md)と[コーパス評価の手順](docs/corpus-evaluation.md)をご覧ください。
 
 [全ルール](docs/rules.md)、[品質ゲート](docs/quality.md)、[コーパス評価](docs/corpus-evaluation.md)、[オフライン方針](docs/offline.md)を参照してください。
 
 ## VS Code
 
-<p align="center"><img src="assets/screenshots/vscode.png" alt="VS CodeでのGeulLint診断、Quick Fix、ルール検索" width="100%"></p>
+<p align="center"><img src="assets/screenshots/vscode.png" alt="GeulLintの実装済みVS Code機能に基づくワークフロー概念図" width="100%"><br><sub>実装済み機能と実在するルールIDに基づく概念図です。配置はVS Codeのバージョンにより異なる場合があります。</sub></p>
 
 [Releases](https://github.com/binibinibin123/geullint/releases)から環境に合うVSIXを取得し、`Extensions: Install from VSIX...`を選びます。ローカル言語サーバー同梱のため、Rust・Node.js・APIキーは不要です。
 
 ## 制限とコントリビューション
 
-GeulLintは保守的なルールベースのリンターです。長い文脈の意味判断や創作上の校閲を置き換えるものではありません。独立指標は、ライセンス・ハッシュ・レビュー記録を備えたコーパスでのみ公開します。
+GeulLintは保守的なルールベースのリンターです。一般的な未知語辞書はまだ同梱していないため、公開ルール外の誤字を見逃すことがあります。長い文脈の意味判断や創作上の校閲を置き換えるものではありません。独立指標は、ライセンス・ハッシュ・レビュー記録を備えたコーパスでのみ公開します。
 
 [CONTRIBUTING.md](CONTRIBUTING.md)、[ARCHITECTURE.md](ARCHITECTURE.md)、[ROADMAP.md](ROADMAP.md)をご覧ください。脆弱性は[SECURITY.md](SECURITY.md)の手順で報告してください。
 

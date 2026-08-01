@@ -3,5 +3,7 @@ src/**
 tsconfig.json
 **/*.test.ts
 dist/test/**
+dist/extension-meta.json
 node_modules/**
+scripts/**
 *.vsix

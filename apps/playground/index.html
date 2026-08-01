@@ -53,7 +53,7 @@
             <button class="text-button" id="sample" type="button" data-i18n="sample">예시 불러오기</button>
           </div>
           <label class="sr-only" for="editor" data-i18n="editorLabel">검사할 한국어 문장</label>
-          <textarea id="editor" spellcheck="false">오늘이 몇일이지? 일이 되서 할려고 책를 봤다.</textarea>
+          <textarea id="editor" spellcheck="false">안녕하세용 감사해용 왠만하면 돼게 할려고 하였다.</textarea>
           <div class="editor-foot"><span id="character-count">0자</span><span><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span></div>
         </div>
 
@@ -64,7 +64,7 @@
           <select id="profile">
             <option value="default">Default — 확실한 오류</option>
             <option value="strict">Strict — 더 넓은 점검</option>
-            <option value="editorial">Editorial — 문장 다듬기 포함</option>
+            <option value="editorial" selected>Editorial — 문장 다듬기 포함</option>
           </select>
           <label for="source-kind" data-i18n="sourceLabel">입력 형식</label>
           <select id="source-kind">
@@ -86,6 +86,10 @@
           </div>
           <label class="sr-only" for="corrected-output" data-i18n="correctionLabel">안전한 교정이 반영된 문장</label>
           <textarea id="corrected-output" readonly aria-busy="true"></textarea>
+          <label class="review-correction-toggle" for="include-review-corrections">
+            <input id="include-review-corrections" type="checkbox" checked />
+            <span data-i18n="includeReviewCorrections">검토 제안도 교정문에 포함</span>
+          </label>
           <div class="correction-actions">
             <button class="correction-action secondary" id="copy-correction" type="button" data-i18n="copyCorrection" disabled>교정문 복사</button>
             <button class="correction-action primary" id="apply-correction" type="button" data-i18n="applyCorrection" disabled>원문에 반영</button>
@@ -122,10 +126,11 @@
           <p data-i18n="installCopy">Release 체크섬을 검증하는 설치기로 Rust나 API 키 없이 시작하세요.</p>
         </div>
         <pre><code><span># Windows PowerShell</span>
-irm https://raw.githubusercontent.com/binibinibin123/geullint/master/install.ps1 | iex
+$env:GEULLINT_VERSION='0.3.0-alpha.1'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.ps1 | iex
 
 <span># macOS / Linux</span>
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/master/install.sh | sh</code></pre>
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.sh | GEULLINT_VERSION=0.3.0-alpha.1 sh</code></pre>
         <div class="cta-row">
           <a class="cta primary" href="https://github.com/binibinibin123/geullint#30초-시작" data-i18n="installerButton">설치 안내</a>
           <a class="cta" href="https://github.com/binibinibin123/geullint/releases" data-i18n="releaseButton">GitHub Release</a>

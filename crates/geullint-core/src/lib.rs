@@ -2,11 +2,22 @@
 
 //! `GeulLint`'s offline linting core.
 
+mod analysis;
+mod endings;
+mod matcher;
+mod productive;
+mod source;
+
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
     sync::OnceLock,
 };
+
+use matcher::{LiteralMatcher, MatchBoundary};
+pub(crate) use source::source_ranges;
+
+pub use analysis::{AnalyzedDocument, AnalyzedWord};
 
 /// A half-open UTF-8 byte range in the original source text.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -159,7 +170,6 @@ pub enum OverlayError {
 }
 
 /// A Korean morphological token produced by the bundled offline dictionary.
-#[cfg(feature = "morphology")]
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MorphToken {
@@ -307,6 +317,14 @@ pub struct Diagnostic {
     pub safe_fix: bool,
 }
 
+/// Diagnostics and stable correction previews computed from one initial analysis.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct LintOutcome {
+    pub diagnostics: Vec<Diagnostic>,
+    pub fixed_text: String,
+    pub review_fixed_text: String,
+}
+
 /// A reusable linter with a fixed configuration.
 #[derive(Clone, Debug)]
 pub struct Engine {
@@ -351,6 +369,97 @@ impl Engine {
     #[must_use]
     pub fn check(&self, text: &str, source_kind: SourceKind) -> Vec<Diagnostic> {
         lint_text_with_rule_packs(text, source_kind, &self.config, &self.rule_pack_rules)
+    }
+
+    /// Checks a document and computes stable correction previews without repeating the initial
+    /// analysis. When review fixes are not requested, both preview fields contain the safe result.
+    #[must_use]
+    pub fn check_with_fixes(
+        &self,
+        text: &str,
+        source_kind: SourceKind,
+        include_review_fixes: bool,
+    ) -> LintOutcome {
+        let diagnostics = self.check(text, source_kind);
+        let first_fixed = apply_suggested_fixes(text, &diagnostics, false);
+        let fixed_text = self.stabilize_after_first(text, first_fixed.clone(), source_kind, false);
+        let review_fixed_text = if include_review_fixes {
+            let first_review_fixed = apply_suggested_fixes(text, &diagnostics, true);
+            if first_review_fixed == first_fixed {
+                fixed_text.clone()
+            } else {
+                self.stabilize_after_first(text, first_review_fixed, source_kind, true)
+            }
+        } else {
+            fixed_text.clone()
+        };
+        LintOutcome {
+            diagnostics,
+            fixed_text,
+            review_fixed_text,
+        }
+    }
+
+    /// Applies safe fixes until another pass would make no change.
+    ///
+    /// Chained rules can expose a second valid correction after the first edit. This method
+    /// resolves those chains in one user-visible operation, while detecting custom-rule cycles
+    /// and abandoning an unexpectedly long rewrite instead of returning a partially fixed text.
+    #[must_use]
+    pub fn fix(&self, text: &str, source_kind: SourceKind) -> String {
+        self.fix_until_stable(text, source_kind, false)
+    }
+
+    /// Applies safe fixes and opt-in review suggestions until the result is stable.
+    ///
+    /// Review suggestions can be subjective and should only be used after an explicit user
+    /// choice, such as the review checkbox in the browser demo.
+    #[must_use]
+    pub fn fix_with_review(&self, text: &str, source_kind: SourceKind) -> String {
+        self.fix_until_stable(text, source_kind, true)
+    }
+
+    fn fix_until_stable(
+        &self,
+        text: &str,
+        source_kind: SourceKind,
+        include_review: bool,
+    ) -> String {
+        let diagnostics = self.check(text, source_kind);
+        let first = apply_suggested_fixes(text, &diagnostics, include_review);
+        self.stabilize_after_first(text, first, source_kind, include_review)
+    }
+
+    fn stabilize_after_first(
+        &self,
+        original: &str,
+        first: String,
+        source_kind: SourceKind,
+        include_review: bool,
+    ) -> String {
+        const MAX_PASSES: usize = 32;
+
+        if first == original {
+            return first;
+        }
+
+        let original = original.to_owned();
+        let mut current = first;
+        let mut seen = BTreeSet::from([original.clone(), current.clone()]);
+
+        for _ in 1..MAX_PASSES {
+            let diagnostics = self.check(&current, source_kind);
+            let next = apply_suggested_fixes(&current, &diagnostics, include_review);
+            if next == current {
+                return current;
+            }
+            if !seen.insert(next.clone()) {
+                return original;
+            }
+            current = next;
+        }
+
+        original
     }
 
     #[must_use]
@@ -433,36 +542,16 @@ fn lint_text_with_rule_packs(
     config: &LintConfig,
     rule_pack_rules: &[LiteralRule],
 ) -> Vec<Diagnostic> {
-    let source_ranges = source_ranges(text, source_kind);
-    let mut diagnostics: Vec<_> = literal_rules()
-        .iter()
-        .chain(rule_pack_rules)
-        .filter(|rule| !config.is_disabled(&rule.id) && config.profile.includes(rule.profile))
-        .flat_map(|rule| {
-            source_ranges.iter().flat_map(move |source_range| {
-                rule.replacements.iter().flat_map(move |replacement| {
-                    text[source_range.start..source_range.end]
-                        .match_indices(&replacement.from)
-                        .filter(move |(_, original)| {
-                            !config.suppresses_with_user_dictionary(&rule.id, original)
-                        })
-                        .map(move |(relative_start, original)| Diagnostic {
-                            rule_id: rule.id.clone(),
-                            severity: rule.severity,
-                            message: rule.message.clone(),
-                            range: TextRange {
-                                start: source_range.start + relative_start,
-                                end: source_range.start + relative_start + original.len(),
-                            },
-                            original: original.to_owned(),
-                            suggestions: vec![replacement.to.clone()],
-                            safe_fix: rule.safe_fix,
-                        })
-                })
-            })
-        })
-        .collect();
-    diagnostics.extend(native_diagnostics(text, &source_ranges, config));
+    let document = AnalyzedDocument::new(text, source_kind);
+    let source_ranges = document.source_ranges();
+    let mut diagnostics = bundled_literal_diagnostics(text, source_ranges, config);
+    diagnostics.extend(rule_pack_literal_diagnostics(
+        text,
+        source_ranges,
+        config,
+        rule_pack_rules,
+    ));
+    diagnostics.extend(native_diagnostics(text, &document, config));
     diagnostics.sort_by(|left, right| {
         left.range
             .start
@@ -470,6 +559,98 @@ fn lint_text_with_rule_packs(
             .then_with(|| left.range.end.cmp(&right.range.end))
             .then_with(|| left.rule_id.cmp(&right.rule_id))
     });
+    diagnostics
+}
+
+fn bundled_literal_diagnostics(
+    text: &str,
+    source_ranges: &[TextRange],
+    config: &LintConfig,
+) -> Vec<Diagnostic> {
+    let rules = literal_rules();
+    let matcher = bundled_literal_matcher();
+    let mut diagnostics = Vec::new();
+
+    for source_range in source_ranges {
+        let source = &text[source_range.start..source_range.end];
+        for matched in matcher.find(source) {
+            let rule = &rules[matched.rule_index];
+            if rule.id == "punctuation.duplicate.comma"
+                || config.is_disabled(&rule.id)
+                || !config.profile.includes(rule.profile)
+            {
+                continue;
+            }
+            let replacement = &rule.replacements[matched.replacement_index];
+            let original = &source[matched.start..matched.end];
+            if config.suppresses_with_user_dictionary(&rule.id, original) {
+                continue;
+            }
+            diagnostics.push(Diagnostic {
+                rule_id: rule.id.clone(),
+                severity: rule.severity,
+                message: rule.message.clone(),
+                range: TextRange {
+                    start: source_range.start + matched.start,
+                    end: source_range.start + matched.end,
+                },
+                original: original.to_owned(),
+                suggestions: vec![replacement.to.clone()],
+                safe_fix: rule.safe_fix,
+            });
+        }
+    }
+
+    diagnostics
+}
+
+fn bundled_literal_matcher() -> &'static LiteralMatcher {
+    static MATCHER: OnceLock<LiteralMatcher> = OnceLock::new();
+    MATCHER.get_or_init(|| LiteralMatcher::from_bundled_rules(literal_rules()))
+}
+
+fn rule_pack_literal_diagnostics(
+    text: &str,
+    source_ranges: &[TextRange],
+    config: &LintConfig,
+    rule_pack_rules: &[LiteralRule],
+) -> Vec<Diagnostic> {
+    let mut diagnostics = Vec::new();
+
+    for rule in rule_pack_rules
+        .iter()
+        .filter(|rule| !config.is_disabled(&rule.id) && config.profile.includes(rule.profile))
+    {
+        for source_range in source_ranges {
+            let source = &text[source_range.start..source_range.end];
+            for replacement in &rule.replacements {
+                for (relative_start, original) in source.match_indices(&replacement.from) {
+                    let relative_end = relative_start + original.len();
+                    if !replacement
+                        .boundary
+                        .unwrap_or(MatchBoundary::Substring)
+                        .allows(source, relative_start, relative_end)
+                        || config.suppresses_with_user_dictionary(&rule.id, original)
+                    {
+                        continue;
+                    }
+                    diagnostics.push(Diagnostic {
+                        rule_id: rule.id.clone(),
+                        severity: rule.severity,
+                        message: rule.message.clone(),
+                        range: TextRange {
+                            start: source_range.start + relative_start,
+                            end: source_range.start + relative_end,
+                        },
+                        original: original.to_owned(),
+                        suggestions: vec![replacement.to.clone()],
+                        safe_fix: rule.safe_fix,
+                    });
+                }
+            }
+        }
+    }
+
     diagnostics
 }
 
@@ -501,10 +682,12 @@ pub fn rule_metadata(rule_id: &str) -> Option<RuleMetadata> {
             title: literal_rule
                 .and_then(|rule| rule.title.clone())
                 .or_else(|| dynamic_metadata.map(|metadata| metadata.title.to_owned()))
+                .or_else(|| curated_rule_title(rule_id).map(str::to_owned))
                 .unwrap_or_else(|| humanize_rule_id(rule_id)),
             description: literal_rule
                 .and_then(|rule| rule.description.clone())
                 .or_else(|| dynamic_metadata.map(|metadata| metadata.description.to_owned()))
+                .or_else(|| literal_rule.map(|rule| rule.message.clone()))
                 .or_else(|| {
                     native_replacements
                         .first()
@@ -525,72 +708,89 @@ pub fn rule_metadata(rule_id: &str) -> Option<RuleMetadata> {
                     }
                 }),
             default_enabled: literal_rule.map_or_else(
-                || dynamic_metadata.is_none_or(|metadata| metadata.default_enabled),
+                || {
+                    dynamic_metadata
+                        .is_none_or(|metadata| metadata.minimum_profile == Profile::Default)
+                },
                 |rule| {
                     rule.default_enabled
                         .unwrap_or(rule.profile == Profile::Default)
                 },
             ),
-            fix_safety: if rule_is_safe(rule_id) {
-                FixSafety::Safe
-            } else {
-                FixSafety::Review
-            },
-            profiles: literal_rules()
-                .iter()
-                .find(|rule| rule.id == rule_id)
-                .map_or_else(
-                    || Profile::enabled_from(Profile::Default),
-                    |rule| Profile::enabled_from(rule.profile),
-                ),
-            incorrect_examples: literal_rule.map_or_else(
+            fix_safety: literal_rule.map_or_else(
                 || {
                     dynamic_metadata.map_or_else(
                         || {
-                            native_replacements
-                                .iter()
-                                .map(|rule| rule.from.to_string())
-                                .collect()
+                            if native_replacements.iter().all(|rule| rule.safe_fix) {
+                                FixSafety::Safe
+                            } else {
+                                FixSafety::Review
+                            }
                         },
-                        |metadata| vec![metadata.incorrect.to_owned()],
+                        |metadata| metadata.fix_safety,
                     )
                 },
                 |rule| {
-                    rule.examples.as_ref().map_or_else(
-                        || {
-                            rule.replacements
-                                .iter()
-                                .map(|replacement| replacement.from.clone())
-                                .collect()
-                        },
-                        |examples| examples.incorrect.clone(),
-                    )
+                    if rule.safe_fix {
+                        FixSafety::Safe
+                    } else {
+                        FixSafety::Review
+                    }
                 },
             ),
-            correct_examples: literal_rule.map_or_else(
+            profiles: literal_rule.map_or_else(
                 || {
-                    dynamic_metadata.map_or_else(
-                        || {
-                            native_replacements
-                                .iter()
-                                .map(|rule| rule.to.to_string())
-                                .collect()
-                        },
-                        |metadata| vec![metadata.correct.to_owned()],
+                    Profile::enabled_from(
+                        dynamic_metadata
+                            .map_or(Profile::Default, |metadata| metadata.minimum_profile),
                     )
                 },
-                |rule| {
-                    rule.examples.as_ref().map_or_else(
-                        || {
-                            rule.replacements
-                                .iter()
-                                .map(|replacement| replacement.to.clone())
-                                .collect()
-                        },
-                        |examples| examples.correct.clone(),
-                    )
-                },
+                |rule| Profile::enabled_from(rule.profile),
             ),
+            incorrect_examples: curated_rule_examples(rule_id)
+                .map(|(incorrect, _)| vec![incorrect.to_owned()])
+                .or_else(|| dynamic_metadata.map(|metadata| vec![metadata.incorrect.to_owned()]))
+                .or_else(|| {
+                    literal_rule.map(|rule| {
+                        rule.examples.as_ref().map_or_else(
+                            || {
+                                rule.replacements
+                                    .iter()
+                                    .map(|replacement| replacement.from.clone())
+                                    .collect()
+                            },
+                            |examples| examples.incorrect.clone(),
+                        )
+                    })
+                })
+                .unwrap_or_else(|| {
+                    native_replacements
+                        .iter()
+                        .map(|rule| rule.from.to_string())
+                        .collect()
+                }),
+            correct_examples: curated_rule_examples(rule_id)
+                .map(|(_, correct)| vec![correct.to_owned()])
+                .or_else(|| dynamic_metadata.map(|metadata| vec![metadata.correct.to_owned()]))
+                .or_else(|| {
+                    literal_rule.map(|rule| {
+                        rule.examples.as_ref().map_or_else(
+                            || {
+                                rule.replacements
+                                    .iter()
+                                    .map(|replacement| replacement.to.clone())
+                                    .collect()
+                            },
+                            |examples| examples.correct.clone(),
+                        )
+                    })
+                })
+                .unwrap_or_else(|| {
+                    native_replacements
+                        .iter()
+                        .map(|rule| rule.to.to_string())
+                        .collect()
+                }),
             documentation_url: format!(
                 "https://github.com/binibinibin123/geullint/blob/master/docs/rules.md#{rule_id}"
             ),
@@ -605,6 +805,57 @@ pub fn rule_catalog() -> Vec<RuleMetadata> {
         .into_iter()
         .filter_map(|rule_id| rule_metadata(&rule_id))
         .collect()
+}
+
+fn curated_rule_title(rule_id: &str) -> Option<&'static str> {
+    match rule_id {
+        "grammar.negation.an-before-predicate" => Some("부정 부사 ‘안’"),
+        "grammar.negation.ji-anh" => Some("‘-지 않다’ 띄어쓰기"),
+        "grammar.particle.duplicate" => Some("조사 중복"),
+        "punctuation.no-space-before-mark" => Some("문장 부호 앞 띄어쓰기"),
+        "repetition.ending" => Some("종결 표현 반복"),
+        "spacing.dependent-noun.geot" => Some("의존 명사 ‘것’ 띄어쓰기"),
+        "spacing.dependent-noun.jeok" => Some("의존 명사 ‘적’ 띄어쓰기"),
+        "spacing.dependent-noun.jul" => Some("의존 명사 ‘줄’ 띄어쓰기"),
+        "spacing.dependent-noun.jung" => Some("의존 명사 ‘중’ 띄어쓰기"),
+        "spacing.dependent-noun.ppun" => Some("의존 명사 ‘뿐’ 띄어쓰기"),
+        "spacing.dependent-noun.su" => Some("의존 명사 ‘수’ 띄어쓰기"),
+        "spacing.dependent-noun.ttae" => Some("의존 명사 ‘때’ 띄어쓰기"),
+        "spacing.fixed.ppunman-anira" => Some("‘뿐만 아니라’ 띄어쓰기"),
+        "spacing.fixed.su-bakke" => Some("‘수밖에’ 붙여쓰기"),
+        "spelling.adverb.i-hi" => Some("부사 ‘-이/-히’ 표기"),
+        "spelling.confusable.oraen-oraet" => Some("‘오랜/오랫-’ 표기"),
+        "spelling.confusable.wen-waen" => Some("‘웬/왠’ 구별"),
+        "spelling.conjugation.boe-bwae" => Some("‘봬요’ 표기"),
+        "spelling.conjugation.dwaet" => Some("‘됐’ 표기"),
+        "spelling.lexical.anseong-matchum" => Some("안성맞춤 표기"),
+        "spelling.lexical.chojeom" => Some("초점 표기"),
+        "spelling.lexical.daega" => Some("대가 표기"),
+        "spelling.lexical.dodaeche" => Some("도대체 표기"),
+        "spelling.lexical.eoieopda" => Some("어이없다 표기"),
+        "spelling.lexical.eojjaetdeun" => Some("어쨌든 표기"),
+        "spelling.lexical.gaesu" => Some("개수 표기"),
+        "spelling.lexical.geokkuro" => Some("거꾸로 표기"),
+        "spelling.lexical.geumse" => Some("금세 표기"),
+        "spelling.lexical.gop-ppaegi" => Some("곱빼기 표기"),
+        "spelling.lexical.hamatteomyeon" => Some("하마터면 표기"),
+        "spelling.lexical.huihanhada" => Some("희한하다 표기"),
+        "spelling.lexical.jjagipgi" => Some("짜깁기 표기"),
+        "spelling.lexical.jjigae" => Some("찌개 표기"),
+        "spelling.lexical.tongjjaero" => Some("통째로 표기"),
+        "spelling.lexical.yeokhal" => Some("역할 표기"),
+        "spelling.lexical.yukgaejang" => Some("육개장 표기"),
+        "spelling.loanword.curated" => Some("표준 외래어 표기"),
+        "style.redundancy.gajang-choego" => Some("‘가장 최고’ 의미 중복"),
+        _ => None,
+    }
+}
+
+fn curated_rule_examples(rule_id: &str) -> Option<(&'static str, &'static str)> {
+    match rule_id {
+        "grammar.particle.duplicate" => Some(("자료를를 확인했다", "자료를 확인했다")),
+        _ => None,
+    }
 }
 
 fn humanize_rule_id(rule_id: &str) -> String {
@@ -626,11 +877,14 @@ fn humanize_rule_id(rule_id: &str) -> String {
 /// Applies only safe, non-overlapping diagnostics to the original UTF-8 text.
 #[must_use]
 pub fn apply_safe_fixes(text: &str, diagnostics: &[Diagnostic]) -> String {
+    apply_suggested_fixes(text, diagnostics, false)
+}
+
+fn apply_suggested_fixes(text: &str, diagnostics: &[Diagnostic], include_review: bool) -> String {
     let mut candidates: Vec<_> = diagnostics
         .iter()
         .filter_map(|diagnostic| {
-            diagnostic
-                .safe_fix
+            (diagnostic.safe_fix || include_review)
                 .then(|| {
                     diagnostic
                         .suggestions
@@ -674,16 +928,6 @@ fn is_dictionary_aware(rule_id: &str) -> bool {
     rule_id.starts_with("spelling.lexical.") || rule_id == "spelling.loanword.curated"
 }
 
-fn rule_is_safe(rule_id: &str) -> bool {
-    literal_rules()
-        .iter()
-        .any(|rule| rule.id == rule_id && rule.safe_fix)
-        || NATIVE_LITERALS
-            .iter()
-            .any(|rule| rule.id == rule_id && rule.safe_fix)
-        || (DYNAMIC_NATIVE_RULE_IDS.contains(&rule_id) && rule_id != "repetition.adjacent-word")
-}
-
 struct NativeLiteral {
     id: &'static str,
     severity: Severity,
@@ -708,74 +952,11 @@ struct NativeRuleMetadata {
     incorrect: &'static str,
     correct: &'static str,
     confidence: Confidence,
-    default_enabled: bool,
+    minimum_profile: Profile,
+    fix_safety: FixSafety,
 }
 
 const NATIVE_LITERALS: &[NativeLiteral] = &[
-    NativeLiteral {
-        id: "grammar.conjugation.doe-to-dwae",
-        severity: Severity::Warning,
-        message: "‘되서’는 ‘돼서’로 쓰는 것이 맞습니다.",
-        from: "되서",
-        to: "돼서",
-        safe_fix: true,
-    },
-    NativeLiteral {
-        id: "grammar.conjugation.doe-to-dwae",
-        severity: Severity::Warning,
-        message: "‘되도’는 ‘돼도’로 쓰는 것이 맞습니다.",
-        from: "되도",
-        to: "돼도",
-        safe_fix: true,
-    },
-    NativeLiteral {
-        id: "grammar.conjugation.doe-to-dwae",
-        severity: Severity::Warning,
-        message: "‘되요’는 ‘돼요’로 쓰는 것이 맞습니다.",
-        from: "되요",
-        to: "돼요",
-        safe_fix: true,
-    },
-    NativeLiteral {
-        id: "grammar.conjugation.doe-to-dwae",
-        severity: Severity::Warning,
-        message: "‘되야’는 ‘돼야’로 쓰는 것이 맞습니다.",
-        from: "되야",
-        to: "돼야",
-        safe_fix: true,
-    },
-    NativeLiteral {
-        id: "grammar.conjugation.dwae-to-doe",
-        severity: Severity::Warning,
-        message: "‘돼면’은 ‘되면’으로 쓰는 것이 맞습니다.",
-        from: "돼면",
-        to: "되면",
-        safe_fix: true,
-    },
-    NativeLiteral {
-        id: "grammar.conjugation.dwae-to-doe",
-        severity: Severity::Warning,
-        message: "‘돼고’는 ‘되고’로 쓰는 것이 맞습니다.",
-        from: "돼고",
-        to: "되고",
-        safe_fix: true,
-    },
-    NativeLiteral {
-        id: "grammar.conjugation.dwae-to-doe",
-        severity: Severity::Warning,
-        message: "‘돼는’은 ‘되는’으로 쓰는 것이 맞습니다.",
-        from: "돼는",
-        to: "되는",
-        safe_fix: true,
-    },
-    NativeLiteral {
-        id: "grammar.conjugation.dwae-to-doe",
-        severity: Severity::Warning,
-        message: "‘됄’은 ‘될’로 쓰는 것이 맞습니다.",
-        from: "됄",
-        to: "될",
-        safe_fix: true,
-    },
     NativeLiteral {
         id: "grammar.negation.ji-anh",
         severity: Severity::Warning,
@@ -790,22 +971,6 @@ const NATIVE_LITERALS: &[NativeLiteral] = &[
         message: "부정 부사 ‘안’을 사용하세요.",
         from: "않 간다",
         to: "안 간다",
-        safe_fix: true,
-    },
-    NativeLiteral {
-        id: "grammar.ending.euryeo",
-        severity: Severity::Warning,
-        message: "‘-려고’를 사용하세요.",
-        from: "할려고",
-        to: "하려고",
-        safe_fix: true,
-    },
-    NativeLiteral {
-        id: "grammar.ending.euryeo",
-        severity: Severity::Warning,
-        message: "‘-려면’을 사용하세요.",
-        from: "할려면",
-        to: "하려면",
         safe_fix: true,
     },
     NativeLiteral {
@@ -947,7 +1112,16 @@ const NATIVE_LITERALS: &[NativeLiteral] = &[
 ];
 
 const DYNAMIC_NATIVE_RULE_IDS: &[&str] = &[
+    "grammar.copula.anieyo",
+    "grammar.conjugation.doe-to-dwae",
+    "grammar.conjugation.dwae-to-doe",
+    "grammar.ending.colloquial-yong",
     "grammar.ending.deun-choice",
+    "grammar.ending.euryeo",
+    "grammar.ending.euryeo-context",
+    "grammar.ending.seumnida",
+    "grammar.ending.sipsio",
+    "grammar.negation.anh-doe",
     "grammar.particle.topic-allomorph",
     "grammar.particle.subject-allomorph",
     "grammar.particle.object-allomorph",
@@ -956,9 +1130,56 @@ const DYNAMIC_NATIVE_RULE_IDS: &[&str] = &[
     "punctuation.space-after-comma",
     "punctuation.space-after-sentence-mark",
     "repetition.adjacent-word",
+    "spacing.dependent-noun.beop",
+    "spacing.dependent-noun.chae",
+    "spacing.dependent-noun.daero",
+    "spacing.dependent-noun.de",
+    "spacing.dependent-noun.deut",
+    "spacing.dependent-noun.mankeum",
+    "spacing.dependent-noun.ri",
 ];
 
 const DYNAMIC_NATIVE_RULE_METADATA: &[NativeRuleMetadata] = &[
+    NativeRuleMetadata {
+        id: "grammar.copula.anieyo",
+        title: "‘아니에요’ 표기",
+        description: "‘아니다’에 ‘-에요’가 붙은 활용형을 ‘아니에요’로 바로잡습니다.",
+        incorrect: "아니예요",
+        correct: "아니에요",
+        confidence: Confidence::High,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Safe,
+    },
+    NativeRuleMetadata {
+        id: "grammar.conjugation.doe-to-dwae",
+        title: "‘되’와 ‘돼’ 활용 구별",
+        description: "‘되서’, ‘되요’와 잘못 줄인 ‘됀’, ‘됄’, ‘됌’을 올바른 활용으로 고칩니다.",
+        incorrect: "됀",
+        correct: "된",
+        confidence: Confidence::High,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Safe,
+    },
+    NativeRuleMetadata {
+        id: "grammar.conjugation.dwae-to-doe",
+        title: "‘돼’와 ‘되’ 활용 구별",
+        description: "‘돼게’, ‘돼면서’, ‘돼도록’처럼 어미 앞에서는 ‘되’를 씁니다.",
+        incorrect: "돼게",
+        correct: "되게",
+        confidence: Confidence::High,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Safe,
+    },
+    NativeRuleMetadata {
+        id: "grammar.ending.colloquial-yong",
+        title: "표준 종결어미 ‘-요’",
+        description: "편집 문체에서 ‘해용’, ‘세용’을 표준 종결어미로 검토하도록 안내합니다.",
+        incorrect: "감사해용",
+        correct: "감사해요",
+        confidence: Confidence::Medium,
+        minimum_profile: Profile::Editorial,
+        fix_safety: FixSafety::Review,
+    },
     NativeRuleMetadata {
         id: "grammar.ending.deun-choice",
         title: "선택의 ‘-든지’",
@@ -966,7 +1187,128 @@ const DYNAMIC_NATIVE_RULE_METADATA: &[NativeRuleMetadata] = &[
         incorrect: "커피던지 차던지",
         correct: "커피든지 차든지",
         confidence: Confidence::High,
-        default_enabled: true,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Safe,
+    },
+    NativeRuleMetadata {
+        id: "grammar.ending.euryeo",
+        title: "의도·조건의 ‘-려고/-려면’",
+        description: "검증된 활용형에서 불필요하게 덧붙은 ‘ㄹ’을 바로잡습니다.",
+        incorrect: "먹을려고",
+        correct: "먹으려고",
+        confidence: Confidence::High,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Safe,
+    },
+    NativeRuleMetadata {
+        id: "grammar.ending.euryeo-context",
+        title: "‘갈려고/갈려면’ 문맥 검토",
+        description: "‘갈려고’, ‘갈려면’을 문맥에 따라 ‘가려고’, ‘가려면’으로 검토합니다.",
+        incorrect: "갈려고",
+        correct: "가려고",
+        confidence: Confidence::Medium,
+        minimum_profile: Profile::Strict,
+        fix_safety: FixSafety::Review,
+    },
+    NativeRuleMetadata {
+        id: "grammar.ending.seumnida",
+        title: "현대 표준 ‘-습니다/-ㅂ니다’",
+        description: "옛 표기 ‘-읍니다/-읍니까’를 받침에 맞는 현대 표준 활용으로 바로잡습니다.",
+        incorrect: "읽읍니다",
+        correct: "읽습니다",
+        confidence: Confidence::High,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Safe,
+    },
+    NativeRuleMetadata {
+        id: "grammar.ending.sipsio",
+        title: "높임 명령형 ‘-십시오’",
+        description: "높임 명령형의 잘못된 ‘-십시요’를 ‘-십시오’로 바로잡습니다.",
+        incorrect: "확인하십시요",
+        correct: "확인하십시오",
+        confidence: Confidence::High,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Safe,
+    },
+    NativeRuleMetadata {
+        id: "grammar.negation.anh-doe",
+        title: "부정 부사 ‘안’과 ‘되다’",
+        description: "‘않되다/않돼다’처럼 잘못 쓴 부정을 ‘안 되다’ 계열로 바로잡습니다.",
+        incorrect: "않됩니다",
+        correct: "안 됩니다",
+        confidence: Confidence::High,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Safe,
+    },
+    NativeRuleMetadata {
+        id: "spacing.dependent-noun.de",
+        title: "의존 명사 ‘데’ 띄어쓰기",
+        description: "관형형 뒤에서 장소·경우를 나타내는 ‘데’의 띄어쓰기를 검토합니다.",
+        incorrect: "묵을데가",
+        correct: "묵을 데가",
+        confidence: Confidence::Medium,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Review,
+    },
+    NativeRuleMetadata {
+        id: "spacing.dependent-noun.chae",
+        title: "의존 명사 ‘채’ 띄어쓰기",
+        description: "관형형 뒤에서 상태를 나타내는 ‘채’의 띄어쓰기를 검토합니다.",
+        incorrect: "입은채로",
+        correct: "입은 채로",
+        confidence: Confidence::Medium,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Review,
+    },
+    NativeRuleMetadata {
+        id: "spacing.dependent-noun.deut",
+        title: "의존 명사 ‘듯’ 띄어쓰기",
+        description: "관형형 뒤에서 짐작을 나타내는 ‘듯’의 띄어쓰기를 검토합니다.",
+        incorrect: "모르는듯하다",
+        correct: "모르는 듯하다",
+        confidence: Confidence::Medium,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Review,
+    },
+    NativeRuleMetadata {
+        id: "spacing.dependent-noun.mankeum",
+        title: "의존 명사 ‘만큼’ 띄어쓰기",
+        description: "관형형 뒤에서 정도를 나타내는 ‘만큼’의 띄어쓰기를 검토합니다.",
+        incorrect: "먹을만큼",
+        correct: "먹을 만큼",
+        confidence: Confidence::Medium,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Review,
+    },
+    NativeRuleMetadata {
+        id: "spacing.dependent-noun.daero",
+        title: "의존 명사 ‘대로’ 띄어쓰기",
+        description: "관형형 뒤에서 양상·방식을 나타내는 ‘대로’의 띄어쓰기를 검토합니다.",
+        incorrect: "들은대로",
+        correct: "들은 대로",
+        confidence: Confidence::Medium,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Review,
+    },
+    NativeRuleMetadata {
+        id: "spacing.dependent-noun.beop",
+        title: "의존 명사 ‘법’ 띄어쓰기",
+        description: "관형형 뒤에서 일반적인 이치를 나타내는 ‘법’의 띄어쓰기를 검토합니다.",
+        incorrect: "사는법이다",
+        correct: "사는 법이다",
+        confidence: Confidence::Medium,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Review,
+    },
+    NativeRuleMetadata {
+        id: "spacing.dependent-noun.ri",
+        title: "의존 명사 ‘리’ 띄어쓰기",
+        description: "관형형 뒤에서 가능성을 나타내는 ‘리’의 띄어쓰기를 검토합니다.",
+        incorrect: "잊을리가 없다",
+        correct: "잊을 리가 없다",
+        confidence: Confidence::Medium,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Review,
     },
     NativeRuleMetadata {
         id: "grammar.particle.topic-allomorph",
@@ -975,7 +1317,8 @@ const DYNAMIC_NATIVE_RULE_METADATA: &[NativeRuleMetadata] = &[
         incorrect: "책는",
         correct: "책은",
         confidence: Confidence::High,
-        default_enabled: true,
+        minimum_profile: Profile::Strict,
+        fix_safety: FixSafety::Review,
     },
     NativeRuleMetadata {
         id: "grammar.particle.subject-allomorph",
@@ -984,7 +1327,8 @@ const DYNAMIC_NATIVE_RULE_METADATA: &[NativeRuleMetadata] = &[
         incorrect: "나무이",
         correct: "나무가",
         confidence: Confidence::High,
-        default_enabled: true,
+        minimum_profile: Profile::Strict,
+        fix_safety: FixSafety::Review,
     },
     NativeRuleMetadata {
         id: "grammar.particle.object-allomorph",
@@ -993,7 +1337,8 @@ const DYNAMIC_NATIVE_RULE_METADATA: &[NativeRuleMetadata] = &[
         incorrect: "책를",
         correct: "책을",
         confidence: Confidence::High,
-        default_enabled: true,
+        minimum_profile: Profile::Strict,
+        fix_safety: FixSafety::Review,
     },
     NativeRuleMetadata {
         id: "grammar.particle.comitative-allomorph",
@@ -1002,7 +1347,8 @@ const DYNAMIC_NATIVE_RULE_METADATA: &[NativeRuleMetadata] = &[
         incorrect: "책와",
         correct: "책과",
         confidence: Confidence::High,
-        default_enabled: true,
+        minimum_profile: Profile::Strict,
+        fix_safety: FixSafety::Review,
     },
     NativeRuleMetadata {
         id: "grammar.particle.instrumental-allomorph",
@@ -1011,7 +1357,8 @@ const DYNAMIC_NATIVE_RULE_METADATA: &[NativeRuleMetadata] = &[
         incorrect: "책로",
         correct: "책으로",
         confidence: Confidence::High,
-        default_enabled: true,
+        minimum_profile: Profile::Strict,
+        fix_safety: FixSafety::Review,
     },
     NativeRuleMetadata {
         id: "punctuation.space-after-comma",
@@ -1020,7 +1367,8 @@ const DYNAMIC_NATIVE_RULE_METADATA: &[NativeRuleMetadata] = &[
         incorrect: "사과,배",
         correct: "사과, 배",
         confidence: Confidence::High,
-        default_enabled: true,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Safe,
     },
     NativeRuleMetadata {
         id: "punctuation.space-after-sentence-mark",
@@ -1029,7 +1377,8 @@ const DYNAMIC_NATIVE_RULE_METADATA: &[NativeRuleMetadata] = &[
         incorrect: "끝났다.다음",
         correct: "끝났다. 다음",
         confidence: Confidence::High,
-        default_enabled: true,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Safe,
     },
     NativeRuleMetadata {
         id: "repetition.adjacent-word",
@@ -1038,7 +1387,8 @@ const DYNAMIC_NATIVE_RULE_METADATA: &[NativeRuleMetadata] = &[
         incorrect: "문서를 문서를",
         correct: "문서를",
         confidence: Confidence::Medium,
-        default_enabled: true,
+        minimum_profile: Profile::Default,
+        fix_safety: FixSafety::Review,
     },
 ];
 
@@ -1076,10 +1426,13 @@ const INSTRUMENTAL_ALLOMORPH_RULE: AllomorphRule = AllomorphRule {
 
 fn native_diagnostics(
     text: &str,
-    source_ranges: &[TextRange],
+    document: &AnalyzedDocument,
     config: &LintConfig,
 ) -> Vec<Diagnostic> {
-    let mut diagnostics = native_literal_diagnostics(text, source_ranges, config);
+    let source_ranges = document.source_ranges();
+    let mut diagnostics = native_literal_diagnostics(text, document, config);
+    diagnostics.extend(ending_diagnostics(document, config));
+    diagnostics.extend(productive_diagnostics(text, document, config));
     diagnostics.extend(parallel_deun_diagnostics(text, source_ranges, config));
     diagnostics.extend(particle_diagnostics(text, source_ranges, config));
     diagnostics.extend(punctuation_diagnostics(text, source_ranges, config));
@@ -1087,33 +1440,196 @@ fn native_diagnostics(
     diagnostics
 }
 
+fn productive_diagnostics(
+    text: &str,
+    document: &AnalyzedDocument,
+    config: &LintConfig,
+) -> Vec<Diagnostic> {
+    let source_ranges = document.source_ranges();
+    let mut source_range_index = 0;
+    let mut diagnostics = Vec::new();
+
+    for word in document.words() {
+        while source_ranges
+            .get(source_range_index)
+            .is_some_and(|range| range.end < word.range.end)
+        {
+            source_range_index += 1;
+        }
+        let following_text = source_ranges
+            .get(source_range_index)
+            .filter(|range| range.start <= word.range.start && word.range.end <= range.end)
+            .map_or("", |range| &text[word.range.end..range.end]);
+
+        productive::for_each_match(&word.surface, following_text, |matched| {
+            if ending_rule_enabled(config, matched.rule_id) {
+                diagnostics.push(native_diagnostic(
+                    matched.rule_id,
+                    Severity::Warning,
+                    matched.message,
+                    word.range,
+                    &word.surface,
+                    &matched.replacement,
+                    dynamic_rule_is_safe(matched.rule_id),
+                ));
+            }
+        });
+    }
+
+    diagnostics
+}
+
+fn ending_diagnostics(document: &AnalyzedDocument, config: &LintConfig) -> Vec<Diagnostic> {
+    let mut diagnostics = Vec::new();
+
+    if ending_rule_enabled(config, "grammar.conjugation.doe-to-dwae") {
+        diagnostics.extend(document.words().iter().flat_map(|word| {
+            endings::doe_to_dwae_edits(&word.surface)
+                .into_iter()
+                .map(|edit| {
+                    native_diagnostic(
+                        "grammar.conjugation.doe-to-dwae",
+                        Severity::Warning,
+                        "‘되/돼’의 활용과 준말 표기를 바로잡으세요.",
+                        TextRange {
+                            start: word.range.start + edit.start,
+                            end: word.range.start + edit.end,
+                        },
+                        &word.surface[edit.start..edit.end],
+                        &edit.replacement,
+                        dynamic_rule_is_safe("grammar.conjugation.doe-to-dwae"),
+                    )
+                })
+        }));
+    }
+
+    if ending_rule_enabled(config, "grammar.conjugation.dwae-to-doe") {
+        diagnostics.extend(document.words().iter().filter_map(|word| {
+            endings::correct_dwae_to_doe(&word.surface).map(|suggestion| {
+                native_diagnostic(
+                    "grammar.conjugation.dwae-to-doe",
+                    Severity::Warning,
+                    "‘돼’ 뒤에 이 어미가 오면 ‘되’로 씁니다.",
+                    word.range,
+                    &word.surface,
+                    &suggestion,
+                    dynamic_rule_is_safe("grammar.conjugation.dwae-to-doe"),
+                )
+            })
+        }));
+    }
+
+    if ending_rule_enabled(config, "grammar.ending.euryeo") {
+        diagnostics.extend(document.words().iter().filter_map(|word| {
+            endings::correct_known_euryeo(&word.surface).map(|suggestion| {
+                native_diagnostic(
+                    "grammar.ending.euryeo",
+                    Severity::Warning,
+                    "이 활용형에서는 ‘-려고/-려면’을 사용하세요.",
+                    word.range,
+                    &word.surface,
+                    &suggestion,
+                    dynamic_rule_is_safe("grammar.ending.euryeo"),
+                )
+            })
+        }));
+    }
+
+    if ending_rule_enabled(config, "grammar.ending.euryeo-context") {
+        diagnostics.extend(document.words().iter().filter_map(|word| {
+            endings::review_context_euryeo(&word.surface).map(|suggestion| {
+                native_diagnostic(
+                    "grammar.ending.euryeo-context",
+                    Severity::Warning,
+                    "문맥에 따라 ‘가려고/가려면’으로 고치는 것을 검토하세요.",
+                    word.range,
+                    &word.surface,
+                    &suggestion,
+                    dynamic_rule_is_safe("grammar.ending.euryeo-context"),
+                )
+            })
+        }));
+    }
+
+    if ending_rule_enabled(config, "grammar.ending.colloquial-yong") {
+        diagnostics.extend(document.words().iter().filter_map(|word| {
+            endings::review_colloquial_yong(&word.surface).map(|suggestion| {
+                native_diagnostic(
+                    "grammar.ending.colloquial-yong",
+                    Severity::Info,
+                    "편집 문체에서는 표준 종결어미 ‘-요’를 검토하세요.",
+                    word.range,
+                    &word.surface,
+                    &suggestion,
+                    dynamic_rule_is_safe("grammar.ending.colloquial-yong"),
+                )
+            })
+        }));
+    }
+
+    diagnostics
+}
+
+fn ending_rule_enabled(config: &LintConfig, rule_id: &str) -> bool {
+    !config.is_disabled(rule_id)
+        && DYNAMIC_NATIVE_RULE_METADATA
+            .iter()
+            .find(|metadata| metadata.id == rule_id)
+            .is_some_and(|metadata| config.profile.includes(metadata.minimum_profile))
+}
+
+fn dynamic_rule_is_safe(rule_id: &str) -> bool {
+    DYNAMIC_NATIVE_RULE_METADATA
+        .iter()
+        .find(|metadata| metadata.id == rule_id)
+        .is_some_and(|metadata| metadata.fix_safety == FixSafety::Safe)
+}
+
 fn native_literal_diagnostics(
     text: &str,
-    source_ranges: &[TextRange],
+    document: &AnalyzedDocument,
     config: &LintConfig,
 ) -> Vec<Diagnostic> {
     NATIVE_LITERALS
         .iter()
-        .filter(|rule| !config.is_disabled(rule.id))
+        .filter(|rule| {
+            rule.id != "punctuation.no-space-before-mark" && !config.is_disabled(rule.id)
+        })
         .flat_map(|rule| {
-            source_ranges.iter().flat_map(move |source_range| {
-                text[source_range.start..source_range.end]
-                    .match_indices(rule.from)
-                    .map(move |(relative_start, original)| {
-                        native_diagnostic(
-                            rule.id,
-                            rule.severity,
-                            rule.message,
-                            TextRange {
+            document
+                .source_ranges()
+                .iter()
+                .flat_map(move |source_range| {
+                    text[source_range.start..source_range.end]
+                        .match_indices(rule.from)
+                        .filter_map(move |(relative_start, matched)| {
+                            let matched_range = TextRange {
                                 start: source_range.start + relative_start,
-                                end: source_range.start + relative_start + original.len(),
-                            },
-                            original,
-                            rule.to,
-                            rule.safe_fix,
-                        )
-                    })
-            })
+                                end: source_range.start + relative_start + matched.len(),
+                            };
+                            let range = matched_range;
+                            let original = matched;
+                            let replacement = rule.to;
+
+                            if rule.id == "grammar.particle.duplicate"
+                                && !document.words().iter().any(|word| {
+                                    word.range.start < range.start && word.range.end == range.end
+                                })
+                            {
+                                return None;
+                            }
+
+                            Some(native_diagnostic(
+                                rule.id,
+                                rule.severity,
+                                rule.message,
+                                range,
+                                original,
+                                replacement,
+                                rule.safe_fix,
+                            ))
+                        })
+                })
         })
         .collect()
 }
@@ -1123,6 +1639,10 @@ fn particle_diagnostics(
     source_ranges: &[TextRange],
     config: &LintConfig,
 ) -> Vec<Diagnostic> {
+    if !config.profile.includes(Profile::Strict) {
+        return Vec::new();
+    }
+
     let mut diagnostics = Vec::new();
     diagnostics.extend(allomorph_diagnostics(
         text,
@@ -1173,7 +1693,7 @@ fn particle_diagnostics(
                         },
                         &text[previous_start..end],
                         &format!("{previous}가"),
-                        true,
+                        false,
                     ));
                 }
             }
@@ -1218,7 +1738,7 @@ fn allomorph_diagnostics(
                     },
                     &text[previous_start..end],
                     &format!("{previous}{}", rule.correct_particle),
-                    true,
+                    false,
                 ));
             }
         }
@@ -1373,30 +1893,78 @@ fn punctuation_diagnostics(
     let mut diagnostics = Vec::new();
     for source_range in source_ranges {
         let source = &text[source_range.start..source_range.end];
+
+        if !config.is_disabled("punctuation.no-space-before-mark") {
+            append_space_before_mark_diagnostics(text, *source_range, &mut diagnostics);
+        }
+
         for (relative_start, character) in source.char_indices() {
             let start = source_range.start + relative_start;
             let end = start + character.len_utf8();
-            let next = text[end..].chars().next();
-            if !config.is_disabled("punctuation.space-after-comma")
-                && character == ','
-                && next.is_some_and(is_hangul_syllable)
-            {
-                diagnostics.push(native_diagnostic(
-                    "punctuation.space-after-comma",
-                    Severity::Warning,
-                    "쉼표 뒤에는 띄어쓰기를 넣으세요.",
-                    TextRange { start, end },
-                    &text[start..end],
-                    ", ",
-                    true,
-                ));
+            let relative_end = relative_start + character.len_utf8();
+            let next = source[relative_end..].chars().next();
+
+            if character == ',' {
+                if source[..relative_start].ends_with(',') {
+                    continue;
+                }
+
+                let mut comma_run_end = relative_end;
+                while source.as_bytes().get(comma_run_end) == Some(&b',') {
+                    comma_run_end += 1;
+                }
+                let after_run = source[comma_run_end..].chars().next();
+                let duplicate_commas = comma_run_end - relative_start > 1;
+
+                if duplicate_commas && !config.is_disabled("punctuation.duplicate.comma") {
+                    let range = TextRange {
+                        start,
+                        end: source_range.start + comma_run_end,
+                    };
+                    let replacement = if !config.is_disabled("punctuation.space-after-comma")
+                        && after_run.is_some_and(is_hangul_syllable)
+                    {
+                        ", "
+                    } else {
+                        ","
+                    };
+                    diagnostics.push(native_diagnostic(
+                        "punctuation.duplicate.comma",
+                        Severity::Warning,
+                        "쉼표가 중복되었습니다.",
+                        range,
+                        &text[range.start..range.end],
+                        replacement,
+                        true,
+                    ));
+                    continue;
+                }
+
+                if !config.is_disabled("punctuation.space-after-comma")
+                    && after_run.is_some_and(is_hangul_syllable)
+                {
+                    let comma_start = source_range.start + comma_run_end - 1;
+                    diagnostics.push(native_diagnostic(
+                        "punctuation.space-after-comma",
+                        Severity::Warning,
+                        "쉼표 뒤에는 띄어쓰기를 넣으세요.",
+                        TextRange {
+                            start: comma_start,
+                            end: comma_start + 1,
+                        },
+                        ",",
+                        ", ",
+                        true,
+                    ));
+                }
             }
+
             if !config.is_disabled("punctuation.space-after-sentence-mark")
                 && matches!(character, '.' | '!' | '?')
                 && next.is_some_and(is_hangul_syllable)
-                && text[..start]
+                && source[..relative_start]
                     .chars()
-                    .last()
+                    .next_back()
                     .is_none_or(|previous| !previous.is_ascii_digit())
             {
                 diagnostics.push(native_diagnostic(
@@ -1412,6 +1980,58 @@ fn punctuation_diagnostics(
         }
     }
     diagnostics
+}
+
+fn append_space_before_mark_diagnostics(
+    text: &str,
+    source_range: TextRange,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    let source = &text[source_range.start..source_range.end];
+    let mut relative_start = 0;
+    while relative_start < source.len() {
+        let character = source[relative_start..]
+            .chars()
+            .next()
+            .expect("offset stays inside source text");
+        if !matches!(character, ' ' | '\t') {
+            relative_start += character.len_utf8();
+            continue;
+        }
+
+        let mut relative_end = relative_start + character.len_utf8();
+        while relative_end < source.len() {
+            let next = source[relative_end..]
+                .chars()
+                .next()
+                .expect("offset stays inside source text");
+            if !matches!(next, ' ' | '\t') {
+                break;
+            }
+            relative_end += next.len_utf8();
+        }
+
+        if source[relative_end..]
+            .chars()
+            .next()
+            .is_some_and(|next| matches!(next, '.' | '!' | '?'))
+        {
+            let range = TextRange {
+                start: source_range.start + relative_start,
+                end: source_range.start + relative_end,
+            };
+            diagnostics.push(native_diagnostic(
+                "punctuation.no-space-before-mark",
+                Severity::Warning,
+                "문장 부호 앞에는 띄어쓰지 않습니다.",
+                range,
+                &text[range.start..range.end],
+                "",
+                true,
+            ));
+        }
+        relative_start = relative_end;
+    }
 }
 
 fn native_diagnostic(
@@ -1533,6 +2153,8 @@ struct RuleExamples {
 struct Replacement {
     from: String,
     to: String,
+    #[serde(default)]
+    boundary: Option<MatchBoundary>,
 }
 
 fn literal_rules() -> &'static [LiteralRule] {
@@ -1630,179 +2252,4 @@ fn validate_rule_file(file: &RuleFile) -> Result<(), RulePackError> {
         }
     }
     Ok(())
-}
-
-fn source_ranges(text: &str, source_kind: SourceKind) -> Vec<TextRange> {
-    match source_kind {
-        SourceKind::PlainText => vec![TextRange {
-            start: 0,
-            end: text.len(),
-        }],
-        SourceKind::Markdown => markdown_ranges(text),
-        SourceKind::JavaScript | SourceKind::TypeScript | SourceKind::Python | SourceKind::Rust => {
-            comment_ranges(text, source_kind)
-        }
-    }
-}
-
-fn markdown_ranges(text: &str) -> Vec<TextRange> {
-    let mut ranges = Vec::new();
-    let mut line_start = 0;
-    let mut in_fence = false;
-
-    for line in text.split_inclusive('\n') {
-        let line_end = line_start + line.len();
-        let content = &text[line_start..line_end];
-        let trimmed = content.trim_start_matches([' ', '\t']);
-        let is_fence_marker = trimmed.starts_with("```") || trimmed.starts_with("~~~");
-
-        if is_fence_marker {
-            in_fence = !in_fence;
-        } else if !in_fence {
-            push_non_code_markdown_ranges(content, line_start, &mut ranges);
-        }
-
-        line_start = line_end;
-    }
-
-    ranges
-}
-
-fn push_non_code_markdown_ranges(line: &str, line_start: usize, ranges: &mut Vec<TextRange>) {
-    let mut segment_start = line_start;
-    let mut in_inline_code = false;
-
-    for (relative_index, character) in line.char_indices() {
-        if character != '`' {
-            continue;
-        }
-
-        let current = line_start + relative_index;
-        if in_inline_code {
-            segment_start = current + character.len_utf8();
-            in_inline_code = false;
-        } else {
-            push_non_empty_range(ranges, segment_start, current);
-            in_inline_code = true;
-        }
-    }
-
-    if !in_inline_code {
-        push_non_empty_range(ranges, segment_start, line_start + line.len());
-    }
-}
-
-#[cfg(feature = "source-parsing")]
-fn comment_ranges(text: &str, source_kind: SourceKind) -> Vec<TextRange> {
-    let language: tree_sitter::Language = match source_kind {
-        SourceKind::JavaScript => tree_sitter_javascript::LANGUAGE.into(),
-        SourceKind::TypeScript => tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
-        SourceKind::Python => tree_sitter_python::LANGUAGE.into(),
-        SourceKind::Rust => tree_sitter_rust::LANGUAGE.into(),
-        SourceKind::PlainText | SourceKind::Markdown => return Vec::new(),
-    };
-    let mut parser = tree_sitter::Parser::new();
-    if parser.set_language(&language).is_err() {
-        return Vec::new();
-    }
-    let Some(tree) = parser.parse(text, None) else {
-        return Vec::new();
-    };
-
-    let mut ranges = Vec::new();
-    collect_comment_ranges(tree.root_node(), &mut ranges);
-    ranges
-}
-
-#[cfg(not(feature = "source-parsing"))]
-fn comment_ranges(text: &str, source_kind: SourceKind) -> Vec<TextRange> {
-    lightweight_comment_ranges(text, source_kind)
-}
-
-/// A dependency-free fallback for browser builds, where native Tree-sitter parsers
-/// cannot be linked. It recognizes line and block comments while skipping quoted text.
-#[cfg(not(feature = "source-parsing"))]
-fn lightweight_comment_ranges(text: &str, source_kind: SourceKind) -> Vec<TextRange> {
-    if source_kind == SourceKind::Python {
-        return text
-            .split_inclusive('\n')
-            .scan(0, |line_start, line| {
-                let start = *line_start;
-                *line_start += line.len();
-                Some((start, line))
-            })
-            .filter_map(|(line_start, line)| {
-                line.find('#').map(|relative_start| TextRange {
-                    start: line_start + relative_start,
-                    end: line_start + line.trim_end_matches('\n').len(),
-                })
-            })
-            .collect();
-    }
-
-    let bytes = text.as_bytes();
-    let mut ranges = Vec::new();
-    let mut index = 0;
-    let mut quote = None;
-    while index < bytes.len() {
-        if let Some(delimiter) = quote {
-            if bytes[index] == b'\\' {
-                index += 2;
-            } else if bytes[index] == delimiter {
-                quote = None;
-                index += 1;
-            } else {
-                index += 1;
-            }
-            continue;
-        }
-
-        match bytes[index] {
-            b'\'' | b'\"' | b'`' => {
-                quote = Some(bytes[index]);
-                index += 1;
-            }
-            b'/' if bytes.get(index + 1) == Some(&b'/') => {
-                let start = index;
-                index = bytes[index..]
-                    .iter()
-                    .position(|byte| *byte == b'\n')
-                    .map_or(bytes.len(), |relative_end| index + relative_end);
-                ranges.push(TextRange { start, end: index });
-            }
-            b'/' if bytes.get(index + 1) == Some(&b'*') => {
-                let start = index;
-                let content_start = index + 2;
-                index = bytes[content_start..]
-                    .windows(2)
-                    .position(|window| window == b"*/")
-                    .map_or(bytes.len(), |relative_end| content_start + relative_end + 2);
-                ranges.push(TextRange { start, end: index });
-            }
-            _ => index += 1,
-        }
-    }
-    ranges
-}
-
-#[cfg(feature = "source-parsing")]
-fn collect_comment_ranges(node: tree_sitter::Node<'_>, ranges: &mut Vec<TextRange>) {
-    if node.kind() == "comment" {
-        ranges.push(TextRange {
-            start: node.start_byte(),
-            end: node.end_byte(),
-        });
-        return;
-    }
-
-    let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        collect_comment_ranges(child, ranges);
-    }
-}
-
-fn push_non_empty_range(ranges: &mut Vec<TextRange>, start: usize, end: usize) {
-    if start < end {
-        ranges.push(TextRange { start, end });
-    }
 }

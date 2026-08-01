@@ -1,0 +1,395 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "plain-url-is-excluded",
+      "sourceKind": "plain_text",
+      "profile": "default",
+      "text": "오류를 신고할 주소는 https://example.test/메세지 입니다.",
+      "diagnostics": [],
+      "fixedText": "오류를 신고할 주소는 https://example.test/메세지 입니다."
+    },
+    {
+      "id": "plain-windows-path-is-excluded",
+      "sourceKind": "plain_text",
+      "profile": "default",
+      "text": "원본 파일 C:\\몇일\\완성됬다.txt 는 보존한다.",
+      "diagnostics": [],
+      "fixedText": "원본 파일 C:\\몇일\\완성됬다.txt 는 보존한다."
+    },
+    {
+      "id": "plain-email-is-excluded",
+      "sourceKind": "plain_text",
+      "profile": "default",
+      "text": "전자우편 user+어쨋든@example.test 로 답장했다.",
+      "diagnostics": [],
+      "fixedText": "전자우편 user+어쨋든@example.test 로 답장했다."
+    },
+    {
+      "id": "plain-dot-identifiers-are-excluded",
+      "sourceKind": "plain_text",
+      "profile": "default",
+      "text": "첨부 파일 초안.몇일.md 는 아직 완성됬다.txt 로 바꾸지 마세요.",
+      "diagnostics": [],
+      "fixedText": "첨부 파일 초안.몇일.md 는 아직 완성됬다.txt 로 바꾸지 마세요."
+    },
+    {
+      "id": "plain-domain-and-hashtag-are-excluded",
+      "sourceKind": "plain_text",
+      "profile": "default",
+      "text": "도메인 메세지.example 과 #어쨋든 태그는 내부 식별자다.",
+      "diagnostics": [],
+      "fixedText": "도메인 메세지.example 과 #어쨋든 태그는 내부 식별자다."
+    },
+    {
+      "id": "plain-dot-identifiers-with-particles-are-excluded",
+      "sourceKind": "plain_text",
+      "profile": "default",
+      "text": "초안.몇일.md를 열어 보고 완성됬다.txt에 저장했다. 보고서.몇일.pdf만 삭제하지 않았다. README.몇일.md에서는 예외다. 완성됬다.txt로부터 복사했다.",
+      "diagnostics": [],
+      "fixedText": "초안.몇일.md를 열어 보고 완성됬다.txt에 저장했다. 보고서.몇일.pdf만 삭제하지 않았다. README.몇일.md에서는 예외다. 완성됬다.txt로부터 복사했다."
+    },
+    {
+      "id": "plain-domain-with-particle-is-excluded",
+      "sourceKind": "plain_text",
+      "profile": "default",
+      "text": "메세지.example에서 공지를 확인했고 메세지.example에서도 읽었다.",
+      "diagnostics": [],
+      "fixedText": "메세지.example에서 공지를 확인했고 메세지.example에서도 읽었다."
+    },
+    {
+      "id": "python-string-comment-marker",
+      "sourceKind": "python",
+      "profile": "default",
+      "text": "value = \"# 몇일\"\r\n# 가나다 몇일",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 32, "end": 38, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "value = \"# 몇일\"\r\n# 가나다 며칠"
+    },
+    {
+      "id": "python-triple-and-prefixed-strings",
+      "sourceKind": "python",
+      "profile": "default",
+      "text": "values = (r\"# 몇일\", BR'# 본적 있다', fr\"\"\"# 책와 {value}\"\"\")\n# 본적 있다",
+      "diagnostics": [
+        { "ruleId": "spacing.dependent-noun.jeok", "start": 72, "end": 85, "original": "본적 있다", "suggestion": "본 적 있다", "safeFix": true }
+      ],
+      "fixedText": "values = (r\"# 몇일\", BR'# 본적 있다', fr\"\"\"# 책와 {value}\"\"\")\n# 본 적 있다"
+    },
+    {
+      "id": "python-escaped-string-followed-by-comment",
+      "sourceKind": "python",
+      "profile": "default",
+      "text": "value = \"escaped \\\"# 몇일\\\"\"  # 몇일",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 34, "end": 40, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "value = \"escaped \\\"# 몇일\\\"\"  # 며칠"
+    },
+    {
+      "id": "python-unclosed-string-fails-closed",
+      "sourceKind": "python",
+      "profile": "default",
+      "text": "value = \"몇일 # 본적 있다",
+      "diagnostics": [],
+      "fixedText": "value = \"몇일 # 본적 있다"
+    },
+    {
+      "id": "javascript-regex-character-class-and-flags",
+      "sourceKind": "javascript",
+      "profile": "default",
+      "text": "const pattern = /[//] 몇일/giu;",
+      "diagnostics": [],
+      "fixedText": "const pattern = /[//] 몇일/giu;"
+    },
+    {
+      "id": "typescript-regex-escape-character-class-and-flags",
+      "sourceKind": "typescript",
+      "profile": "default",
+      "text": "const pattern: RegExp = /\\/[/*]몇일/giu;",
+      "diagnostics": [],
+      "fixedText": "const pattern: RegExp = /\\/[/*]몇일/giu;"
+    },
+    {
+      "id": "javascript-regex-after-default-keyword",
+      "sourceKind": "javascript",
+      "profile": "default",
+      "text": "export default /[//] 몇일/;",
+      "diagnostics": [],
+      "fixedText": "export default /[//] 몇일/;"
+    },
+    {
+      "id": "javascript-division-remains-code",
+      "sourceKind": "javascript",
+      "profile": "default",
+      "text": "const ratio = total / count;",
+      "diagnostics": [],
+      "fixedText": "const ratio = total / count;"
+    },
+    {
+      "id": "javascript-regex-followed-by-real-comment",
+      "sourceKind": "javascript",
+      "profile": "default",
+      "text": "const pattern = /[//] 몇일/giu; // 본적 있다",
+      "diagnostics": [
+        { "ruleId": "spacing.dependent-noun.jeok", "start": 37, "end": 50, "original": "본적 있다", "suggestion": "본 적 있다", "safeFix": true }
+      ],
+      "fixedText": "const pattern = /[//] 몇일/giu; // 본 적 있다"
+    },
+    {
+      "id": "javascript-regex-after-control-condition",
+      "sourceKind": "javascript",
+      "profile": "default",
+      "text": "if (ready) /[//] 몇일/giu.test(value); // 본적 있다",
+      "diagnostics": [
+        { "ruleId": "spacing.dependent-noun.jeok", "start": 44, "end": 57, "original": "본적 있다", "suggestion": "본 적 있다", "safeFix": true }
+      ],
+      "fixedText": "if (ready) /[//] 몇일/giu.test(value); // 본 적 있다"
+    },
+    {
+      "id": "javascript-regex-after-block",
+      "sourceKind": "javascript",
+      "profile": "default",
+      "text": "if (ready) { run(); }\n/prefix[//] 몇일/giu.test(value); // 본적 있다",
+      "diagnostics": [
+        { "ruleId": "spacing.dependent-noun.jeok", "start": 61, "end": 74, "original": "본적 있다", "suggestion": "본 적 있다", "safeFix": true }
+      ],
+      "fixedText": "if (ready) { run(); }\n/prefix[//] 몇일/giu.test(value); // 본 적 있다"
+    },
+    {
+      "id": "javascript-division-followed-by-real-comment",
+      "sourceKind": "javascript",
+      "profile": "default",
+      "text": "const ratio = total / count; // 몇일",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 32, "end": 38, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "const ratio = total / count; // 며칠"
+    },
+    {
+      "id": "javascript-template-interpolation-comment",
+      "sourceKind": "javascript",
+      "profile": "default",
+      "text": "const message = `몇일 ${value /* 몇일 */}`;",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 35, "end": 41, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "const message = `몇일 ${value /* 며칠 */}`;"
+    },
+    {
+      "id": "typescript-nested-template-code-comment",
+      "sourceKind": "typescript",
+      "profile": "default",
+      "text": "const message: string = `몇일 ${`안 ${value // 본적 있다\n}`}`;",
+      "diagnostics": [
+        { "ruleId": "spacing.dependent-noun.jeok", "start": 50, "end": 63, "original": "본적 있다", "suggestion": "본 적 있다", "safeFix": true }
+      ],
+      "fixedText": "const message: string = `몇일 ${`안 ${value // 본 적 있다\n}`}`;"
+    },
+    {
+      "id": "javascript-malformed-template-fails-closed",
+      "sourceKind": "javascript",
+      "profile": "default",
+      "text": "const message = `몇일 // 본적 있다",
+      "diagnostics": [],
+      "fixedText": "const message = `몇일 // 본적 있다"
+    },
+    {
+      "id": "rust-raw-byte-and-char-strings",
+      "sourceKind": "rust",
+      "profile": "default",
+      "text": "let a = r###\"// 몇일\"###; let b = br#\"/* 본적 있다 */\"#; let c = '/';",
+      "diagnostics": [],
+      "fixedText": "let a = r###\"// 몇일\"###; let b = br#\"/* 본적 있다 */\"#; let c = '/';"
+    },
+    {
+      "id": "rust-multiline-string-followed-by-comment",
+      "sourceKind": "rust",
+      "profile": "default",
+      "text": "let text = \"몇일\n본적 있다\";\n// 몇일",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 38, "end": 44, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "let text = \"몇일\n본적 있다\";\n// 며칠"
+    },
+    {
+      "id": "rust-lifetime-and-comment",
+      "sourceKind": "rust",
+      "profile": "default",
+      "text": "fn f<'a>(value: &'a str) {} // 가나다 몇일",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 41, "end": 47, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "fn f<'a>(value: &'a str) {} // 가나다 며칠"
+    },
+    {
+      "id": "rust-nested-block-comments",
+      "sourceKind": "rust",
+      "profile": "strict",
+      "text": "/* 바깥 몇일 /* 안쪽 본적 있다 */ 책와 간다 */",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 10, "end": 16, "original": "몇일", "suggestion": "며칠", "safeFix": true },
+        { "ruleId": "spacing.dependent-noun.jeok", "start": 27, "end": 40, "original": "본적 있다", "suggestion": "본 적 있다", "safeFix": true },
+        { "ruleId": "grammar.particle.comitative-allomorph", "start": 44, "end": 50, "original": "책와", "suggestion": "책과", "safeFix": false }
+      ],
+      "fixedText": "/* 바깥 며칠 /* 안쪽 본 적 있다 */ 책와 간다 */"
+    },
+    {
+      "id": "rust-unclosed-raw-string-fails-closed",
+      "sourceKind": "rust",
+      "profile": "default",
+      "text": "let text = r##\"몇일 // 본적 있다",
+      "diagnostics": [],
+      "fixedText": "let text = r##\"몇일 // 본적 있다"
+    },
+    {
+      "id": "developer-error-007",
+      "sourceKind": "rust",
+      "profile": "default",
+      "text": "let count = 1; // 이 구현을 본적 있다",
+      "diagnostics": [
+        { "ruleId": "spacing.dependent-noun.jeok", "start": 32, "end": 45, "original": "본적 있다", "suggestion": "본 적 있다", "safeFix": true }
+      ],
+      "fixedText": "let count = 1; // 이 구현을 본 적 있다"
+    },
+    {
+      "id": "developer-error-008",
+      "sourceKind": "rust",
+      "profile": "strict",
+      "text": "let count = 1; // 책와 연필을 비교한다",
+      "diagnostics": [
+        { "ruleId": "grammar.particle.comitative-allomorph", "start": 18, "end": 24, "original": "책와", "suggestion": "책과", "safeFix": false }
+      ],
+      "fixedText": "let count = 1; // 책와 연필을 비교한다"
+    },
+    {
+      "id": "markdown-prose-and-code",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "`몇일`\r\n본문 가나다 몇일\r\n```rust\r\n// 본적 있다\r\n```",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 27, "end": 33, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "`몇일`\r\n본문 가나다 며칠\r\n```rust\r\n// 본적 있다\r\n```"
+    },
+    {
+      "id": "markdown-link-destination-is-excluded",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "[문서](https://example.test/몇일)",
+      "diagnostics": [],
+      "fixedText": "[문서](https://example.test/몇일)"
+    },
+    {
+      "id": "markdown-autolink-destination-is-excluded",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "<https://example.test/메세지>",
+      "diagnostics": [],
+      "fixedText": "<https://example.test/메세지>"
+    },
+    {
+      "id": "markdown-list-image-marker-keeps-leading-space",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "- ![로고](assets/logo.png)",
+      "diagnostics": [],
+      "fixedText": "- ![로고](assets/logo.png)"
+    },
+    {
+      "id": "markdown-inline-image-marker-keeps-leading-space",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "설명 다음에 ![그림](assets/몇일.png)을 배치했다.",
+      "diagnostics": [],
+      "fixedText": "설명 다음에 ![그림](assets/몇일.png)을 배치했다."
+    },
+    {
+      "id": "markdown-double-backtick-code-span",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "문서 ``몇일`` 뒤 본문 몇일",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 29, "end": 35, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "문서 ``몇일`` 뒤 본문 며칠"
+    },
+    {
+      "id": "markdown-tilde-fence-keeps-backticks-as-code",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "~~~text\n몇일\n```\n몇일\n~~~\n본문 몇일",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 37, "end": 43, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "~~~text\n몇일\n```\n몇일\n~~~\n본문 며칠"
+    },
+    {
+      "id": "markdown-four-backtick-fence-rejects-shorter-close",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "````markdown\n몇일\n```\n몇일\n````\n본문 몇일",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 43, "end": 49, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "````markdown\n몇일\n```\n몇일\n````\n본문 며칠"
+    },
+    {
+      "id": "markdown-indented-fence-and-info-string",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "   ```rust linenos\n몇일\n```not-close\n몇일\n   ```\n본문 몇일",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 60, "end": 66, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "   ```rust linenos\n몇일\n```not-close\n몇일\n   ```\n본문 며칠"
+    },
+    {
+      "id": "markdown-four-space-marker-is-indented-code",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "    ```rust\n본문 몇일",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 19, "end": 25, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "    ```rust\n본문 며칠"
+    },
+    {
+      "id": "markdown-indented-code-is-excluded",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "    몇일\n본문 몇일",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 18, "end": 24, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "    몇일\n본문 며칠"
+    },
+    {
+      "id": "markdown-unclosed-code-span-fails-closed",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "본문\n``몇일\n본적 있다",
+      "diagnostics": [],
+      "fixedText": "본문\n``몇일\n본적 있다"
+    },
+    {
+      "id": "markdown-unclosed-fence-fails-closed",
+      "sourceKind": "markdown",
+      "profile": "default",
+      "text": "본문\n~~~text\n몇일\n본적 있다",
+      "diagnostics": [],
+      "fixedText": "본문\n~~~text\n몇일\n본적 있다"
+    },
+    {
+      "id": "rust-crlf-korean-prefix-range",
+      "sourceKind": "rust",
+      "profile": "default",
+      "text": "let x=1;\r\n// 가나다 몇일\r\nlet y=2;",
+      "diagnostics": [
+        { "ruleId": "spelling.lexical.myeochil", "start": 23, "end": 29, "original": "몇일", "suggestion": "며칠", "safeFix": true }
+      ],
+      "fixedText": "let x=1;\r\n// 가나다 며칠\r\nlet y=2;"
+    }
+  ]
+}

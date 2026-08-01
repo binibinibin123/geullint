@@ -64,7 +64,7 @@ cargo run -p geullint-cli -- `
 
 [`scripts/curate-kolla-v2-gold.mjs`](../scripts/curate-kolla-v2-gold.mjs)는 mapping의 review ID·UTF-8 바이트 경계를 검증하고 evaluator 형식 JSONL, 일반 corpus manifest, review queue·mapping·출력의 SHA-256이 담긴 별도 provenance를 만듭니다. provenance의 `manifestSha256`이 manifest 전체 바이트를 고정하고, `kolla-v2-curated-gold.provenance.sha256`은 provenance 파일 자체를 고정합니다. `--verify`는 sidecar와 provenance를 먼저 확인한 뒤 manifest의 스키마·corpus 경로·해시와 review queue·mapping·corpus의 실제 바이트 해시를 다시 계산합니다.
 
-500개 규칙 출시 게이트에 넣을 corpus는 `--require-independent-review`를 반드시 사용합니다. 각 case에 서로 다른 두 명 이상의 `independentReviews[].reviewer`와, 그 누구와도 다른 `adjudicatedBy`를 기록해야 합니다. reviewer·adjudicator는 외부 계정이나 API 키가 아니라 로컬 검토 기록의 식별자이며, 각 리뷰도 UTF-8 범위와 제안을 갖춘 정확 진단이어야 합니다. 이 옵션은 provenance의 `independentReviewRequired`에도 기록되고, 같은 옵션을 붙인 `--verify`가 그 기록을 확인합니다.
+정밀도·재현율 같은 품질 수치의 근거로 사용할 corpus는 `--require-independent-review`를 반드시 사용합니다. 각 case에 서로 다른 두 명 이상의 `independentReviews[].reviewer`와, 그 누구와도 다른 `adjudicatedBy`를 기록해야 합니다. reviewer·adjudicator는 외부 계정이나 API 키가 아니라 로컬 검토 기록의 식별자이며, 각 리뷰도 UTF-8 범위와 제안을 갖춘 정확 진단이어야 합니다. 이 옵션은 provenance의 `independentReviewRequired`에도 기록되고, 같은 옵션을 붙인 `--verify`가 그 기록을 확인합니다.
 
 첫 생성에는 존재하지 않는 `--out-dir`을 지정합니다. 스크립트는 같은 부모 폴더의 임시 sibling directory에 네 파일을 모두 쓴 뒤 final directory로 원자적으로 이름을 바꿉니다. final directory가 이미 있거나 중간 단계가 실패하면 기존 directory는 덮어쓰지 않고 임시 directory만 정리하므로, 원인을 해결한 뒤 같은 명령을 다시 실행할 수 있습니다.
 

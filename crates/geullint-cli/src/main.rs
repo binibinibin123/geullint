@@ -2,8 +2,9 @@ use anyhow::{Context, Result, bail};
 use clap::{Parser, ValueEnum};
 use geullint_core::{
     Diagnostic, DictionaryOverlay, Engine, LintConfig, Profile, RulePack, Severity, SourceKind,
-    TextRange, apply_safe_fixes, rule_catalog, rule_metadata,
+    TextRange, rule_catalog, rule_metadata,
 };
+use ignore::WalkBuilder;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -12,7 +13,6 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
-use walkdir::WalkDir;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -174,6 +174,7 @@ struct SarifLog {
 #[serde(rename_all = "camelCase")]
 struct SarifRun {
     tool: SarifTool,
+    column_kind: &'static str,
     results: Vec<SarifResult>,
 }
 
@@ -234,19 +235,36 @@ struct CorpusCase {
     id: String,
     text: String,
     #[serde(default)]
+    genre: Option<String>,
+    #[serde(default)]
     source_kind: SourceKind,
     #[serde(default)]
     profile: Option<Profile>,
     #[serde(default)]
+    case_type: Option<CorpusCaseType>,
+    #[serde(default)]
+    provenance_id: Option<String>,
+    #[serde(default)]
     expected_rule_ids: Vec<String>,
     #[serde(default)]
     expected_diagnostics: Vec<CorpusExpectedDiagnostic>,
+    #[serde(default)]
+    expected_fixed_text: Option<String>,
+}
+
+#[derive(Clone, Copy, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum CorpusCaseType {
+    Error,
+    Normal,
 }
 
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct CorpusExpectedDiagnostic {
     rule_id: String,
+    #[serde(default)]
+    original: Option<String>,
     #[serde(default)]
     range: Option<TextRange>,
     #[serde(default)]
@@ -291,6 +309,14 @@ struct CorpusCaseFailure {
     id: String,
     false_positive_rule_ids: Vec<String>,
     false_negative_rule_ids: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    fixed_text_mismatch: Option<CorpusFixedTextMismatch>,
+}
+
+#[derive(Serialize)]
+struct CorpusFixedTextMismatch {
+    expected: String,
+    actual: String,
 }
 
 #[derive(Default)]
@@ -498,8 +524,9 @@ fn run(arguments: &Arguments) -> Result<bool> {
             .with_context(|| format!("{} 파일을 UTF-8로 읽을 수 없습니다", path.display()))?;
         let source_kind = source_kind_for_path(&path);
         if arguments.fix || arguments.fix_dry_run {
-            let diagnostics = engine.check(&text, source_kind);
-            let fixed = apply_safe_fixes(&text, &diagnostics);
+            let fixed = engine
+                .check_with_fixes(&text, source_kind, false)
+                .fixed_text;
             if arguments.fix && fixed != text {
                 fs::write(&path, &fixed).with_context(|| {
                     format!("{} 파일에 수정 사항을 쓸 수 없습니다", path.display())
@@ -525,6 +552,94 @@ fn run(arguments: &Arguments) -> Result<bool> {
     Ok(has_failure)
 }
 
+fn profile_engine_index(profile: Profile) -> usize {
+    match profile {
+        Profile::Default => 0,
+        Profile::Strict => 1,
+        Profile::Editorial => 2,
+    }
+}
+
+fn validate_corpus_case_type(
+    path: &Path,
+    line: usize,
+    case_type: Option<CorpusCaseType>,
+    expected_diagnostic_count: usize,
+) -> Result<()> {
+    match case_type {
+        Some(CorpusCaseType::Normal) if expected_diagnostic_count != 0 => bail!(
+            "{} corpus line {line} normal caseType requires no expected diagnostics",
+            path.display()
+        ),
+        Some(CorpusCaseType::Error) if expected_diagnostic_count == 0 => bail!(
+            "{} corpus line {line} error caseType requires at least one expected diagnostic",
+            path.display()
+        ),
+        _ => Ok(()),
+    }
+}
+
+fn resolve_expected_diagnostic_ranges(
+    path: &Path,
+    line: usize,
+    text: &str,
+    expectations: &mut [CorpusExpectedDiagnostic],
+) -> Result<()> {
+    for expectation in expectations {
+        if let Some(range) = expectation.range
+            && (range.start > range.end
+                || range.end > text.len()
+                || !text.is_char_boundary(range.start)
+                || !text.is_char_boundary(range.end))
+        {
+            bail!(
+                "{} corpus line {line} expected diagnostic `{}` has an invalid UTF-8 range",
+                path.display(),
+                expectation.rule_id
+            );
+        }
+
+        let Some(original) = expectation.original.as_deref() else {
+            continue;
+        };
+        if original.is_empty() {
+            bail!(
+                "{} corpus line {line} expected diagnostic `{}` has an empty original",
+                path.display(),
+                expectation.rule_id
+            );
+        }
+        if let Some(range) = expectation.range {
+            if &text[range.start..range.end] != original {
+                bail!(
+                    "{} corpus line {line} expected diagnostic `{}` range does not equal original",
+                    path.display(),
+                    expectation.rule_id
+                );
+            }
+            continue;
+        }
+
+        let mut occurrences = text
+            .char_indices()
+            .filter_map(|(start, _)| text[start..].starts_with(original).then_some(start));
+        let first = occurrences.next();
+        if first.is_none() || occurrences.next().is_some() {
+            bail!(
+                "{} corpus line {line} expected diagnostic `{}` original must occur exactly once",
+                path.display(),
+                expectation.rule_id
+            );
+        }
+        let start = first.expect("a unique occurrence has a start");
+        expectation.range = Some(TextRange {
+            start,
+            end: start + original.len(),
+        });
+    }
+    Ok(())
+}
+
 #[allow(clippy::too_many_lines)] // Keeps streaming parsing, validation, matching, and metric aggregation together.
 fn evaluate_corpus(
     path: &Path,
@@ -544,6 +659,9 @@ fn evaluate_corpus(
     let mut false_positive_cases = 0_usize;
     let mut case_failures = Vec::new();
     let mut rule_metric_counts = BTreeMap::<String, RuleMetricCounts>::new();
+    let mut seen_case_ids = BTreeMap::<String, usize>::new();
+    let mut engines: [Option<Engine>; 3] = [None, None, None];
+    let mut has_fixed_text_mismatch = false;
 
     for (index, line) in reader.lines().enumerate() {
         let line = line.with_context(|| {
@@ -570,6 +688,28 @@ fn evaluate_corpus(
                 index + 1
             );
         }
+        let normalized_id = case.id.trim().to_owned();
+        if let Some(previous_line) = seen_case_ids.insert(normalized_id.clone(), index + 1) {
+            bail!(
+                "{} corpus line {} has duplicate case id `{}` (first seen on line {})",
+                path.display(),
+                index + 1,
+                normalized_id,
+                previous_line
+            );
+        }
+        for (field, value) in [
+            ("genre", case.genre.as_deref()),
+            ("provenanceId", case.provenance_id.as_deref()),
+        ] {
+            if value.is_some_and(|value| value.trim().is_empty()) {
+                bail!(
+                    "{} corpus line {} has an empty {field}",
+                    path.display(),
+                    index + 1
+                );
+            }
+        }
 
         let mut config = base_config.clone();
         if let Some(profile) = case.profile {
@@ -582,11 +722,12 @@ fn evaluate_corpus(
                 index + 1
             );
         }
-        let expected_diagnostics = if case.expected_diagnostics.is_empty() {
+        let mut expected_diagnostics = if case.expected_diagnostics.is_empty() {
             case.expected_rule_ids
                 .iter()
                 .map(|rule_id| CorpusExpectedDiagnostic {
                     rule_id: rule_id.clone(),
+                    original: None,
                     range: None,
                     suggestions: None,
                 })
@@ -594,8 +735,25 @@ fn evaluate_corpus(
         } else {
             case.expected_diagnostics.clone()
         };
-        let engine = build_engine(config, packs.to_vec())?;
-        let actual_diagnostics = engine.check(&case.text, case.source_kind);
+        validate_corpus_case_type(path, index + 1, case.case_type, expected_diagnostics.len())?;
+        resolve_expected_diagnostic_ranges(path, index + 1, &case.text, &mut expected_diagnostics)?;
+        let engine_index = profile_engine_index(config.profile);
+        if engines[engine_index].is_none() {
+            engines[engine_index] = Some(build_engine(config, packs.to_vec())?);
+        }
+        let engine = engines[engine_index]
+            .as_ref()
+            .expect("engine is initialized for the selected profile");
+        let outcome = engine.check_with_fixes(&case.text, case.source_kind, false);
+        let actual_diagnostics = outcome.diagnostics;
+        let fixed_text_mismatch = case.expected_fixed_text.as_ref().and_then(|expected| {
+            let actual = outcome.fixed_text.clone();
+            (actual != *expected).then(|| CorpusFixedTextMismatch {
+                expected: expected.clone(),
+                actual,
+            })
+        });
+        has_fixed_text_mismatch |= fixed_text_mismatch.is_some();
         if expected_diagnostics.is_empty() {
             normal_cases += 1;
             if !actual_diagnostics.is_empty() {
@@ -626,11 +784,13 @@ fn evaluate_corpus(
         }
         if !comparison.false_positive_rule_ids.is_empty()
             || !comparison.false_negative_rule_ids.is_empty()
+            || fixed_text_mismatch.is_some()
         {
             case_failures.push(CorpusCaseFailure {
                 id: case.id,
                 false_positive_rule_ids: comparison.false_positive_rule_ids,
                 false_negative_rule_ids: comparison.false_negative_rule_ids,
+                fixed_text_mismatch,
             });
         }
         cases += 1;
@@ -681,9 +841,9 @@ fn evaluate_corpus(
         let gate_report = evaluate_corpus_quality_gate(&report, gate);
         let passed = gate_report.passed;
         report.quality_gate = Some(gate_report);
-        !passed
+        !passed || has_fixed_text_mismatch
     } else {
-        report.false_positives > 0 || report.false_negatives > 0
+        report.false_positives > 0 || report.false_negatives > 0 || has_fixed_text_mismatch
     };
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(has_failure)
@@ -1115,15 +1275,26 @@ fn collect_files(paths: &[PathBuf]) -> Result<Vec<PathBuf>> {
         if path.is_file() {
             files.push(path.clone());
         } else if path.is_dir() {
-            for entry in WalkDir::new(path)
+            let mut builder = WalkBuilder::new(path);
+            builder
+                .add_custom_ignore_filename(".geullintignore")
+                .require_git(false)
                 .follow_links(false)
-                .into_iter()
-                .filter_entry(|entry| !is_ignored_directory(entry.path()))
-            {
+                .hidden(false)
+                .filter_entry(|entry| !is_ignored_directory(entry.path()));
+            for entry in builder.build() {
                 let entry =
                     entry.with_context(|| format!("{} 경로를 읽을 수 없습니다", path.display()))?;
-                if entry.file_type().is_file() {
-                    files.push(entry.into_path());
+                if entry
+                    .file_type()
+                    .is_some_and(|file_type| file_type.is_file())
+                {
+                    let entry_path = entry.into_path();
+                    if supported_source_kind(&entry_path).is_some()
+                        && contains_valid_utf8(&entry_path)?
+                    {
+                        files.push(entry_path);
+                    }
                 }
             }
         } else {
@@ -1138,18 +1309,45 @@ fn collect_files(paths: &[PathBuf]) -> Result<Vec<PathBuf>> {
 fn is_ignored_directory(path: &Path) -> bool {
     path.file_name()
         .and_then(|name| name.to_str())
-        .is_some_and(|name| matches!(name, ".git" | "node_modules" | "target" | "dist"))
+        .is_some_and(|name| {
+            matches!(
+                name,
+                ".git"
+                    | ".next"
+                    | ".turbo"
+                    | ".worktrees"
+                    | "coverage"
+                    | "dist"
+                    | "node_modules"
+                    | "target"
+            )
+        })
 }
 
 fn source_kind_for_path(path: &Path) -> SourceKind {
-    match path.extension().and_then(|extension| extension.to_str()) {
-        Some("md" | "mdx") => SourceKind::Markdown,
-        Some("js" | "jsx" | "mjs" | "cjs") => SourceKind::JavaScript,
-        Some("ts" | "tsx" | "mts" | "cts") => SourceKind::TypeScript,
-        Some("py") => SourceKind::Python,
-        Some("rs") => SourceKind::Rust,
-        _ => SourceKind::PlainText,
+    supported_source_kind(path).unwrap_or(SourceKind::PlainText)
+}
+
+fn supported_source_kind(path: &Path) -> Option<SourceKind> {
+    let extension = path
+        .extension()
+        .and_then(|extension| extension.to_str())?
+        .to_ascii_lowercase();
+    match extension.as_str() {
+        "md" | "markdown" => Some(SourceKind::Markdown),
+        "js" | "jsx" | "mjs" | "cjs" => Some(SourceKind::JavaScript),
+        "ts" | "tsx" | "mts" | "cts" => Some(SourceKind::TypeScript),
+        "py" => Some(SourceKind::Python),
+        "rs" => Some(SourceKind::Rust),
+        "txt" | "text" => Some(SourceKind::PlainText),
+        _ => None,
     }
+}
+
+fn contains_valid_utf8(path: &Path) -> Result<bool> {
+    let bytes =
+        fs::read(path).with_context(|| format!("{} 파일을 읽을 수 없습니다", path.display()))?;
+    Ok(std::str::from_utf8(&bytes).is_ok())
 }
 
 fn line_and_column(text: &str, byte_offset: usize) -> (usize, usize) {
@@ -1217,6 +1415,7 @@ fn print_sarif(reported: &[ReportedDiagnostic]) -> Result<()> {
                     information_uri: "https://github.com/binibinibin123/geullint",
                 },
             },
+            column_kind: "unicodeCodePoints",
             results: reported
                 .iter()
                 .map(|finding| SarifResult {
@@ -1228,7 +1427,7 @@ fn print_sarif(reported: &[ReportedDiagnostic]) -> Result<()> {
                     locations: vec![SarifLocation {
                         physical_location: SarifPhysicalLocation {
                             artifact_location: SarifArtifactLocation {
-                                uri: finding.path.replace('\\', "/"),
+                                uri: sarif_artifact_uri(&finding.path),
                             },
                             region: SarifRegion {
                                 start_line: finding.line,
@@ -1242,6 +1441,39 @@ fn print_sarif(reported: &[ReportedDiagnostic]) -> Result<()> {
     };
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())
+}
+
+fn sarif_artifact_uri(path: &str) -> String {
+    let normalized = path.replace('\\', "/");
+    let bytes = normalized.as_bytes();
+    let is_windows_absolute =
+        bytes.len() >= 3 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' && bytes[2] == b'/';
+    let encoded = percent_encode_uri_path(&normalized, is_windows_absolute);
+
+    if is_windows_absolute {
+        format!("file:///{encoded}")
+    } else if normalized.starts_with("//") {
+        format!("file:{encoded}")
+    } else if normalized.starts_with('/') {
+        format!("file://{encoded}")
+    } else {
+        encoded
+    }
+}
+
+fn percent_encode_uri_path(path: &str, preserve_colon: bool) -> String {
+    let mut encoded = String::with_capacity(path.len());
+    for byte in path.bytes() {
+        if byte.is_ascii_alphanumeric()
+            || matches!(byte, b'-' | b'.' | b'_' | b'~' | b'/')
+            || (preserve_colon && byte == b':')
+        {
+            encoded.push(char::from(byte));
+        } else {
+            write!(encoded, "%{byte:02X}").expect("writing to a string cannot fail");
+        }
+    }
+    encoded
 }
 
 fn severity_name(severity: Severity) -> &'static str {

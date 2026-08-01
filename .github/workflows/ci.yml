@@ -12,25 +12,34 @@ jobs:
   rust:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master (2026-08-02)
         with:
           toolchain: 1.96.0
           components: rustfmt, clippy
           targets: wasm32-unknown-unknown
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
       - run: cargo fmt --check
       - run: cargo clippy --workspace -- -D warnings
       - run: cargo test --workspace
       - run: cargo build -p geullint-wasm --target wasm32-unknown-unknown --release
+      - run: cargo build -p geullint-cli
+      - name: Validate the committed Korean safety corpus
+        run: >-
+          node scripts/validate-safety-corpus.mjs
+          --corpus corpus/safety-regressions-v1.jsonl
+          --policy corpus/safety-regressions-v1.policy.json
+          --cli target/debug/geullint
+      - name: Evaluate exact diagnostics and corrected text
+        run: target/debug/geullint --corpus-manifest corpus/safety-regressions-v1.manifest.json
 
   npm-wrapper:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
       - run: node --test packages/npm/geullint/test/geullint.test.js
@@ -45,8 +54,8 @@ jobs:
       run:
         working-directory: extensions/vscode-geullint
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
           cache: npm
@@ -54,3 +63,4 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm test
+      - run: npm run build

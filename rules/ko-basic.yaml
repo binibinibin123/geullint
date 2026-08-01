@@ -214,8 +214,10 @@ rules:
         to: 뿐만 아니라
   - id: spelling.lexical.jjigae
     severity: error
+    profile: strict
+    defaultEnabled: false
     message: "음식 이름 ‘찌개’의 표기를 확인하세요."
-    safeFix: true
+    safeFix: false
     replacements:
       - from: 찌게
         to: 찌개

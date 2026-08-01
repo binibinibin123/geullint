@@ -1,5 +1,164 @@
 version: 1
 cases:
+  - name: legacy-seumnida-ending
+    kind: error
+    text: "읽읍니다"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.ending.seumnida
+        suggestions: ["읽습니다"]
+        safeFix: true
+
+  - name: sipsio-ending
+    kind: error
+    text: "확인하십시요"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.ending.sipsio
+        suggestions: ["확인하십시오"]
+        safeFix: true
+
+  - name: anieyo-copula
+    kind: error
+    text: "아니예요"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.copula.anieyo
+        suggestions: ["아니에요"]
+        safeFix: true
+
+  - name: anh-doe-negation
+    kind: error
+    text: "않됩니다"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.negation.anh-doe
+        suggestions: ["안 됩니다"]
+        safeFix: true
+
+  - name: dependent-noun-de
+    kind: error
+    text: "묵을데가"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: spacing.dependent-noun.de
+        suggestions: ["묵을 데가"]
+        safeFix: false
+
+  - name: dependent-noun-chae
+    kind: error
+    text: "입은채로"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: spacing.dependent-noun.chae
+        suggestions: ["입은 채로"]
+        safeFix: false
+
+  - name: dependent-noun-deut
+    kind: error
+    text: "모르는듯하다"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: spacing.dependent-noun.deut
+        suggestions: ["모르는 듯하다"]
+        safeFix: false
+
+  - name: dependent-noun-mankeum
+    kind: error
+    text: "먹을만큼"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: spacing.dependent-noun.mankeum
+        suggestions: ["먹을 만큼"]
+        safeFix: false
+
+  - name: dependent-noun-daero
+    kind: error
+    text: "들은대로"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: spacing.dependent-noun.daero
+        suggestions: ["들은 대로"]
+        safeFix: false
+
+  - name: dependent-noun-beop
+    kind: error
+    text: "사는법이다"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: spacing.dependent-noun.beop
+        suggestions: ["사는 법이다"]
+        safeFix: false
+
+  - name: dependent-noun-ri
+    kind: error
+    text: "잊을리가 없다"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: spacing.dependent-noun.ri
+        suggestions: ["잊을 리가"]
+        safeFix: false
+
+  - name: malformed-contracted-doe-form
+    kind: error
+    text: "됀 문서"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.conjugation.doe-to-dwae
+        suggestions: ["된"]
+        safeFix: true
+
+  - name: dwae-word-ending
+    kind: error
+    text: "일이 돼게 하지 마세요."
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.conjugation.dwae-to-doe
+        suggestions: ["되게"]
+
+  - name: colloquial-yong-ending
+    kind: error
+    text: "감사해용"
+    sourceKind: plain_text
+    profile: editorial
+    expected:
+      - ruleId: grammar.ending.colloquial-yong
+        suggestions: ["감사해요"]
+        safeFix: false
+
+  - name: known-euryeo-ending
+    kind: error
+    text: "먹을려고"
+    sourceKind: plain_text
+    profile: default
+    expected:
+      - ruleId: grammar.ending.euryeo
+        suggestions: ["먹으려고"]
+        safeFix: true
+
+  - name: contextual-euryeo-ending
+    kind: error
+    text: "갈려고"
+    sourceKind: plain_text
+    profile: strict
+    expected:
+      - ruleId: grammar.ending.euryeo-context
+        suggestions: ["가려고"]
+        safeFix: false
+
   - name: choice-ending
     kind: error
     text: "커피던지 차던지 고르세요."
@@ -14,46 +173,51 @@ cases:
     kind: error
     text: "책는 유용하다."
     sourceKind: plain_text
-    profile: default
+    profile: strict
     expected:
       - ruleId: grammar.particle.topic-allomorph
         suggestions: ["책은"]
+        safeFix: false
 
   - name: subject-particle
     kind: error
     text: "나무이 필요하다."
     sourceKind: plain_text
-    profile: default
+    profile: strict
     expected:
       - ruleId: grammar.particle.subject-allomorph
         suggestions: ["무가"]
+        safeFix: false
 
   - name: object-particle
     kind: error
     text: "책를 읽는다."
     sourceKind: plain_text
-    profile: default
+    profile: strict
     expected:
       - ruleId: grammar.particle.object-allomorph
         suggestions: ["책을"]
+        safeFix: false
 
   - name: comitative-particle
     kind: error
     text: "책와 연필을 챙긴다."
     sourceKind: plain_text
-    profile: default
+    profile: strict
     expected:
       - ruleId: grammar.particle.comitative-allomorph
         suggestions: ["책과"]
+        safeFix: false
 
   - name: instrumental-particle
     kind: error
     text: "책로 공부한다."
     sourceKind: plain_text
-    profile: default
+    profile: strict
     expected:
       - ruleId: grammar.particle.instrumental-allomorph
         suggestions: ["책으로"]
+        safeFix: false
 
   - name: comma-spacing
     kind: error
@@ -84,12 +248,17 @@ cases:
 
   - name: correct-forms-stay-silent
     kind: normal
-    text: "책은 유용하다. 나무가 필요하다. 작가는 책을 읽는다. 책과 연필을 챙긴다. 책으로 공부한다. 커피든지 차든지 고르세요. 사과, 배를 샀다. 끝났다. 다음 문장이다. 문서를 저장한다."
+    text: "된 문서가 필요하다. 되게 처리한다. 먹으려고 한다. 가려고 한다. 감사해요. 책은 유용하다. 나무가 필요하다. 작가는 책을 읽는다. 책과 연필을 챙긴다. 책으로 공부한다. 커피든지 차든지 고르세요. 사과, 배를 샀다. 끝났다. 다음 문장이다. 문서를 저장한다."
     sourceKind: plain_text
     profile: default
     expected: []
     absentRuleIds:
+      - grammar.conjugation.doe-to-dwae
+      - grammar.conjugation.dwae-to-doe
+      - grammar.ending.colloquial-yong
       - grammar.ending.deun-choice
+      - grammar.ending.euryeo
+      - grammar.ending.euryeo-context
       - grammar.particle.topic-allomorph
       - grammar.particle.subject-allomorph
       - grammar.particle.object-allomorph
@@ -99,6 +268,25 @@ cases:
       - punctuation.space-after-sentence-mark
       - repetition.adjacent-word
 
+  - name: productive-forms-stay-silent
+    kind: normal
+    text: "읽습니다. 먹읍시다. 확인하십시오. 그건 아니에요. 접속이 안 됩니다. 무리하지 않되 원칙은 지킨다. 쓸데가 없다. 산채로 만든 반찬이다. 제법 그럴듯하다. 마을만큼 조용하다. 마음대로 고른다. 그 행위는 불법이다. 그에게는 권리가 없다."
+    sourceKind: plain_text
+    profile: default
+    expected: []
+    absentRuleIds:
+      - grammar.copula.anieyo
+      - grammar.ending.seumnida
+      - grammar.ending.sipsio
+      - grammar.negation.anh-doe
+      - spacing.dependent-noun.beop
+      - spacing.dependent-noun.chae
+      - spacing.dependent-noun.daero
+      - spacing.dependent-noun.de
+      - spacing.dependent-noun.deut
+      - spacing.dependent-noun.mankeum
+      - spacing.dependent-noun.ri
+
   - name: lexical-subject-particle-exception
     kind: exception
     text: "그 아이."
@@ -107,6 +295,19 @@ cases:
     expected: []
     absentRuleIds:
       - grammar.particle.subject-allomorph
+
+  - name: lexical-ro-and-jjige-counterexamples
+    kind: normal
+    text: "근로 환경 진로를 선택했다 난로를 켰다 원로 배우 선로를 점검했다 폭로 기사. 감자를 푹 찌게 물을 올렸다."
+    sourceKind: plain_text
+    profile: default
+    expected: []
+    absentRuleIds:
+      - grammar.particle.topic-allomorph
+      - grammar.particle.subject-allomorph
+      - grammar.particle.object-allomorph
+      - grammar.particle.comitative-allomorph
+      - grammar.particle.instrumental-allomorph
 
   - name: distributive-adjacent-repeat-exception
     kind: exception

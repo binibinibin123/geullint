@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "root": ".",
+  "artifacts": [
+    {
+      "name": "playground WebAssembly engine",
+      "path": "apps/playground/pkg/geullint_wasm_bg.wasm",
+      "maxRawBytes": 650000,
+      "maxGzipBytes": 220000
+    },
+    {
+      "name": "playground WebAssembly JavaScript wrapper",
+      "path": "apps/playground/pkg/geullint_wasm.js",
+      "maxRawBytes": 10000,
+      "maxGzipBytes": 2900
+    }
+  ]
+}

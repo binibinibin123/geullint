@@ -5,7 +5,16 @@ use std::fs;
 use std::path::PathBuf;
 
 const DYNAMIC_NATIVE_RULE_IDS: &[&str] = &[
+    "grammar.copula.anieyo",
+    "grammar.conjugation.doe-to-dwae",
+    "grammar.conjugation.dwae-to-doe",
+    "grammar.ending.colloquial-yong",
     "grammar.ending.deun-choice",
+    "grammar.ending.euryeo",
+    "grammar.ending.euryeo-context",
+    "grammar.ending.seumnida",
+    "grammar.ending.sipsio",
+    "grammar.negation.anh-doe",
     "grammar.particle.topic-allomorph",
     "grammar.particle.subject-allomorph",
     "grammar.particle.object-allomorph",
@@ -14,6 +23,13 @@ const DYNAMIC_NATIVE_RULE_IDS: &[&str] = &[
     "punctuation.space-after-comma",
     "punctuation.space-after-sentence-mark",
     "repetition.adjacent-word",
+    "spacing.dependent-noun.beop",
+    "spacing.dependent-noun.chae",
+    "spacing.dependent-noun.daero",
+    "spacing.dependent-noun.de",
+    "spacing.dependent-noun.deut",
+    "spacing.dependent-noun.mankeum",
+    "spacing.dependent-noun.ri",
 ];
 
 #[derive(Debug, Deserialize)]
@@ -51,6 +67,8 @@ struct ExpectedDiagnostic {
     count: usize,
     #[serde(default)]
     suggestions: Vec<String>,
+    #[serde(default)]
+    safe_fix: Option<bool>,
 }
 
 const fn one() -> usize {
@@ -117,6 +135,16 @@ fn native_rule_fixtures_cover_each_dynamic_rule_and_its_known_good_forms() {
                         .map(|suggestion| vec![suggestion.clone()])
                         .collect::<Vec<_>>(),
                     "{}: unexpected suggestion for {}",
+                    case.name,
+                    expected.rule_id,
+                );
+            }
+            if let Some(safe_fix) = expected.safe_fix {
+                assert!(
+                    matching
+                        .iter()
+                        .all(|diagnostic| diagnostic.safe_fix == safe_fix),
+                    "{}: unexpected fix safety for {}",
                     case.name,
                     expected.rule_id,
                 );

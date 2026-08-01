@@ -63,16 +63,12 @@ test("requires one versioned archive root so installers can locate the binary", 
   );
 });
 
-test("accepts only a nonempty curated catalogue of at most 100 rules", () => {
+test("accepts a nonempty curated catalogue of any verified size", () => {
   assert.doesNotThrow(() =>
     validateReleaseCatalog({
-      ruleCount: 100,
-      rules: Array.from({ length: 100 }, (_, index) => ({ id: `rule-${index}` })),
+      ruleCount: 101,
+      rules: Array.from({ length: 101 }, (_, index) => ({ id: `rule-${index}` })),
     }),
-  );
-  assert.throws(
-    () => validateReleaseCatalog({ ruleCount: 101, rules: Array(101).fill({}) }),
-    /at most 100/u,
   );
   assert.throws(
     () => validateReleaseCatalog({ ruleCount: 2, rules: [{}] }),

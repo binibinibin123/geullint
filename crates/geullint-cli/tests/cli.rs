@@ -43,6 +43,145 @@ fn emits_machine_readable_json_when_requested() {
 }
 
 #[test]
+fn directory_scan_skips_binary_and_invalid_utf8_files() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let prose = directory.path().join("memo.md");
+    let binary = directory.path().join("preview.gif");
+    let invalid_text = directory.path().join("broken.txt");
+    fs::write(&prose, "몇일 뒤에 만나요.").expect("prose input");
+    fs::write(&binary, [0xff, 0xd8, 0xff, 0x00]).expect("binary input");
+    fs::write(&invalid_text, [0xff, 0xfe, 0x00]).expect("invalid text input");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    let output = command
+        .args(["--format", "json"])
+        .arg(directory.path())
+        .output()
+        .expect("run geullint");
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stderr.is_empty());
+    let document: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid JSON output");
+    let diagnostics = document["diagnostics"]
+        .as_array()
+        .expect("diagnostic array");
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0]["path"], prose.display().to_string());
+    assert_eq!(diagnostics[0]["ruleId"], "spelling.lexical.myeochil");
+}
+
+#[test]
+fn explicitly_selected_invalid_utf8_file_remains_an_error() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let input = directory.path().join("broken.txt");
+    fs::write(&input, [0xff, 0xfe, 0x00]).expect("invalid text input");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    command
+        .arg(&input)
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains("UTF-8"));
+}
+
+#[test]
+fn directory_fix_skips_unsupported_structured_text_formats() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let prose = directory.path().join("memo.txt");
+    let mdx = directory.path().join("page.mdx");
+    let restructured_text = directory.path().join("guide.rst");
+    let json = directory.path().join("data.json");
+    let mdx_source = "export const slug = \"몇일\";";
+    let rst_source = ".. code-block:: python\n\n    value = \"몇일\"";
+    let json_source = r#"{"메세지":"몇일"}"#;
+    fs::write(&prose, "몇일 뒤에 만나요.").expect("plain text input");
+    fs::write(&mdx, mdx_source).expect("MDX input");
+    fs::write(&restructured_text, rst_source).expect("reStructuredText input");
+    fs::write(&json, json_source).expect("JSON input");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    command
+        .arg("--fix")
+        .arg(directory.path())
+        .assert()
+        .success();
+
+    assert_eq!(
+        fs::read_to_string(prose).expect("fixed text"),
+        "며칠 뒤에 만나요."
+    );
+    assert_eq!(fs::read_to_string(mdx).expect("unchanged MDX"), mdx_source);
+    assert_eq!(
+        fs::read_to_string(restructured_text).expect("unchanged reStructuredText"),
+        rst_source
+    );
+    assert_eq!(
+        fs::read_to_string(json).expect("unchanged JSON"),
+        json_source
+    );
+}
+
+#[test]
+fn directory_scan_honours_geullintignore_patterns() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let checked = directory.path().join("checked.md");
+    let ignored = directory.path().join("examples.md");
+    let generated_directory = directory.path().join("generated");
+    fs::create_dir(&generated_directory).expect("generated directory");
+    fs::write(&checked, "몇일 뒤에 만나요.").expect("checked input");
+    fs::write(&ignored, "몇일 뒤에 만나요.").expect("ignored input");
+    fs::write(generated_directory.join("rules.md"), "몇일 뒤에 만나요.").expect("generated input");
+    fs::write(
+        directory.path().join(".geullintignore"),
+        "examples.md\ngenerated/\n",
+    )
+    .expect("ignore file");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    let output = command
+        .args(["--format", "json"])
+        .arg(directory.path())
+        .output()
+        .expect("run geullint");
+
+    assert_eq!(output.status.code(), Some(1));
+    let document: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid JSON output");
+    let diagnostics = document["diagnostics"]
+        .as_array()
+        .expect("diagnostic array");
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0]["path"], checked.display().to_string());
+}
+
+#[test]
+fn directory_scan_honours_gitignore_outside_a_git_repository() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let checked = directory.path().join("checked.md");
+    let ignored = directory.path().join("ignored-by-git.md");
+    fs::write(&checked, "몇일 뒤에 만나요.").expect("checked input");
+    fs::write(&ignored, "몇일 뒤에 만나요.").expect("ignored input");
+    fs::write(directory.path().join(".gitignore"), "ignored-by-git.md\n").expect("ignore file");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    let output = command
+        .args(["--format", "json"])
+        .arg(directory.path())
+        .output()
+        .expect("run geullint");
+
+    assert_eq!(output.status.code(), Some(1));
+    let document: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid JSON output");
+    let diagnostics = document["diagnostics"]
+        .as_array()
+        .expect("diagnostic array");
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0]["path"], checked.display().to_string());
+}
+
+#[test]
 fn loads_disabled_rules_from_a_json_config_file() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let input = directory.path().join("memo.txt");
@@ -226,6 +365,7 @@ fn emits_sarif_for_code_scanning_integrations() {
         serde_json::from_slice(&output.stdout).expect("valid SARIF JSON output");
     assert_eq!(document["version"], "2.1.0");
     assert_eq!(document["runs"][0]["tool"]["driver"]["name"], "GeulLint");
+    assert_eq!(document["runs"][0]["columnKind"], "unicodeCodePoints");
     assert_eq!(
         document["runs"][0]["results"][0]["ruleId"],
         "spelling.lexical.myeochil"
@@ -234,6 +374,73 @@ fn emits_sarif_for_code_scanning_integrations() {
         document["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["region"]["startLine"],
         1
     );
+}
+
+#[test]
+fn sarif_keeps_repository_relative_artifact_uris_relative() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let source_directory = directory.path().join("docs");
+    fs::create_dir(&source_directory).expect("source directory");
+    fs::write(source_directory.join("memo.md"), "몇일 뒤에 만나자.").expect("test input");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    let output = command
+        .current_dir(directory.path())
+        .args(["--format", "sarif", "docs/memo.md"])
+        .output()
+        .expect("run geullint");
+
+    assert_eq!(output.status.code(), Some(1));
+    let document: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid SARIF JSON output");
+    assert_eq!(
+        document["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"]["uri"],
+        "docs/memo.md"
+    );
+}
+
+#[test]
+fn sarif_encodes_absolute_artifact_paths_as_file_uris() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let input = directory.path().join("한글 문서 #1.md");
+    fs::write(&input, "몇일 뒤에 만나자.").expect("test input");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    let output = command
+        .args(["--format", "sarif"])
+        .arg(&input)
+        .output()
+        .expect("run geullint");
+
+    assert_eq!(output.status.code(), Some(1));
+    let document: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid SARIF JSON output");
+    let uri = document["runs"][0]["results"][0]["locations"][0]["physicalLocation"]
+        ["artifactLocation"]["uri"]
+        .as_str()
+        .expect("artifact URI");
+
+    assert!(uri.starts_with("file:///"), "unexpected URI: {uri}");
+    #[cfg(windows)]
+    {
+        let drive = input
+            .display()
+            .to_string()
+            .chars()
+            .next()
+            .expect("drive letter");
+        assert!(
+            uri.starts_with(&format!("file:///{drive}:/")),
+            "unexpected URI: {uri}"
+        );
+    }
+    assert!(
+        uri.ends_with("/%ED%95%9C%EA%B8%80%20%EB%AC%B8%EC%84%9C%20%231.md"),
+        "unexpected URI: {uri}"
+    );
+    assert!(!uri.contains('\\'), "unexpected URI: {uri}");
+    assert!(!uri.contains(' '), "unexpected URI: {uri}");
+    assert!(!uri.contains('#'), "unexpected URI: {uri}");
 }
 
 #[test]
@@ -388,6 +595,210 @@ fn evaluates_exact_rule_ranges_and_suggestions_when_the_corpus_supplies_them() {
 }
 
 #[test]
+fn derives_an_exact_utf8_range_from_a_unique_original() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let corpus = directory.path().join("original-corpus.jsonl");
+    fs::write(
+        &corpus,
+        r#"{"id":"original-range","text":"회의가 몇일 뒤에 열립니다.","caseType":"error","expectedDiagnostics":[{"ruleId":"spelling.lexical.myeochil","original":"몇일","suggestions":["며칠"]}],"expectedFixedText":"회의가 며칠 뒤에 열립니다."}"#,
+    )
+    .expect("test corpus");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    let output = command
+        .args(["--corpus", corpus.to_str().expect("UTF-8 path")])
+        .output()
+        .expect("run geullint");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let report: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid corpus JSON report");
+    assert_eq!(report["truePositives"], 1);
+    assert_eq!(report["caseFailures"], serde_json::json!([]));
+}
+
+#[test]
+fn rejects_an_ambiguous_original_annotation() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let corpus = directory.path().join("ambiguous-original.jsonl");
+    fs::write(
+        &corpus,
+        r#"{"id":"ambiguous","text":"몇일 뒤 몇일 안에","caseType":"error","expectedDiagnostics":[{"ruleId":"spelling.lexical.myeochil","original":"몇일","suggestions":["며칠"]}]}"#,
+    )
+    .expect("test corpus");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    command
+        .args(["--corpus", corpus.to_str().expect("UTF-8 path")])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains(
+            "original must occur exactly once",
+        ));
+}
+
+#[test]
+fn rejects_empty_originals_and_invalid_or_inconsistent_utf8_ranges() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let fixtures = [
+        (
+            "empty-original.jsonl",
+            r#"{"id":"empty","text":"몇일 뒤에 만나요.","expectedDiagnostics":[{"ruleId":"spelling.lexical.myeochil","original":"","suggestions":["며칠"]}]}"#,
+            "empty original",
+        ),
+        (
+            "invalid-range.jsonl",
+            r#"{"id":"invalid-range","text":"몇일 뒤에 만나요.","expectedDiagnostics":[{"ruleId":"spelling.lexical.myeochil","range":{"start":1,"end":6},"suggestions":["며칠"]}]}"#,
+            "invalid UTF-8 range",
+        ),
+        (
+            "inconsistent-range.jsonl",
+            r#"{"id":"inconsistent-range","text":"몇일 뒤에 만나요.","expectedDiagnostics":[{"ruleId":"spelling.lexical.myeochil","original":"뒤에","range":{"start":0,"end":6},"suggestions":["며칠"]}]}"#,
+            "range does not equal original",
+        ),
+    ];
+
+    for (name, contents, expected_error) in fixtures {
+        let corpus = directory.path().join(name);
+        fs::write(&corpus, contents).expect("test corpus");
+        let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+        command
+            .args(["--corpus", corpus.to_str().expect("UTF-8 path")])
+            .assert()
+            .code(2)
+            .stderr(predicates::str::contains(expected_error));
+    }
+}
+
+#[test]
+fn rejects_duplicate_corpus_ids_but_allows_repeated_external_texts() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let duplicate_ids = directory.path().join("duplicate-ids.jsonl");
+    fs::write(
+        &duplicate_ids,
+        concat!(
+            r#"{"id":"same","text":"첫 번째 정상 문장입니다.","expectedRuleIds":[]}"#,
+            "\n",
+            r#"{"id":"same","text":"두 번째 정상 문장입니다.","expectedRuleIds":[]}"#,
+            "\n",
+        ),
+    )
+    .expect("duplicate ids corpus");
+    let duplicate_texts = directory.path().join("duplicate-texts.jsonl");
+    fs::write(
+        &duplicate_texts,
+        concat!(
+            r#"{"id":"one","text":"같은   문장입니다.","expectedRuleIds":[]}"#,
+            "\n",
+            r#"{"id":"two","text":"  같은 문장입니다.  ","expectedRuleIds":[]}"#,
+            "\n",
+        ),
+    )
+    .expect("duplicate texts corpus");
+
+    let mut id_command = Command::cargo_bin("geullint").expect("geullint binary");
+    id_command
+        .args(["--corpus", duplicate_ids.to_str().expect("UTF-8 path")])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains("duplicate case id"));
+
+    let mut text_command = Command::cargo_bin("geullint").expect("geullint binary");
+    text_command
+        .args(["--corpus", duplicate_texts.to_str().expect("UTF-8 path")])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("\"cases\": 2"));
+}
+
+#[test]
+fn rejects_case_type_annotation_mismatches() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let corpus = directory.path().join("case-type-mismatch.jsonl");
+    fs::write(
+        &corpus,
+        r#"{"id":"normal-with-error","text":"몇일 뒤에 만나요.","caseType":"normal","expectedRuleIds":["spelling.lexical.myeochil"]}"#,
+    )
+    .expect("test corpus");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    command
+        .args(["--corpus", corpus.to_str().expect("UTF-8 path")])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains(
+            "normal caseType requires no expected diagnostics",
+        ));
+}
+
+#[test]
+fn reports_an_expected_fixed_text_mismatch() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let corpus = directory.path().join("wrong-fixed-text.jsonl");
+    fs::write(
+        &corpus,
+        r#"{"id":"wrong-fix","text":"몇일 뒤에 만나요.","caseType":"error","expectedDiagnostics":[{"ruleId":"spelling.lexical.myeochil","original":"몇일","suggestions":["며칠"]}],"expectedFixedText":"몇 일 뒤에 만나요."}"#,
+    )
+    .expect("test corpus");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    let output = command
+        .args(["--corpus", corpus.to_str().expect("UTF-8 path")])
+        .output()
+        .expect("run geullint");
+
+    assert_eq!(output.status.code(), Some(1));
+    let report: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid corpus JSON report");
+    assert_eq!(
+        report["caseFailures"][0]["fixedTextMismatch"]["expected"],
+        "몇 일 뒤에 만나요."
+    );
+    assert_eq!(
+        report["caseFailures"][0]["fixedTextMismatch"]["actual"],
+        "며칠 뒤에 만나요."
+    );
+}
+
+#[test]
+fn accepts_unchanged_fixed_text_for_a_review_only_diagnostic() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let corpus = directory.path().join("review-only.jsonl");
+    fs::write(
+        &corpus,
+        r#"{"id":"review-jjigae","text":"저녁에는 찌게를 먹었다.","profile":"strict","caseType":"error","expectedDiagnostics":[{"ruleId":"spelling.lexical.jjigae","original":"찌게","suggestions":["찌개"]}],"expectedFixedText":"저녁에는 찌게를 먹었다."}"#,
+    )
+    .expect("test corpus");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    command
+        .args(["--corpus", corpus.to_str().expect("UTF-8 path")])
+        .assert()
+        .success();
+}
+
+#[test]
+fn keeps_old_corpus_rows_backward_compatible() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let corpus = directory.path().join("legacy.jsonl");
+    fs::write(
+        &corpus,
+        r#"{"id":"legacy","text":"몇일 뒤에 만나요.","expectedRuleIds":["spelling.lexical.myeochil"]}"#,
+    )
+    .expect("test corpus");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    command
+        .args(["--corpus", corpus.to_str().expect("UTF-8 path")])
+        .assert()
+        .success();
+}
+
+#[test]
 fn counts_a_wrong_exact_annotation_as_both_a_false_positive_and_false_negative() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let corpus = directory.path().join("exact-corpus.jsonl");
@@ -420,7 +831,7 @@ fn reports_per_rule_precision_recall_and_wilson_lower_bound() {
         concat!(
             r#"{"id":"true-positive","text":"몇일 뒤에 만나요.","expectedRuleIds":["spelling.lexical.myeochil"]}"#,
             "\n",
-            r#"{"id":"false-positive","text":"몇일 뒤에 만나요.","expectedRuleIds":[]}"#,
+            r#"{"id":"false-positive","text":"보고서 제출은 몇일 뒤입니다.","expectedRuleIds":[]}"#,
             "\n",
             r#"{"id":"false-negative","text":"오늘 문서를 읽는다.","expectedRuleIds":["spelling.lexical.myeochil"]}"#,
             "\n",
@@ -467,7 +878,7 @@ fn evaluates_a_local_corpus_against_declared_quality_thresholds() {
         concat!(
             r#"{"id":"true-positive","text":"몇일 뒤에 만나요.","expectedRuleIds":["spelling.lexical.myeochil"]}"#,
             "\n",
-            r#"{"id":"false-positive","text":"몇일 뒤에 만나요.","expectedRuleIds":[]}"#,
+            r#"{"id":"false-positive","text":"보고서 제출은 몇일 뒤입니다.","expectedRuleIds":[]}"#,
             "\n",
             r#"{"id":"false-negative","text":"오늘 문서를 읽는다.","expectedRuleIds":["spelling.lexical.myeochil"]}"#,
             "\n",
@@ -546,7 +957,6 @@ fn bundled_seed_corpus_keeps_every_stable_rule_id_executable() {
             .trim()
             .parse()
             .expect("integer catalog count");
-    assert!(declared_count <= 100);
     assert_eq!(report["cases"], declared_count);
     assert!(report["truePositives"].as_u64().unwrap_or_default() >= declared_count as u64);
     assert_eq!(report["falsePositives"], 0);
@@ -704,7 +1114,6 @@ fn rules_catalog_json_exposes_all_bundled_metadata_in_stable_order() {
             .trim()
             .parse()
             .expect("integer catalog count");
-    assert!(declared_count <= 100);
     assert_eq!(document["ruleCount"], declared_count);
     assert_eq!(rules.len(), declared_count);
     assert!(

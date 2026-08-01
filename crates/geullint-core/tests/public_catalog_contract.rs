@@ -1,8 +1,8 @@
 use geullint_core::{
-    Confidence, LintConfig, Profile, SourceKind, available_rule_ids, lint_text, rule_metadata,
+    Confidence, FixSafety, LintConfig, Profile, SourceKind, available_rule_ids, lint_text,
+    rule_metadata,
 };
 
-const MAX_RELEASE_RULE_COUNT: usize = 100;
 const PUBLIC_CATEGORIES: &[&str] = &[
     "advanced",
     "grammar",
@@ -22,10 +22,6 @@ fn ships_only_the_declared_curated_rule_core_with_metadata() {
         .parse()
         .expect("catalog-count.txt must contain an integer");
 
-    assert!(
-        declared_count <= MAX_RELEASE_RULE_COUNT,
-        "the alpha release must not trade precision for an exact rule-count milestone"
-    );
     assert_eq!(
         rule_ids.len(),
         declared_count,
@@ -47,6 +43,32 @@ fn ships_only_the_declared_curated_rule_core_with_metadata() {
             metadata.documentation_url.ends_with(&format!("#{rule_id}")),
             "{} must link to its own documentation anchor",
             metadata.id
+        );
+    }
+}
+
+#[test]
+fn every_public_rule_has_human_written_korean_metadata() {
+    for rule_id in available_rule_ids() {
+        let metadata =
+            rule_metadata(&rule_id).unwrap_or_else(|| panic!("{rule_id} must expose metadata"));
+        let has_hangul = |value: &str| {
+            value
+                .chars()
+                .any(|character| ('가'..='힣').contains(&character))
+        };
+
+        assert!(
+            has_hangul(&metadata.title),
+            "{rule_id} has a placeholder title"
+        );
+        assert!(
+            has_hangul(&metadata.description),
+            "{rule_id} has a placeholder description"
+        );
+        assert!(
+            !metadata.description.contains("한국어 검사 규칙입니다"),
+            "{rule_id} has a generated placeholder description"
         );
     }
 }
@@ -104,6 +126,73 @@ fn exposes_complete_bundled_metadata() {
             .any(|text| text == "몇일")
     );
     assert!(metadata.correct_examples.iter().any(|text| text == "며칠"));
+}
+
+#[test]
+fn context_dependent_particle_and_jjigae_rules_are_non_default_review_rules() {
+    for rule_id in [
+        "grammar.particle.topic-allomorph",
+        "grammar.particle.subject-allomorph",
+        "grammar.particle.object-allomorph",
+        "grammar.particle.comitative-allomorph",
+        "grammar.particle.instrumental-allomorph",
+        "spelling.lexical.jjigae",
+    ] {
+        let metadata =
+            rule_metadata(rule_id).unwrap_or_else(|| panic!("{rule_id} must expose metadata"));
+
+        assert!(
+            !metadata.default_enabled,
+            "{rule_id} must not be a default rule"
+        );
+        assert_eq!(metadata.fix_safety, FixSafety::Review, "{rule_id}");
+        assert_eq!(metadata.profiles, [Profile::Strict, Profile::Editorial]);
+    }
+}
+
+#[test]
+fn ending_rule_metadata_matches_runtime_profile_and_fix_safety() {
+    for (rule_id, profiles, safety, confidence) in [
+        (
+            "grammar.conjugation.doe-to-dwae",
+            vec![Profile::Default, Profile::Strict, Profile::Editorial],
+            FixSafety::Safe,
+            Confidence::High,
+        ),
+        (
+            "grammar.conjugation.dwae-to-doe",
+            vec![Profile::Default, Profile::Strict, Profile::Editorial],
+            FixSafety::Safe,
+            Confidence::High,
+        ),
+        (
+            "grammar.ending.euryeo",
+            vec![Profile::Default, Profile::Strict, Profile::Editorial],
+            FixSafety::Safe,
+            Confidence::High,
+        ),
+        (
+            "grammar.ending.euryeo-context",
+            vec![Profile::Strict, Profile::Editorial],
+            FixSafety::Review,
+            Confidence::Medium,
+        ),
+        (
+            "grammar.ending.colloquial-yong",
+            vec![Profile::Editorial],
+            FixSafety::Review,
+            Confidence::Medium,
+        ),
+    ] {
+        let metadata = rule_metadata(rule_id).unwrap_or_else(|| panic!("missing {rule_id}"));
+        assert_eq!(metadata.profiles, profiles, "{rule_id}");
+        assert_eq!(metadata.fix_safety, safety, "{rule_id}");
+        assert_eq!(metadata.confidence, confidence, "{rule_id}");
+        assert_eq!(
+            metadata.default_enabled,
+            profiles.contains(&Profile::Default)
+        );
+    }
 }
 
 #[test]

@@ -1,4 +1,5 @@
 import { applyLocale } from "./i18n.js";
+import { replaceUtf8Range } from "./corrections.js";
 
 const editor = document.querySelector("#editor");
 const profile = document.querySelector("#profile");
@@ -14,17 +15,18 @@ const correctedOutput = document.querySelector("#corrected-output");
 const correctionStatus = document.querySelector("#correction-status");
 const copyCorrection = document.querySelector("#copy-correction");
 const applyCorrection = document.querySelector("#apply-correction");
+const includeReviewCorrections = document.querySelector("#include-review-corrections");
 const ruleSearch = document.querySelector("#rule-search");
 const ruleList = document.querySelector("#rule-list");
 const ruleCount = document.querySelector("#rule-count");
 
 const samples = [
+  "안녕하세용 감사해용 왠만하면 돼게 할려고 하였다.",
   "오늘이 몇일이지? 일이 되서 할려고 책를 봤다.",
   "github actions에서 데이타를 확인하고 결과를 다시 재검토했다.",
   "공공 기관의 개인 정보 처리 방침을 사전에 미리 읽어 주세요.",
 ];
 const worker = new Worker("./worker.js", { type: "module" });
-const textEncoder = new TextEncoder();
 let requestNumber = 0;
 let sampleIndex = 0;
 let engineReady = false;
@@ -32,22 +34,7 @@ let indexedRules = [];
 let currentCopy;
 let correctionState = "correctionLoading";
 let requestedText = "";
-
-export function replaceUtf8Range(text, range, replacement) {
-  function stringIndexForByte(byteOffset) {
-    let bytes = 0;
-    let index = 0;
-    for (const character of text) {
-      if (bytes >= byteOffset) break;
-      bytes += textEncoder.encode(character).length;
-      index += character.length;
-    }
-    return index;
-  }
-  const start = stringIndexForByte(range.start);
-  const end = stringIndexForByte(range.end);
-  return `${text.slice(0, start)}${replacement}${text.slice(end)}`;
-}
+let latestCorrection;
 
 export function createRuleIndex(catalog) {
   return catalog.rules.map((rule) => ({
@@ -79,6 +66,7 @@ function setCorrectionState(state) {
 }
 
 function prepareCorrection() {
+  latestCorrection = undefined;
   correctedOutput.value = "";
   correctedOutput.setAttribute("aria-busy", "true");
   copyCorrection.disabled = true;
@@ -87,6 +75,7 @@ function prepareCorrection() {
 }
 
 function invalidateCorrection() {
+  latestCorrection = undefined;
   correctedOutput.value = "";
   correctedOutput.setAttribute("aria-busy", "false");
   copyCorrection.disabled = true;
@@ -94,17 +83,25 @@ function invalidateCorrection() {
   setCorrectionState("correctionNeedsScan");
 }
 
-function renderCorrection(originalText, fixedText, diagnostics) {
-  correctedOutput.value = fixedText;
+function renderCorrection(originalText, fixedText, reviewFixedText, diagnostics) {
+  latestCorrection = { originalText, fixedText, reviewFixedText, diagnostics };
+  const includesReview = includeReviewCorrections.checked
+    && diagnostics.some((diagnostic) => !diagnostic.safeFix && diagnostic.suggestions?.[0]);
+  const previewText = includesReview
+    ? reviewFixedText
+    : fixedText;
+  correctedOutput.value = previewText;
   correctedOutput.setAttribute("aria-busy", "false");
-  const changed = fixedText !== originalText;
+  const changed = previewText !== originalText;
   const state = changed
-    ? "correctionApplied"
+    ? includesReview
+      ? "correctionReviewApplied"
+      : "correctionApplied"
     : diagnostics.length > 0
       ? "correctionReview"
       : "correctionUnchanged";
   setCorrectionState(state);
-  copyCorrection.disabled = fixedText.length === 0;
+  copyCorrection.disabled = previewText.length === 0;
   applyCorrection.disabled = !changed;
 }
 
@@ -212,6 +209,7 @@ function scan() {
     text: requestedText,
     sourceKind: sourceKind.value,
     config: { profile: profile.value },
+    includeReviewFixes: includeReviewCorrections.checked,
   });
 }
 
@@ -242,6 +240,7 @@ worker.addEventListener("message", ({ data }) => {
   renderCorrection(
     requestedText,
     data.response.fixedText,
+    data.response.reviewFixedText,
     data.response.diagnostics,
   );
   renderDiagnostics(data.response.diagnostics);
@@ -275,6 +274,9 @@ applyCorrection.addEventListener("click", () => {
   editor.value = correctedOutput.value;
   updateCharacterCount();
   editor.focus();
+  scan();
+});
+includeReviewCorrections.addEventListener("change", () => {
   scan();
 });
 ruleSearch.addEventListener("input", renderRuleList);

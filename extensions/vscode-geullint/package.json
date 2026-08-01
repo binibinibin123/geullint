@@ -2,7 +2,7 @@
   "name": "geullint",
   "displayName": "GeulLint",
   "description": "완전 오프라인 한국어 맞춤법·문법 린터",
-  "version": "0.2.0-alpha.1",
+  "version": "0.3.0-alpha.1",
   "publisher": "geullint",
   "license": "MIT",
   "icon": "icon.png",
@@ -108,7 +108,10 @@
     "compile": "tsc -p .",
     "check": "tsc --noEmit -p .",
     "test": "npm run compile && node --test dist/test/*.test.js",
-    "package": "npm run compile && vsce package --no-dependencies"
+    "bundle": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --outfile=dist/extension.js --metafile=dist/extension-meta.json",
+    "verify:bundle": "node scripts/verify-bundle.mjs",
+    "build": "npm run compile && npm run bundle && npm run verify:bundle",
+    "package": "npm run build && vsce package --no-dependencies"
   },
   "dependencies": {
     "vscode-languageclient": "^10.1.0"
@@ -117,6 +120,7 @@
     "@types/node": "^22.15.0",
     "@types/vscode": "^1.93.0",
     "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.25.0",
     "typescript": "^5.8.3"
   }
 }

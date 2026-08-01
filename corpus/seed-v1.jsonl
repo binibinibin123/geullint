@@ -1,13 +1,19 @@
 {"id":"bundled-advanced.honorific.jeo-jasin","text":"제가 제 자신을","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["advanced.honorific.jeo-jasin"]}
-{"id":"bundled-grammar.conjugation.doe-to-dwae","text":"되서","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.conjugation.doe-to-dwae"]}
-{"id":"bundled-grammar.conjugation.dwae-to-doe","text":"돼면","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.conjugation.dwae-to-doe"]}
+{"id":"bundled-grammar.conjugation.doe-to-dwae","text":"됀","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.conjugation.doe-to-dwae"]}
+{"id":"bundled-grammar.conjugation.dwae-to-doe","text":"돼게","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.conjugation.dwae-to-doe"]}
+{"id":"bundled-grammar.copula.anieyo","text":"아니예요","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.copula.anieyo"]}
+{"id":"bundled-grammar.ending.colloquial-yong","text":"감사해용","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.ending.colloquial-yong"]}
 {"id":"bundled-grammar.ending.deun-choice","text":"커피던지 차던지","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.ending.deun-choice","grammar.ending.deun-choice"]}
-{"id":"bundled-grammar.ending.euryeo","text":"할려고","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.ending.euryeo"]}
+{"id":"bundled-grammar.ending.euryeo","text":"먹을려고","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.ending.euryeo"]}
+{"id":"bundled-grammar.ending.euryeo-context","text":"갈려고","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.ending.euryeo-context"]}
 {"id":"bundled-grammar.ending.hal-ge","text":"할께","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.ending.hal-ge"]}
+{"id":"bundled-grammar.ending.seumnida","text":"읽읍니다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.ending.seumnida"]}
+{"id":"bundled-grammar.ending.sipsio","text":"확인하십시요","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.ending.sipsio"]}
 {"id":"bundled-grammar.negation.an-before-predicate","text":"않 간다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.negation.an-before-predicate"]}
+{"id":"bundled-grammar.negation.anh-doe","text":"않됩니다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.negation.anh-doe"]}
 {"id":"bundled-grammar.negation.ji-anh","text":"지 안았다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.negation.ji-anh"]}
 {"id":"bundled-grammar.particle.comitative-allomorph","text":"책와","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.particle.comitative-allomorph"]}
-{"id":"bundled-grammar.particle.duplicate","text":"를를","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.particle.duplicate"]}
+{"id":"bundled-grammar.particle.duplicate","text":"자료를를 확인했다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.particle.duplicate"]}
 {"id":"bundled-grammar.particle.instrumental-allomorph","text":"책로","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.particle.instrumental-allomorph"]}
 {"id":"bundled-grammar.particle.object-allomorph","text":"책를","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.particle.object-allomorph"]}
 {"id":"bundled-grammar.particle.subject-allomorph","text":"나무이","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["grammar.particle.subject-allomorph"]}
@@ -19,11 +25,18 @@
 {"id":"bundled-repetition.adjacent-word","text":"문서를 문서를","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["repetition.adjacent-word"]}
 {"id":"bundled-repetition.ending","text":"했습니다습니다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["repetition.ending"]}
 {"id":"bundled-spacing.compound.database","text":"데이터 베이스","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.compound.database"]}
+{"id":"bundled-spacing.dependent-noun.beop","text":"사는법이다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.beop"]}
+{"id":"bundled-spacing.dependent-noun.chae","text":"입은채로","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.chae"]}
+{"id":"bundled-spacing.dependent-noun.daero","text":"들은대로","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.daero"]}
+{"id":"bundled-spacing.dependent-noun.de","text":"묵을데가","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.de"]}
+{"id":"bundled-spacing.dependent-noun.deut","text":"모르는듯하다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.deut"]}
 {"id":"bundled-spacing.dependent-noun.geot","text":"좋을것 같다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.geot"]}
 {"id":"bundled-spacing.dependent-noun.jeok","text":"본적 있다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.jeok"]}
 {"id":"bundled-spacing.dependent-noun.jul","text":"알줄 안다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.jul"]}
 {"id":"bundled-spacing.dependent-noun.jung","text":"하는중","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.jung"]}
+{"id":"bundled-spacing.dependent-noun.mankeum","text":"먹을만큼","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.mankeum"]}
 {"id":"bundled-spacing.dependent-noun.ppun","text":"기다릴뿐이다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.ppun"]}
+{"id":"bundled-spacing.dependent-noun.ri","text":"잊을리가 없다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.ri"]}
 {"id":"bundled-spacing.dependent-noun.su","text":"할수 있다","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.su"]}
 {"id":"bundled-spacing.dependent-noun.ttae","text":"만날때","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.dependent-noun.ttae"]}
 {"id":"bundled-spacing.fixed.ppunman-anira","text":"뿐만아니라","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spacing.fixed.ppunman-anira"]}

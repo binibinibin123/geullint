@@ -81,6 +81,7 @@ kbd { padding:2px 4px; border:1px solid var(--line); border-radius:3px; backgrou
   font:800 .66rem/1.35 ui-monospace,"Cascadia Mono",monospace; text-align:right;
 }
 .correction-panel[data-state="correctionApplied"] .correction-status,
+.correction-panel[data-state="correctionReviewApplied"] .correction-status,
 .correction-panel[data-state="copySucceeded"] .correction-status { background:var(--ink); color:var(--acid); }
 .correction-panel[data-state="correctionReview"] .correction-status { background:var(--pink); }
 #corrected-output {
@@ -90,6 +91,8 @@ kbd { padding:2px 4px; border:1px solid var(--line); border-radius:3px; backgrou
   cursor:text;
 }
 #corrected-output:focus { border-color:var(--ink); box-shadow:inset 5px 0 0 var(--orange),0 0 0 3px rgba(24,33,28,.18); }
+.review-correction-toggle { display:flex; align-items:center; gap:8px; width:max-content; max-width:100%; margin-top:14px; font:.78rem/1.5 "Malgun Gothic",sans-serif; }
+.review-correction-toggle input { width:17px; height:17px; accent-color:var(--orange); }
 .correction-actions { display:flex; justify-content:flex-end; gap:9px; padding-top:14px; }
 .correction-action {
   min-width:138px; padding:11px 14px; border:1px solid var(--ink);
