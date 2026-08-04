@@ -8,6 +8,7 @@ repository.workspace = true
 
 [features]
 default = []
+standard = []
 morphology = ["dep:lindera"]
 
 [dependencies]

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "name": "GeulRank-small",
+  "version": "0.1.0-baseline",
+  "format": "geulrank-linear-int8-v1",
+  "features": ["bias", "edit_distance", "phonology_distance", "log_frequency", "base_score"],
+  "weights": {
+    "bias": 127,
+    "edit_distance": -29,
+    "phonology_distance": -14,
+    "log_frequency": 6,
+    "base_score": 11
+  },
+  "scale": 0.031496062992125984,
+  "artifact": null,
+  "license": "MIT",
+  "training": {
+    "status": "deterministic-baseline",
+    "sourceManifest": "data/sources.json",
+    "releaseHoldoutRequired": true,
+    "documentDisjoint": true,
+    "note": "The baseline is checked in as named int8 weights; a learned release model must replace it only after the independent holdout gates pass."
+  }
+}

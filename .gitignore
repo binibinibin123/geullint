@@ -1,4 +1,7 @@
 target/
+data/raw/
+data/review/
+data/derived/
 node_modules/
 extensions/vscode-geullint/dist/
 extensions/vscode-geullint/server/
