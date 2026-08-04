@@ -40,7 +40,7 @@ pub use lexicon::{LexiconEntry, LexiconError, StandardLexicon};
 pub use pipeline::{Pipeline, PipelineOutcome};
 pub use planner::CorrectionPlan;
 pub use policy::FixPolicy;
-pub use ranking::{CandidateScorer, DeterministicScorer};
+pub use ranking::{CandidateScorer, DeterministicScorer, GeulRankSmall, RankWeights};
 pub use trace::{TraceEvent, TraceSink, VecTrace};
 
 /// A half-open UTF-8 byte range in the original source text.

@@ -2,6 +2,8 @@ target/
 data/raw/
 data/review/
 data/derived/
+__pycache__/
+*.py[cod]
 node_modules/
 extensions/vscode-geullint/dist/
 extensions/vscode-geullint/server/
