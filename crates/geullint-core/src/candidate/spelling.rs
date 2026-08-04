@@ -1,3 +1,5 @@
+#![allow(clippy::cast_precision_loss, clippy::cast_lossless)]
+
 use super::CandidateGenerator;
 use crate::{Candidate, Evidence, RuleContext, StandardLexicon, TextRange, phonology_distance};
 

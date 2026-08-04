@@ -28,6 +28,10 @@ pub struct StandardLexicon {
 
 impl StandardLexicon {
     /// Parse the deterministic tab-separated v1 interchange format.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LexiconError`] when the version header, row shape, ordering, or frequency is invalid.
     pub fn parse(source: &str) -> Result<Self, LexiconError> {
         let mut lines = source.lines();
         if lines.next() != Some("geullint-standard-lexicon-v1") {
@@ -59,14 +63,15 @@ impl StandardLexicon {
                 return Err(LexiconError::Unsorted { line: line_number });
             }
             previous_surface = Some(surface.clone());
+            let Ok(frequency) = fields[2].parse::<u64>() else {
+                return Err(LexiconError::InvalidRow { line: line_number });
+            };
             entries.insert(
                 surface.clone(),
                 LexiconEntry {
                     surface,
                     part_of_speech: fields[1].to_owned(),
-                    frequency: fields[2]
-                        .parse()
-                        .expect("frequency was validated as an unsigned integer"),
+                    frequency,
                 },
             );
         }
@@ -74,6 +79,10 @@ impl StandardLexicon {
     }
 
     /// Load the checked-in standard asset when the `standard` feature is enabled.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LexiconError`] when the checked-in asset is malformed.
     #[cfg(feature = "standard")]
     pub fn bundled() -> Result<Self, LexiconError> {
         Self::parse(include_str!(

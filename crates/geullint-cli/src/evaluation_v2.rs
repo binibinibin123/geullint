@@ -1,19 +1,14 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub(crate) enum CorpusOrigin {
     IndependentHuman,
     Revision,
+    #[default]
     Project,
     Synthetic,
-}
-
-impl Default for CorpusOrigin {
-    fn default() -> Self {
-        Self::Project
-    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -202,14 +197,14 @@ fn push_minimum(
     actual: usize,
     minimum: Option<usize>,
 ) {
-    if let Some(minimum) = minimum {
-        if actual < minimum {
-            failures.push(DatasetGateFailure {
-                metric,
-                actual,
-                minimum,
-            });
-        }
+    if let Some(minimum) = minimum
+        && actual < minimum
+    {
+        failures.push(DatasetGateFailure {
+            metric,
+            actual,
+            minimum,
+        });
     }
 }
 

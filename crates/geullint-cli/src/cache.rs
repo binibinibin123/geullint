@@ -3,6 +3,7 @@ use geullint_core::Diagnostic;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
+use std::fmt::Write as _;
 use std::fs;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -53,7 +54,11 @@ pub fn save(path: &Path, cache: &CacheFile) -> Result<()> {
 #[must_use]
 pub fn source_hash(text: &str) -> String {
     let digest = Sha256::digest(text.as_bytes());
-    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+    let mut output = String::with_capacity(digest.len() * 2);
+    for byte in digest {
+        write!(output, "{byte:02x}").expect("writing to a string cannot fail");
+    }
+    output
 }
 
 pub fn write_atomic_text(path: &Path, text: &str) -> Result<()> {

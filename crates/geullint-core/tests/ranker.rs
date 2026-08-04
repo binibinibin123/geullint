@@ -42,6 +42,7 @@ fn local_ranker_prefers_lower_edit_distance_and_higher_frequency() {
 }
 
 #[test]
+#[allow(clippy::float_cmp)]
 fn ranker_is_bounded_and_deterministic_for_empty_evidence() {
     let ranker = GeulRankSmall::default();
     let context = context();

@@ -1,3 +1,5 @@
+#![allow(clippy::cast_possible_truncation)]
+
 /// Hangul syllable decomposition used by spelling candidate generation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SyllableFeatures {
@@ -14,9 +16,9 @@ pub fn decompose_syllable(character: char) -> Option<SyllableFeatures> {
     }
     let offset = code - 0xAC00;
     Some(SyllableFeatures {
-        initial: (offset / 588) as u8,
-        medial: ((offset % 588) / 28) as u8,
-        final_consonant: (offset % 28) as u8,
+        initial: u8::try_from(offset / 588).unwrap_or_default(),
+        medial: u8::try_from((offset % 588) / 28).unwrap_or_default(),
+        final_consonant: u8::try_from(offset % 28).unwrap_or_default(),
     })
 }
 

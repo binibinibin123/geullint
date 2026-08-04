@@ -70,6 +70,10 @@ impl GeulRankSmall {
     }
 
     /// Load the checked-in portable INT8 artifact without a dynamic runtime or network access.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the manifest is malformed, uses an unknown format, or omits a feature weight.
     pub fn from_manifest_str(source: &str) -> Result<Self, String> {
         let manifest: RankerManifest =
             serde_json::from_str(source).map_err(|error| error.to_string())?;
@@ -97,6 +101,10 @@ impl GeulRankSmall {
     }
 
     /// Load the versioned baseline artifact bundled by the `standard` feature.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the bundled manifest is malformed.
     #[cfg(feature = "standard")]
     pub fn bundled() -> Result<Self, String> {
         Self::from_manifest_str(include_str!(

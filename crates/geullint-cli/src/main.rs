@@ -24,6 +24,7 @@ use evaluation_v2::{
 };
 
 #[derive(Clone, Debug, Parser)]
+#[allow(clippy::struct_excessive_bools)]
 #[command(
     name = "geullint",
     about = "완전 오프라인 한국어 맞춤법·문법 린터",
@@ -903,16 +904,16 @@ complete -F _geullint_complete geullint
 "#
         }
         CompletionShell::Zsh => {
-            r#"#compdef geullint
+            r"#compdef geullint
 _arguments '1:command:(check fix init doctor dictionary feedback completion rules lsp)' '*:path:_files'
-"#
+"
         }
         CompletionShell::Fish => {
-            r#"complete -c geullint -f -n '__fish_use_subcommand' -a 'check fix init doctor dictionary feedback completion rules lsp'
+            r"complete -c geullint -f -n '__fish_use_subcommand' -a 'check fix init doctor dictionary feedback completion rules lsp'
 complete -c geullint -l stdin -d 'read one document from stdin'
 complete -c geullint -l changed -d 'check changed files'
 complete -c geullint -l fix -d 'apply safe fixes'
-"#
+"
         }
         CompletionShell::Powershell => {
             r#"Register-ArgumentCompleter -Native -CommandName geullint -ScriptBlock {
@@ -951,6 +952,7 @@ fn run_watch(arguments: &Arguments) -> Result<bool> {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn run_once(arguments: &Arguments) -> Result<bool> {
     if let Some(rule_id) = &arguments.explain {
         print_rule_explanation(rule_id, arguments.format)?;
@@ -1113,8 +1115,8 @@ fn print_diff(path: &Path, original: &str, fixed: &str) {
     for (line_number, (before, after)) in original.lines().zip(fixed.lines()).enumerate() {
         if before != after {
             println!("@@ line {} @@", line_number + 1);
-            println!("-{}", before);
-            println!("+{}", after);
+            println!("-{before}");
+            println!("+{after}");
         }
     }
     if original.lines().count() != fixed.lines().count() {
@@ -1264,6 +1266,7 @@ fn validate_corpus_metadata(path: &Path, line: usize, case: &CorpusCase) -> Resu
 }
 
 #[allow(clippy::too_many_lines)] // Keeps streaming parsing, validation, matching, and metric aggregation together.
+#[allow(clippy::cast_precision_loss)]
 fn evaluate_corpus(
     path: &Path,
     base_config: &LintConfig,

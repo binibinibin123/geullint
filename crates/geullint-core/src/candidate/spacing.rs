@@ -1,3 +1,5 @@
+#![allow(clippy::cast_precision_loss, clippy::cast_lossless)]
+
 use super::CandidateGenerator;
 use crate::{Candidate, Evidence, RuleContext, StandardLexicon, TextRange};
 
@@ -26,8 +28,7 @@ impl CandidateGenerator for SpacingCandidateGenerator {
                 continue;
             }
             let characters: Vec<_> = word.surface.char_indices().collect();
-            for split in 1..characters.len() {
-                let split_offset = characters[split].0;
+            for &(split_offset, _) in characters.iter().skip(1) {
                 let left = &word.surface[..split_offset];
                 let right = &word.surface[split_offset..];
                 let Some(left_entry) = self.lexicon.lookup(left) else {

@@ -1,3 +1,5 @@
+#![allow(clippy::cast_precision_loss)]
+
 use serde::{Deserialize, Serialize};
 
 /// Conservative style profiles used only to lower automation confidence.

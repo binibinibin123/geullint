@@ -292,7 +292,7 @@ fn apply_content_changes(
     let mut text = original.to_owned();
     for change in changes {
         let Some(range) = change.range else {
-            text = change.text.clone();
+            text.clone_from(&change.text);
             continue;
         };
         let start = byte_offset_for_position(&text, range.start)
@@ -312,7 +312,8 @@ fn byte_offset_for_position(text: &str, position: Position) -> Option<usize> {
     let mut line_start = 0_usize;
     for (offset, character) in text.char_indices() {
         if line == position.line {
-            let column = text[line_start..offset].encode_utf16().count() as u32;
+            let column =
+                u32::try_from(text[line_start..offset].encode_utf16().count()).unwrap_or(u32::MAX);
             if column == position.character {
                 return Some(offset);
             }
@@ -329,7 +330,7 @@ fn byte_offset_for_position(text: &str, position: Position) -> Option<usize> {
         }
     }
     if line == position.line {
-        let column = text[line_start..].encode_utf16().count() as u32;
+        let column = u32::try_from(text[line_start..].encode_utf16().count()).unwrap_or(u32::MAX);
         if column == position.character {
             return Some(text.len());
         }
