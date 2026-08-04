@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://github.com/binibinibin123/geullint/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/binibinibin123/geullint/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/binibinibin123/geullint/releases"><img alt="Release" src="https://img.shields.io/github/v/release/binibinibin123/geullint?display_name=tag&include_prereleases&sort=semver&color=ff5b35"></a>
-  <a href="CHANGELOG.md"><img alt="Early alpha" src="https://img.shields.io/badge/status-early_alpha-dfff38?labelColor=18211c"></a>
+  <a href="CHANGELOG.md"><img alt="Early beta" src="https://img.shields.io/badge/status-early_beta-dfff38?labelColor=18211c"></a>
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-f1efe6?labelColor=18211c"></a>
 </p>
 
@@ -33,7 +33,7 @@
 | CI | 自动阻止文档质量回退并生成 SARIF 结果 |
 | 自定义词汇 | 添加用户词典、dictionary overlay 和项目 rule pack |
 
-文本、诊断和遥测不会发送到外部服务。已发布的 alpha 版本是 **v0.3.0-alpha.2**；此仓库的规则目录会持续演进，不以固定的规则数量为目标。
+文本、诊断和遥测不会发送到外部服务。已发布的 beta 版本是 **v0.4.0-beta.1**；此仓库的规则目录会持续演进，不以固定的规则数量为目标。
 
 ## 为什么选择 GeulLint
 
@@ -54,22 +54,22 @@ GeulLint 是完全在浏览器、编辑器和终端中**离线**运行的韩语�
 **Windows**
 
 ```powershell
-$env:GEULLINT_VERSION='0.3.0-alpha.2'
-irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.ps1 | iex
+$env:GEULLINT_VERSION='0.4.0-beta.1'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.4.0-beta.1/install.ps1 | iex
 geullint .
 ```
 
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.sh | GEULLINT_VERSION=0.3.0-alpha.2 sh
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.4.0-beta.1/install.sh | GEULLINT_VERSION=0.4.0-beta.1 sh
 geullint .
 ```
 
 脚本会验证 GitHub Release 的 SHA-256。执行前可阅读 [install.ps1](install.ps1) 或 [install.sh](install.sh)。如果已经安装 Rust：
 
 ```bash
-  cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.2 --locked geullint-cli
+  cargo install --git https://github.com/binibinibin123/geullint --tag v0.4.0-beta.1 --locked geullint-cli
 ```
 
 手动压缩包是 [GitHub Releases](https://github.com/binibinibin123/geullint/releases)提供的 fallback。

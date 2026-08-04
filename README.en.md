@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://github.com/binibinibin123/geullint/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/binibinibin123/geullint/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/binibinibin123/geullint/releases"><img alt="Release" src="https://img.shields.io/github/v/release/binibinibin123/geullint?display_name=tag&include_prereleases&sort=semver&color=ff5b35"></a>
-  <a href="CHANGELOG.md"><img alt="Early alpha" src="https://img.shields.io/badge/status-early_alpha-dfff38?labelColor=18211c"></a>
+  <a href="CHANGELOG.md"><img alt="Early beta" src="https://img.shields.io/badge/status-early_beta-dfff38?labelColor=18211c"></a>
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-f1efe6?labelColor=18211c"></a>
 </p>
 
@@ -33,7 +33,7 @@ Check a sentence on the web, then bring the same checker into your editor, termi
 | CI | Prevents document-quality regressions and produces SARIF results |
 | Your vocabulary | Adds a user dictionary, dictionary overlays, and project rule packs |
 
-Writing, diagnostics, and telemetry are never sent to an external service. The published alpha release is **v0.3.0-alpha.2**; this repository's rule catalogue evolves independently of a fixed rule-count target.
+Writing, diagnostics, and telemetry are never sent to an external service. The published beta release is **v0.4.0-beta.1**; this repository's rule catalogue evolves independently of a fixed rule-count target.
 
 ## Why GeulLint
 
@@ -54,22 +54,22 @@ Try the [local WebAssembly playground](https://binibinibin123.github.io/geullint
 **Windows**
 
 ```powershell
-$env:GEULLINT_VERSION='0.3.0-alpha.2'
-irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.ps1 | iex
+$env:GEULLINT_VERSION='0.4.0-beta.1'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.4.0-beta.1/install.ps1 | iex
 geullint .
 ```
 
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.sh | GEULLINT_VERSION=0.3.0-alpha.2 sh
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.4.0-beta.1/install.sh | GEULLINT_VERSION=0.4.0-beta.1 sh
 geullint .
 ```
 
 The scripts verify the SHA-256 checksum of the matching GitHub Release. Read [install.ps1](install.ps1) or [install.sh](install.sh) before running it. With a Rust toolchain:
 
 ```bash
-  cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.2 --locked geullint-cli
+  cargo install --git https://github.com/binibinibin123/geullint --tag v0.4.0-beta.1 --locked geullint-cli
 ```
 
 Manual archives on [GitHub Releases](https://github.com/binibinibin123/geullint/releases) are the fallback.

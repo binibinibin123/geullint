@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const version = "0.3.0-alpha.2";
+const version = "0.4.0-beta.1";
 const tag = `v${version}`;
 
 const packagePaths = [

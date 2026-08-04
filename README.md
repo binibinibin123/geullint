@@ -16,7 +16,7 @@
 <p align="center">
   <a href="https://github.com/binibinibin123/geullint/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/binibinibin123/geullint/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/binibinibin123/geullint/releases"><img alt="Release" src="https://img.shields.io/github/v/release/binibinibin123/geullint?display_name=tag&include_prereleases&sort=semver&color=ff5b35"></a>
-  <a href="CHANGELOG.md"><img alt="Early alpha" src="https://img.shields.io/badge/status-early_alpha-dfff38?labelColor=18211c"></a>
+  <a href="CHANGELOG.md"><img alt="Early beta" src="https://img.shields.io/badge/status-early_beta-dfff38?labelColor=18211c"></a>
   <a href="docs/offline.md"><img alt="Text uploads" src="https://img.shields.io/badge/text_uploads-0-67ce78?labelColor=18211c"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-f1efe6?labelColor=18211c"></a>
 </p>
@@ -49,7 +49,7 @@
 | CI에서 품질 지키기 | 문서 품질 저하를 자동 차단하고 SARIF 결과 생성 |
 | 내 표현에 맞추기 | 사용자 사전, dictionary overlay, 프로젝트 rule pack 추가 |
 
-현재 공개 버전은 **v0.3.0-alpha.2**입니다. 문장·진단·텔레메트리는 외부로 전송하지 않습니다.
+현재 공개 버전은 **v0.4.0-beta.1**입니다. 문장·진단·텔레메트리는 외부로 전송하지 않습니다.
 
 ## 무엇이 다른가
 
@@ -70,25 +70,25 @@ GeulLint는 브라우저·편집기·터미널에서 **완전히 로컬로** 실
 
 ### Windows
 
-아래 명령은 v0.3.0-alpha.2 설치 스크립트와 Release를 함께 고정하고, 체크섬을 검증한 뒤 사용자 디렉터리에 설치합니다. 실행 전 [원문](install.ps1)을 읽을 수 있습니다.
+아래 명령은 v0.4.0-beta.1 설치 스크립트와 Release를 함께 고정하고, 체크섬을 검증한 뒤 사용자 디렉터리에 설치합니다. 실행 전 [원문](install.ps1)을 읽을 수 있습니다.
 
 ```powershell
-$env:GEULLINT_VERSION='0.3.0-alpha.2'
-irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.ps1 | iex
+$env:GEULLINT_VERSION='0.4.0-beta.1'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.4.0-beta.1/install.ps1 | iex
 geullint .
 ```
 
 ### macOS · Linux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.sh | GEULLINT_VERSION=0.3.0-alpha.2 sh
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.4.0-beta.1/install.sh | GEULLINT_VERSION=0.4.0-beta.1 sh
 geullint .
 ```
 
 Rust 도구 체인이 이미 있다면 소스에서 고정 설치할 수도 있습니다.
 
 ```bash
-  cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.2 --locked geullint-cli
+  cargo install --git https://github.com/binibinibin123/geullint --tag v0.4.0-beta.1 --locked geullint-cli
 ```
 
 수동 압축 파일은 [GitHub Releases](https://github.com/binibinibin123/geullint/releases)의 대안(fallback)입니다. 사용자가 개별 실행 파일을 찾아 설치하는 방식을 기본 경로로 삼지 않습니다.
@@ -148,7 +148,7 @@ CI에서는 설치 후 `geullint .` 한 줄을 실행하면 됩니다. 디렉터
 | 문체 | 중복·군더더기·편집 제안 |
 | 문장부호 | 쉼표 중복과 문장 부호 앞뒤 공백 |
 
-현재 카탈로그는 116개 규칙입니다. 새 표기·띄어쓰기·조사 회귀는 서로 다른 오류 문장과 정상 반례를 통과했습니다. 저장소 소유 회귀 표본은 제한된 표본이므로 일반 정밀도나 재현율로 홍보하지 않습니다. 재현 명령과 한계는 [알파 품질 보고서](docs/quality-report-v0.3.0-alpha.2.md)에 공개합니다.
+현재 카탈로그는 116개 규칙입니다. 새 표기·띄어쓰기·조사 회귀는 서로 다른 오류 문장과 정상 반례를 통과했습니다. 저장소 소유 회귀 표본은 제한된 표본이므로 일반 정밀도나 재현율로 홍보하지 않습니다. 재현 명령과 한계는 [베타 품질 보고서](docs/quality-report-v0.4.0-beta.1.md)에 공개합니다.
 
 - [현재 규칙 전체 목록](docs/rules.md)
 - [규칙 품질 게이트](docs/quality.md)

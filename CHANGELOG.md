@@ -4,6 +4,22 @@
 
 ## [Unreleased]
 
+## [0.4.0-beta.1] - 2026-08-05
+
+### Added
+
+- Standard offline engine paths in the browser playground and VS Code language server, with an opt-in context ranking preview.
+- Cross-platform reproducibility checks for the bundled lexicon, ranker assets, and browser persistence.
+
+### Changed
+
+- The browser dictionary and draft stores now survive an immediate reload while IndexedDB is opening.
+- Release metadata and installer examples now point to the beta release tag.
+
+### Quality boundary
+
+- The beta report records the passing local, native, WASM, extension, and offline browser gates. It does not claim commercial-near accuracy: the independent human holdout remains pending and `commercial-near-v1` is still NO-GO.
+
 ## [0.3.0-alpha.2] - 2026-08-04
 
 ### Added
@@ -73,7 +89,8 @@
 - 문장, 진단 결과, 텔레메트리를 전송하지 않는 오프라인 경계를 테스트로 고정
 - 외부 corpus를 평가하기 전 라이선스, 출처, SHA-256, 독립 검토 기록을 검증
 
-[Unreleased]: https://github.com/binibinibin123/geullint/compare/v0.3.0-alpha.2...HEAD
+[Unreleased]: https://github.com/binibinibin123/geullint/compare/v0.4.0-beta.1...HEAD
+[0.4.0-beta.1]: https://github.com/binibinibin123/geullint/releases/tag/v0.4.0-beta.1
 [0.3.0-alpha.2]: https://github.com/binibinibin123/geullint/releases/tag/v0.3.0-alpha.2
 [0.3.0-alpha.1]: https://github.com/binibinibin123/geullint/releases/tag/v0.3.0-alpha.1
 [0.2.0-alpha.1]: https://github.com/binibinibin123/geullint/releases/tag/v0.2.0-alpha.1

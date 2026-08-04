@@ -36,10 +36,10 @@ test("ships structured bug, feature, and rule issue forms", () => {
   assert.match(config, /SECURITY\.md/u);
 });
 
-test("ships machine-readable citation metadata for the curated alpha", () => {
+test("ships machine-readable citation metadata for the beta release", () => {
   const citation = readFileSync("CITATION.cff", "utf8");
   assert.match(citation, /^cff-version:\s*1\.2\.0$/mu);
-  assert.match(citation, /^version:\s*0\.3\.0-alpha\.2$/mu);
+  assert.match(citation, /^version:\s*0\.4\.0-beta\.1$/mu);
   assert.match(citation, /^license:\s*MIT$/mu);
   assert.match(
     citation,

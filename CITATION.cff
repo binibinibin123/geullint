@@ -4,8 +4,8 @@ title: "GeulLint: an offline Korean grammar and spelling linter"
 type: software
 authors:
   - name: "GeulLint contributors"
-version: 0.3.0-alpha.2
-date-released: 2026-08-04
+version: 0.4.0-beta.1
+date-released: 2026-08-05
 repository: "https://github.com/binibinibin123/geullint"
 url: "https://binibinibin123.github.io/geullint/"
 license: MIT
@@ -18,4 +18,4 @@ keywords:
   - WebAssembly
 abstract: >-
   GeulLint is an open-source, fully offline Korean grammar and spelling
-  linter with a curated alpha rule core for command-line, editor, and browser use.
+  linter with a curated rule core for command-line, editor, and browser use.
