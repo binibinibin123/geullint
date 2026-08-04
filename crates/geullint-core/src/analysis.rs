@@ -1,6 +1,9 @@
 use crate::{MorphToken, SourceKind, TextRange, is_hangul_syllable, source_ranges};
 use serde::Serialize;
 
+#[path = "analysis/lattice.rs"]
+pub mod lattice;
+
 #[cfg(feature = "morphology")]
 use crate::MorphAnalyzer;
 

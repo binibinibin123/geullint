@@ -5,8 +5,15 @@
 mod analysis;
 mod endings;
 mod matcher;
+mod pipeline;
+mod planner;
+mod policy;
 mod productive;
+mod ranking;
 mod source;
+mod trace;
+
+pub mod api;
 
 use serde::{Deserialize, Serialize};
 use std::{
@@ -17,7 +24,14 @@ use std::{
 use matcher::{LiteralMatcher, MatchBoundary};
 pub(crate) use source::source_ranges;
 
+pub use analysis::lattice::AnalysisLattice;
 pub use analysis::{AnalyzedDocument, AnalyzedWord};
+pub use api::{Candidate, DiagnosticV2, Evidence, RuleContext, Suggestion};
+pub use pipeline::{Pipeline, PipelineOutcome};
+pub use planner::CorrectionPlan;
+pub use policy::FixPolicy;
+pub use ranking::{CandidateScorer, DeterministicScorer};
+pub use trace::{TraceEvent, TraceSink, VecTrace};
 
 /// A half-open UTF-8 byte range in the original source text.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
