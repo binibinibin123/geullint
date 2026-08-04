@@ -122,6 +122,7 @@ jobs:
         working-directory: extensions/vscode-geullint
         run: |
           npm ci
+          npm audit --omit=optional --audit-level=high
           npm run check
           npm test
           npm run build
@@ -241,7 +242,9 @@ jobs:
       - name: Generate an SBOM for the downloadable archive
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
-          file: ${{ steps.archive.outputs.archive }}
+          # Scan the unpacked payload so the SPDX document describes the binary,
+          # notices, and license files rather than only the outer archive.
+          file: release-staging/geullint-v${{ env.RELEASE_VERSION }}-${{ matrix.target_name }}
           format: spdx-json
           output-file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-${{ matrix.target_name }}.spdx.json
           upload-artifact: false
@@ -398,10 +401,13 @@ jobs:
           node ../../scripts/vsix-smoke.mjs $vsix "${{ matrix.target_name }}" "${{ matrix.binary_name }}"
           $hash = (Get-FileHash -Algorithm SHA256 $vsix).Hash.ToLowerInvariant()
           "$hash  $(Split-Path -Leaf $vsix)" | Set-Content -NoNewline "$vsix.sha256"
+          $vsixContents = "../../release-staging/vsix-${{ matrix.target_name }}"
+          Expand-Archive -Path $vsix -DestinationPath $vsixContents -Force
       - name: Generate a VSIX SBOM
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
-          file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.vsix
+          # Scan the VSIX payload instead of treating the zip as one opaque file.
+          file: release-staging/vsix-${{ matrix.target_name }}
           format: spdx-json
           output-file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.spdx.json
           upload-artifact: false

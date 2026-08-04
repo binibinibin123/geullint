@@ -4,6 +4,24 @@
 
 ## [Unreleased]
 
+## [0.3.0-alpha.2] - 2026-08-04
+
+### Added
+
+- Expanded independent regression coverage for common spelling, dependent-noun spacing, and particle allomorph suggestions.
+- Added an installable offline playground shell with a manifest and service-worker cache for cold reloads.
+
+### Changed
+
+- The browser demo now defaults to conservative safe fixes, keeps review suggestions opt-in, shows all catalogue rules, and offers undo before replacing input.
+- Release SBOM jobs scan unpacked payloads so SPDX output describes the files users receive.
+- Added Dependabot and CodeQL configuration for ongoing repository maintenance.
+
+### Fixed
+
+- Particle suggestions now preserve the complete Korean word instead of returning a truncated prefix.
+- Added audited lexical and spacing variants for `데이타`, `설레임`, `내노라하는`, `끝낼수`, `올것`, `만난적`, and `알수없다`.
+
 ## [0.3.0-alpha.1] - 2026-08-02
 
 ### Added
@@ -55,6 +73,7 @@
 - 문장, 진단 결과, 텔레메트리를 전송하지 않는 오프라인 경계를 테스트로 고정
 - 외부 corpus를 평가하기 전 라이선스, 출처, SHA-256, 독립 검토 기록을 검증
 
-[Unreleased]: https://github.com/binibinibin123/geullint/compare/v0.3.0-alpha.1...HEAD
+[Unreleased]: https://github.com/binibinibin123/geullint/compare/v0.3.0-alpha.2...HEAD
+[0.3.0-alpha.2]: https://github.com/binibinibin123/geullint/releases/tag/v0.3.0-alpha.2
 [0.3.0-alpha.1]: https://github.com/binibinibin123/geullint/releases/tag/v0.3.0-alpha.1
 [0.2.0-alpha.1]: https://github.com/binibinibin123/geullint/releases/tag/v0.2.0-alpha.1

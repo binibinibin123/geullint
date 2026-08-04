@@ -1,4 +1,4 @@
-# GeulLint 규칙 113개
+# GeulLint 규칙 116개
 
 > 이 파일은 공개 규칙 카탈로그에서 재현 가능하게 생성됩니다.
 
@@ -1357,3 +1357,39 @@
 - 기본 활성화: `true`
 - 프로필: `default`, `strict`, `editorial`
 - 예: `웹부라우저` → `웹 브라우저`
+
+<a id="spelling.lexical.deita"></a>
+## `spelling.lexical.deita` — 데이터 표기
+
+‘데이타’는 ‘데이터’로 씁니다.
+
+- 분류: `spelling`
+- 신뢰도: `high`
+- 수정 안전도: `safe`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `데이타` → `데이터`
+
+<a id="spelling.lexical.seolreim"></a>
+## `spelling.lexical.seolreim` — 설렘 표기
+
+명사 ‘설렘’의 표기를 확인합니다.
+
+- 분류: `spelling`
+- 신뢰도: `high`
+- 수정 안전도: `safe`
+- 기본 활성화: `true`
+- 프로필: `default`, `strict`, `editorial`
+- 예: `설레임` → `설렘`
+
+<a id="spelling.lexical.barem"></a>
+## `spelling.lexical.barem` — 바람 표기 검토
+
+문맥에 따라 ‘바램’을 ‘바람’으로 고치는지 검토합니다.
+
+- 분류: `spelling`
+- 신뢰도: `medium`
+- 수정 안전도: `review`
+- 기본 활성화: `false`
+- 프로필: `strict`, `editorial`
+- 예: `바램` → `바람`

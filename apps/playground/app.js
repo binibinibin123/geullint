@@ -15,6 +15,7 @@ const correctedOutput = document.querySelector("#corrected-output");
 const correctionStatus = document.querySelector("#correction-status");
 const copyCorrection = document.querySelector("#copy-correction");
 const applyCorrection = document.querySelector("#apply-correction");
+const undoCorrection = document.querySelector("#undo-correction");
 const includeReviewCorrections = document.querySelector("#include-review-corrections");
 const ruleSearch = document.querySelector("#rule-search");
 const ruleList = document.querySelector("#rule-list");
@@ -22,9 +23,9 @@ const ruleCount = document.querySelector("#rule-count");
 
 const samples = [
   "안녕하세용 감사해용 왠만하면 돼게 할려고 하였다.",
-  "오늘이 몇일이지? 일이 되서 할려고 책를 봤다.",
-  "github actions에서 데이타를 확인하고 결과를 다시 재검토했다.",
-  "공공 기관의 개인 정보 처리 방침을 사전에 미리 읽어 주세요.",
+  "오늘이 몇일이지? 일이 되서 끝낼수 있는지 확인했다.",
+  "회의 자료 데이타를 확인하고 올것 같다고 말했다.",
+  "결과를 알수없다. 만난적 있는 사람에게 물었다.",
 ];
 const worker = new Worker("./worker.js", { type: "module" });
 let requestNumber = 0;
@@ -35,6 +36,8 @@ let currentCopy;
 let correctionState = "correctionLoading";
 let requestedText = "";
 let latestCorrection;
+let undoText;
+const initialText = editor.value;
 
 export function createRuleIndex(catalog) {
   return catalog.rules.map((rule) => ({
@@ -83,6 +86,11 @@ function invalidateCorrection() {
   setCorrectionState("correctionNeedsScan");
 }
 
+function rememberBeforeOverwrite() {
+  undoText = editor.value;
+  undoCorrection.disabled = false;
+}
+
 function renderCorrection(originalText, fixedText, reviewFixedText, diagnostics) {
   latestCorrection = { originalText, fixedText, reviewFixedText, diagnostics };
   const includesReview = includeReviewCorrections.checked
@@ -125,7 +133,12 @@ function renderDiagnostics(diagnostics) {
   results.replaceChildren();
   findingCount.textContent = `${diagnostics.length}건 발견`;
   if (diagnostics.length === 0) {
-    setMessage("empty", "좋습니다. 현재 프로필에서 고칠 표현을 찾지 못했습니다.");
+    setMessage(
+      "empty",
+      editor.value.trim()
+        ? (currentCopy?.noSupportedFindings || "현재 프로필에서 고칠 표현을 찾지 못했습니다.")
+        : (currentCopy?.emptyInput || "검사할 문장을 입력하세요."),
+    );
     return;
   }
 
@@ -150,6 +163,7 @@ function renderDiagnostics(diagnostics) {
       apply.type = "button";
       apply.textContent = `${diagnostic.original} → ${diagnostic.suggestions[0]}`;
       apply.addEventListener("click", () => {
+        rememberBeforeOverwrite();
         editor.value = replaceUtf8Range(
           editor.value,
           diagnostic.range,
@@ -167,8 +181,7 @@ function renderDiagnostics(diagnostics) {
 function renderRuleList() {
   const query = ruleSearch.value.trim().toLocaleLowerCase();
   const matches = indexedRules
-    .filter((entry) => !query || entry.searchable.includes(query))
-    .slice(0, 60);
+    .filter((entry) => !query || entry.searchable.includes(query));
   ruleCount.textContent = query
     ? `${matches.length}${indexedRules.length > matches.length ? "+" : ""} / ${indexedRules.length}`
     : `${indexedRules.length} rules`;
@@ -255,6 +268,7 @@ editor.addEventListener("keydown", (event) => {
 });
 sampleButton.addEventListener("click", () => {
   sampleIndex = (sampleIndex + 1) % samples.length;
+  rememberBeforeOverwrite();
   editor.value = samples[sampleIndex];
   updateCharacterCount();
   scan();
@@ -271,7 +285,17 @@ copyCorrection.addEventListener("click", async () => {
   }
 });
 applyCorrection.addEventListener("click", () => {
+  rememberBeforeOverwrite();
   editor.value = correctedOutput.value;
+  updateCharacterCount();
+  editor.focus();
+  scan();
+});
+undoCorrection.addEventListener("click", () => {
+  if (undoText === undefined) return;
+  editor.value = undoText;
+  undoText = undefined;
+  undoCorrection.disabled = true;
   updateCharacterCount();
   editor.focus();
   scan();
@@ -298,3 +322,14 @@ try {
 currentCopy = applyLocale(language.value);
 setCorrectionState(correctionState);
 updateCharacterCount();
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {
+    // The app remains usable when opened from a local file or a host without SW support.
+  });
+}
+window.addEventListener("beforeunload", (event) => {
+  if (editor.value !== initialText) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+});

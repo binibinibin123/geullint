@@ -1,6 +1,6 @@
 {
   "name": "geullint-darwin-arm64",
-  "version": "0.3.0-alpha.1",
+  "version": "0.3.0-alpha.2",
   "description": "macOS Apple Silicon binary for GeulLint",
   "license": "MIT",
   "repository": {

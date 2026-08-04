@@ -5,6 +5,8 @@ import test from "node:test";
 const index = readFileSync("apps/playground/index.html", "utf8");
 const app = readFileSync("apps/playground/app.js", "utf8");
 const worker = readFileSync("apps/playground/worker.js", "utf8");
+const serviceWorker = readFileSync("apps/playground/sw.js", "utf8");
+const manifest = readFileSync("apps/playground/manifest.webmanifest", "utf8");
 const i18n = readFileSync("apps/playground/i18n.js", "utf8");
 const buildScript = readFileSync("scripts/build-playground.mjs", "utf8");
 const pagesWorkflow = readFileSync(".github/workflows/pages.yml", "utf8");
@@ -33,6 +35,7 @@ test("ships a separate corrected sentence with copy and apply actions", () => {
     "corrected-output",
     "copy-correction",
     "apply-correction",
+    "undo-correction",
     "correction-status",
     "include-review-corrections",
   ]) {
@@ -65,9 +68,17 @@ test("ships a separate corrected sentence with copy and apply actions", () => {
   }
 });
 
-test("starts the human-facing demo with editorial review suggestions visible", () => {
-  assert.match(index, /<option value="editorial" selected>/u);
-  assert.match(index, /id="include-review-corrections" type="checkbox" checked/u);
+test("starts the human-facing demo with conservative safe corrections", () => {
+  assert.match(index, /<option value="default" selected>/u);
+  assert.match(index, /id="include-review-corrections" type="checkbox"/u);
+  assert.doesNotMatch(index, /id="include-review-corrections" type="checkbox" checked/u);
+});
+
+test("protects input edits and renders the complete rule catalogue", () => {
+  assert.match(index, /id="undo-correction"/u);
+  assert.match(app, /beforeunload/u);
+  assert.match(app, /undoText/u);
+  assert.doesNotMatch(app, /\.slice\(0, 60\)/u);
 });
 
 test("sends text only to a local Web Worker and never to a network endpoint", () => {
@@ -106,12 +117,22 @@ test("deploys the generated static playground through GitHub Pages", () => {
   assert.match(index, /href="\.\/app\.css"/);
 });
 
+test("keeps a cold reload usable without a network connection", () => {
+  assert.match(index, /rel="manifest" href="\.\/manifest\.webmanifest"/u);
+  assert.match(app, /serviceWorker\.register\("\.\/sw\.js"/u);
+  assert.match(serviceWorker, /cache\.addAll/iu);
+  assert.match(serviceWorker, /apps\/playground|\.\/app\.js/u);
+  const parsedManifest = JSON.parse(manifest);
+  assert.equal(parsedManifest.start_url, "./index.html");
+  assert.equal(parsedManifest.display, "standalone");
+});
+
 test("advertises only installation paths that exist at release time", () => {
   assert.match(index, /install\.ps1/u);
   assert.match(index, /install\.sh/u);
-  assert.match(index, /geullint\/v0\.3\.0-alpha\.1\/install\.ps1/u);
-  assert.match(index, /geullint\/v0\.3\.0-alpha\.1\/install\.sh/u);
-  assert.match(index, /GEULLINT_VERSION=0\.3\.0-alpha\.1/u);
+  assert.match(index, /geullint\/v0\.3\.0-alpha\.2\/install\.ps1/u);
+  assert.match(index, /geullint\/v0\.3\.0-alpha\.2\/install\.sh/u);
+  assert.match(index, /GEULLINT_VERSION=0\.3\.0-alpha\.2/u);
   assert.doesNotMatch(index, /npm install --save-dev geullint/u);
   assert.doesNotMatch(index, /npmjs\.com\/package\/geullint/u);
 });

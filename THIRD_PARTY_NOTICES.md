@@ -16,7 +16,7 @@ extension runtime. They provide the client side of the connection to the local
 | `semver` | `7.8.5` | ISC | Version-range handling used by the language client. |
 | `minimatch` | `10.2.5` | BlueOak-1.0.0 | Glob matching used by language-client file watchers. |
 | `balanced-match` | `4.0.4` | MIT | Balanced-brace parsing used by the glob matcher. |
-| `brace-expansion` | `5.0.8` | MIT | Brace expansion used by the glob matcher. |
+| `brace-expansion` | `5.0.9` | MIT | Brace expansion used by the glob matcher. |
 
 The license texts distributed with the VSIX are copied verbatim from the
 installed packages:

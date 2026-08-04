@@ -476,11 +476,63 @@ rules:
     replacements:
       - from: "내노라하다"
         to: "내로라하다"
+      - from: "내노라하는"
+        to: "내로라하는"
     examples:
       incorrect:
         - "내노라하다"
       correct:
         - "내로라하다"
+        - "내로라하는"
+  - id: spelling.lexical.deita
+    title: "데이터 표기"
+    description: "권장 표기: ‘데이터’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "‘데이타’는 ‘데이터’로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: "데이타"
+        to: "데이터"
+    examples:
+      incorrect:
+        - "데이타"
+      correct:
+        - "데이터"
+  - id: spelling.lexical.seolreim
+    title: "설렘 표기"
+    description: "권장 표기: ‘설렘’"
+    severity: error
+    confidence: high
+    defaultEnabled: true
+    message: "‘설레임’은 ‘설렘’으로 쓰는 것이 맞습니다."
+    safeFix: true
+    replacements:
+      - from: "설레임"
+        to: "설렘"
+    examples:
+      incorrect:
+        - "설레임"
+      correct:
+        - "설렘"
+  - id: spelling.lexical.barem
+    title: "바람 표기 검토"
+    description: "문맥에 따라 ‘바램’을 ‘바람’으로 고치는지 검토합니다."
+    severity: warning
+    confidence: medium
+    profile: strict
+    defaultEnabled: false
+    message: "문맥상 희망을 뜻한다면 ‘바람’으로 쓰는지 검토하세요."
+    safeFix: false
+    replacements:
+      - from: "바램"
+        to: "바람"
+    examples:
+      incorrect:
+        - "바램"
+      correct:
+        - "바람"
   - id: spelling.lexical.putnaegi
     title: "풋내기 표기"
     description: "권장 표기: ‘풋내기’"

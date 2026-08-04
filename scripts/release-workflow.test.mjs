@@ -228,7 +228,7 @@ test("packages a platform-matched offline language server inside each VSIX", () 
 
 test("attests the archives and VSIX files that users actually download", () => {
   const archiveJob = jobBody(workflow, "build-platform-artifacts");
-  assert.match(archiveJob, /file:\s*\$\{\{\s*steps\.archive\.outputs\.archive\s*\}\}/u);
+  assert.match(archiveJob, /file:\s*release-staging\/geullint-v\$\{\{\s*env\.RELEASE_VERSION\s*\}\}/u);
   assert.match(
     archiveJob,
     /subject-path:\s*\$\{\{\s*steps\.archive\.outputs\.archive\s*\}\}/u,
@@ -237,7 +237,7 @@ test("attests the archives and VSIX files that users actually download", () => {
 
   const vscodeJob = jobBody(workflow, "package-vscode-extension");
   assert.match(vscodeJob, /Get-FileHash[\s\S]*"\$vsix\.sha256"/u);
-  assert.match(vscodeJob, /file:\s*release-artifacts\/.*\.vsix/u);
+  assert.match(vscodeJob, /file:\s*release-staging\/vsix-/u);
   assert.match(vscodeJob, /subject-path:\s*release-artifacts\/.*\.vsix/u);
 
   assert.match(workflow, /attestations: write/u);

@@ -7,6 +7,7 @@
     <meta name="description" content="글을 외부 서버로 보내지 않고 맞춤법·띄어쓰기·문법·문체를 검사하는 오픈소스 한국어 맞춤법 검사기 GeulLint" />
     <title>GeulLint — 오픈소스 한국어 맞춤법 검사기</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2318211c'/%3E%3Cpath d='M15 16h23v8H24v9h13v8H24v7h17' fill='none' stroke='%23dfff38' stroke-width='6'/%3E%3Cpath d='m38 37 5 5 9-13' fill='none' stroke='%23ff5b35' stroke-width='5'/%3E%3C/svg%3E" />
+    <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./app.css" />
   </head>
   <body>
@@ -42,7 +43,7 @@
         <div class="hero-proof" aria-label="제품 수치">
           <div><strong>ALPHA</strong><span data-i18n="metricRules">검증 중인 핵심 규칙</span></div>
           <div><strong>LOCAL</strong><span data-i18n="metricCases">브라우저 안에서 실행</span></div>
-          <div><strong>0</strong><span data-i18n="metricNetwork">네트워크 요청</span></div>
+          <div><strong>0</strong><span data-i18n="metricNetwork">검사 텍스트 외부 전송</span></div>
         </div>
       </section>
 
@@ -62,9 +63,9 @@
           <h2 data-i18n="tuneTitle">점검 강도</h2>
           <label for="profile" data-i18n="profileLabel">규칙 프로필</label>
           <select id="profile">
-            <option value="default">Default — 확실한 오류</option>
+            <option value="default" selected>Default — 확실한 오류</option>
             <option value="strict">Strict — 더 넓은 점검</option>
-            <option value="editorial" selected>Editorial — 문장 다듬기 포함</option>
+            <option value="editorial">Editorial — 문장 다듬기 포함</option>
           </select>
           <label for="source-kind" data-i18n="sourceLabel">입력 형식</label>
           <select id="source-kind">
@@ -87,12 +88,13 @@
           <label class="sr-only" for="corrected-output" data-i18n="correctionLabel">안전한 교정이 반영된 문장</label>
           <textarea id="corrected-output" readonly aria-busy="true"></textarea>
           <label class="review-correction-toggle" for="include-review-corrections">
-            <input id="include-review-corrections" type="checkbox" checked />
+            <input id="include-review-corrections" type="checkbox" />
             <span data-i18n="includeReviewCorrections">검토 제안도 교정문에 포함</span>
           </label>
           <div class="correction-actions">
             <button class="correction-action secondary" id="copy-correction" type="button" data-i18n="copyCorrection" disabled>교정문 복사</button>
             <button class="correction-action primary" id="apply-correction" type="button" data-i18n="applyCorrection" disabled>원문에 반영</button>
+            <button class="correction-action secondary" id="undo-correction" type="button" data-i18n="undoCorrection" disabled>원문 복원</button>
           </div>
         </section>
 
@@ -126,11 +128,11 @@
           <p data-i18n="installCopy">Release 체크섬을 검증하는 설치기로 Rust나 API 키 없이 시작하세요.</p>
         </div>
         <pre><code><span># Windows PowerShell</span>
-$env:GEULLINT_VERSION='0.3.0-alpha.1'
-irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.ps1 | iex
+$env:GEULLINT_VERSION='0.3.0-alpha.2'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.ps1 | iex
 
 <span># macOS / Linux</span>
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.sh | GEULLINT_VERSION=0.3.0-alpha.1 sh</code></pre>
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.sh | GEULLINT_VERSION=0.3.0-alpha.2 sh</code></pre>
         <div class="cta-row">
           <a class="cta primary" href="https://github.com/binibinibin123/geullint#30초-시작" data-i18n="installerButton">설치 안내</a>
           <a class="cta" href="https://github.com/binibinibin123/geullint/releases" data-i18n="releaseButton">GitHub Release</a>

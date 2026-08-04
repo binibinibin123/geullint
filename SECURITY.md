@@ -21,7 +21,10 @@ GeulLint는 입력 문서를 로컬에서만 처리합니다. 그럼에도 설�
 공식 Release는 SHA-256 체크섬, SPDX SBOM, GitHub artifact attestation을 제공합니다. 설치 스크립트는 아카이브를 풀기 전에 체크섬을 확인합니다.
 
 ```bash
-gh attestation verify PATH/TO/ARTIFACT -R binibinibin123/geullint
+gh attestation verify PATH/TO/ARTIFACT \
+  -R binibinibin123/geullint \
+  --predicate-type https://spdx.dev/Document/v2.3 \
+  --signer-workflow binibinibin123/geullint/.github/workflows/release.yml
 ```
 
 GeulLint 코어와 playground는 진단을 위해 네트워크 요청을 하지 않습니다. 이 경계가 깨지는 동작, 텍스트 유출, 경로 탈출, 안전 수정으로 인한 의도하지 않은 파일 변경, 악성 rule pack 처리 문제는 보안 이슈로 간주합니다.

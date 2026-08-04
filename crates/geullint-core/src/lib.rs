@@ -1014,11 +1014,51 @@ const NATIVE_LITERALS: &[NativeLiteral] = &[
         safe_fix: true,
     },
     NativeLiteral {
+        id: "spacing.dependent-noun.su",
+        severity: Severity::Warning,
+        message: "의존 명사 ‘수’는 앞말과 띄어 씁니다.",
+        from: "끝낼수",
+        to: "끝낼 수",
+        safe_fix: true,
+    },
+    NativeLiteral {
+        id: "spacing.dependent-noun.su",
+        severity: Severity::Warning,
+        message: "의존 명사 ‘수’는 앞말과 띄어 씁니다.",
+        from: "알수없다",
+        to: "알 수 없다",
+        safe_fix: true,
+    },
+    NativeLiteral {
+        id: "spacing.dependent-noun.su",
+        severity: Severity::Warning,
+        message: "의존 명사 ‘수’는 앞말과 띄어 씁니다.",
+        from: "알수 있다",
+        to: "알 수 있다",
+        safe_fix: true,
+    },
+    NativeLiteral {
         id: "spacing.dependent-noun.geot",
         severity: Severity::Warning,
         message: "의존 명사 ‘것’은 앞말과 띄어 씁니다.",
         from: "좋을것 같다",
         to: "좋을 것 같다",
+        safe_fix: true,
+    },
+    NativeLiteral {
+        id: "spacing.dependent-noun.geot",
+        severity: Severity::Warning,
+        message: "의존 명사 ‘것’은 앞말과 띄어 씁니다.",
+        from: "올것 같다",
+        to: "올 것 같다",
+        safe_fix: true,
+    },
+    NativeLiteral {
+        id: "spacing.dependent-noun.geot",
+        severity: Severity::Warning,
+        message: "의존 명사 ‘것’은 앞말과 띄어 씁니다.",
+        from: "될것이다",
+        to: "될 것이다",
         safe_fix: true,
     },
     NativeLiteral {
@@ -1035,6 +1075,22 @@ const NATIVE_LITERALS: &[NativeLiteral] = &[
         message: "의존 명사 ‘적’은 앞말과 띄어 씁니다.",
         from: "본적 있다",
         to: "본 적 있다",
+        safe_fix: true,
+    },
+    NativeLiteral {
+        id: "spacing.dependent-noun.jeok",
+        severity: Severity::Warning,
+        message: "의존 명사 ‘적’은 앞말과 띄어 씁니다.",
+        from: "만난적 있다",
+        to: "만난 적 있다",
+        safe_fix: true,
+    },
+    NativeLiteral {
+        id: "spacing.dependent-noun.jeok",
+        severity: Severity::Warning,
+        message: "의존 명사 ‘적’은 앞말과 띄어 씁니다.",
+        from: "해본적 없다",
+        to: "해본 적 없다",
         safe_fix: true,
     },
     NativeLiteral {
@@ -1424,6 +1480,38 @@ const INSTRUMENTAL_ALLOMORPH_RULE: AllomorphRule = AllomorphRule {
     should_replace: has_non_rieul_final_consonant,
 };
 
+const TOPIC_REVERSE_ALLOMORPH_RULE: AllomorphRule = AllomorphRule {
+    id: "grammar.particle.topic-allomorph",
+    message: "은/는 조사를 앞말의 받침에 맞추세요.",
+    incorrect_particle: "은",
+    correct_particle: "는",
+    should_replace: |character| !has_final_consonant(character),
+};
+
+const OBJECT_REVERSE_ALLOMORPH_RULE: AllomorphRule = AllomorphRule {
+    id: "grammar.particle.object-allomorph",
+    message: "을/를 조사를 앞말의 받침에 맞추세요.",
+    incorrect_particle: "을",
+    correct_particle: "를",
+    should_replace: |character| !has_final_consonant(character),
+};
+
+const COMITATIVE_REVERSE_ALLOMORPH_RULE: AllomorphRule = AllomorphRule {
+    id: "grammar.particle.comitative-allomorph",
+    message: "과/와 조사를 앞말의 받침에 맞추세요.",
+    incorrect_particle: "과",
+    correct_particle: "와",
+    should_replace: |character| !has_final_consonant(character),
+};
+
+const INSTRUMENTAL_REVERSE_ALLOMORPH_RULE: AllomorphRule = AllomorphRule {
+    id: "grammar.particle.instrumental-allomorph",
+    message: "‘으로’는 모음 뒤에서 ‘로’가 됩니다.",
+    incorrect_particle: "으로",
+    correct_particle: "로",
+    should_replace: |character| !has_final_consonant(character),
+};
+
 fn native_diagnostics(
     text: &str,
     document: &AnalyzedDocument,
@@ -1668,6 +1756,30 @@ fn particle_diagnostics(
         config,
         &INSTRUMENTAL_ALLOMORPH_RULE,
     ));
+    diagnostics.extend(reverse_allomorph_diagnostics(
+        text,
+        source_ranges,
+        config,
+        &TOPIC_REVERSE_ALLOMORPH_RULE,
+    ));
+    diagnostics.extend(reverse_allomorph_diagnostics(
+        text,
+        source_ranges,
+        config,
+        &OBJECT_REVERSE_ALLOMORPH_RULE,
+    ));
+    diagnostics.extend(reverse_allomorph_diagnostics(
+        text,
+        source_ranges,
+        config,
+        &COMITATIVE_REVERSE_ALLOMORPH_RULE,
+    ));
+    diagnostics.extend(reverse_allomorph_diagnostics(
+        text,
+        source_ranges,
+        config,
+        &INSTRUMENTAL_REVERSE_ALLOMORPH_RULE,
+    ));
     if !config.is_disabled("grammar.particle.subject-allomorph") {
         for source_range in source_ranges {
             for (relative_start, _) in
@@ -1675,9 +1787,10 @@ fn particle_diagnostics(
             {
                 let start = source_range.start + relative_start;
                 let end = start + '이'.len_utf8();
-                let Some((previous_start, previous)) = text[..start].char_indices().last() else {
+                let Some((_, previous)) = text[..start].char_indices().last() else {
                     continue;
                 };
+                let previous_start = preceding_hangul_word_start(text, start);
                 if is_hangul_syllable(previous)
                     && !has_final_consonant(previous)
                     && is_likely_subject_noun(preceding_hangul_word(text, start))
@@ -1692,7 +1805,7 @@ fn particle_diagnostics(
                             end,
                         },
                         &text[previous_start..end],
-                        &format!("{previous}가"),
+                        &format!("{}가", preceding_hangul_word(text, start)),
                         false,
                     ));
                 }
@@ -1719,9 +1832,10 @@ fn allomorph_diagnostics(
         {
             let start = source_range.start + relative_start;
             let end = start + rule.incorrect_particle.len();
-            let Some((previous_start, previous)) = text[..start].char_indices().last() else {
+            let Some((_, previous)) = text[..start].char_indices().last() else {
                 continue;
             };
+            let previous_start = preceding_hangul_word_start(text, start);
             if is_hangul_syllable(previous)
                 && (rule.should_replace)(previous)
                 && previous.to_string() != rule.incorrect_particle
@@ -1737,10 +1851,60 @@ fn allomorph_diagnostics(
                         end,
                     },
                     &text[previous_start..end],
-                    &format!("{previous}{}", rule.correct_particle),
+                    &format!(
+                        "{}{}",
+                        preceding_hangul_word(text, start),
+                        rule.correct_particle
+                    ),
                     false,
                 ));
             }
+        }
+    }
+    diagnostics
+}
+
+fn reverse_allomorph_diagnostics(
+    text: &str,
+    source_ranges: &[TextRange],
+    config: &LintConfig,
+    rule: &AllomorphRule,
+) -> Vec<Diagnostic> {
+    if config.is_disabled(rule.id) {
+        return Vec::new();
+    }
+
+    let mut diagnostics = Vec::new();
+    for source_range in source_ranges {
+        for (relative_start, _) in
+            text[source_range.start..source_range.end].match_indices(rule.incorrect_particle)
+        {
+            let start = source_range.start + relative_start;
+            let end = start + rule.incorrect_particle.len();
+            let Some(previous) = text[..start].chars().next_back() else {
+                continue;
+            };
+            let noun = preceding_hangul_word(text, start);
+            if !is_likely_particle_noun(noun)
+                || !(rule.should_replace)(previous)
+                || !text[end..].chars().next().is_none_or(is_particle_boundary)
+            {
+                continue;
+            }
+
+            let word_start = preceding_hangul_word_start(text, start);
+            diagnostics.push(native_diagnostic(
+                rule.id,
+                Severity::Warning,
+                rule.message,
+                TextRange {
+                    start: word_start,
+                    end,
+                },
+                &text[word_start..end],
+                &format!("{}{}", noun, rule.correct_particle),
+                false,
+            ));
         }
     }
     diagnostics
@@ -1872,16 +2036,53 @@ fn preceding_hangul_word_start(text: &str, before: usize) -> usize {
 }
 
 fn is_likely_topic_noun(word: &str) -> bool {
-    matches!(
-        word,
-        "책" | "문서" | "파일" | "값" | "글" | "댓글" | "사용자" | "프로젝트" | "코드"
-    )
+    is_likely_particle_noun(word)
 }
 
 fn is_likely_subject_noun(word: &str) -> bool {
     matches!(
         word,
-        "나무" | "사과" | "바다" | "학교" | "의자" | "모자" | "친구"
+        "나무" | "사과" | "바다" | "학교" | "의자" | "모자" | "친구" | "연필" | "동생"
+    )
+}
+
+fn is_likely_particle_noun(word: &str) -> bool {
+    matches!(
+        word,
+        "책" | "연필"
+            | "사과"
+            | "친구"
+            | "동생"
+            | "의자"
+            | "학교"
+            | "나무"
+            | "문서"
+            | "파일"
+            | "값"
+            | "글"
+            | "댓글"
+            | "사용자"
+            | "프로젝트"
+            | "코드"
+            | "자료"
+            | "결과"
+            | "정보"
+            | "문장"
+            | "문제"
+            | "시간"
+            | "회의"
+            | "방법"
+            | "이유"
+            | "작업"
+            | "계획"
+            | "서비스"
+            | "제품"
+            | "기능"
+            | "화면"
+            | "규칙"
+            | "단어"
+            | "문법"
+            | "검사기"
     )
 }
 

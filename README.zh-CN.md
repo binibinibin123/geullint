@@ -12,7 +12,7 @@
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-f1efe6?labelColor=18211c"></a>
 </p>
 
-<p align="center"><strong>不上传文本的开源韩语拼写与语法检查器</strong><br>在浏览器、VS Code 和终端中检查韩语拼写、空格、语法与文体。文本不会发送到外部服务器。</p>
+<p align="center"><strong>快速、安全的开源韩语拼写检查器</strong><br>无需将文档发送到外部服务器，即可检查拼写、空格、语法和文体。</p>
 
 <p align="center">
   <a href="https://binibinibin123.github.io/geullint/"><strong>立即检查句子 →</strong></a> ·
@@ -33,7 +33,7 @@
 | CI | 自动阻止文档质量回退并生成 SARIF 结果 |
 | 自定义词汇 | 添加用户词典、dictionary overlay 和项目 rule pack |
 
-文本、诊断和遥测不会发送到外部服务。已发布的 alpha 版本是 **v0.3.0-alpha.1**；此仓库的规则目录会持续演进，不以固定的规则数量为目标。
+文本、诊断和遥测不会发送到外部服务。已发布的 alpha 版本是 **v0.3.0-alpha.2**；此仓库的规则目录会持续演进，不以固定的规则数量为目标。
 
 ## 为什么选择 GeulLint
 
@@ -54,22 +54,22 @@ GeulLint 是完全在浏览器、编辑器和终端中**离线**运行的韩语�
 **Windows**
 
 ```powershell
-$env:GEULLINT_VERSION='0.3.0-alpha.1'
-irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.ps1 | iex
+$env:GEULLINT_VERSION='0.3.0-alpha.2'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.ps1 | iex
 geullint .
 ```
 
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.sh | GEULLINT_VERSION=0.3.0-alpha.1 sh
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.sh | GEULLINT_VERSION=0.3.0-alpha.2 sh
 geullint .
 ```
 
 脚本会验证 GitHub Release 的 SHA-256。执行前可阅读 [install.ps1](install.ps1) 或 [install.sh](install.sh)。如果已经安装 Rust：
 
 ```bash
-cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.1 --locked geullint-cli
+  cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.2 --locked geullint-cli
 ```
 
 手动压缩包是 [GitHub Releases](https://github.com/binibinibin123/geullint/releases)提供的 fallback。

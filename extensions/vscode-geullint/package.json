@@ -2,7 +2,7 @@
   "name": "geullint",
   "displayName": "GeulLint",
   "description": "완전 오프라인 한국어 맞춤법·문법 린터",
-  "version": "0.3.0-alpha.1",
+  "version": "0.3.0-alpha.2",
   "publisher": "geullint",
   "license": "MIT",
   "icon": "icon.png",

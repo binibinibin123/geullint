@@ -12,7 +12,7 @@ const runtimeDependencies = [
   },
   {
     name: "brace-expansion",
-    version: "5.0.8",
+    version: "5.0.9",
     license: "MIT",
     sourceLicense: "LICENSE",
     bundledLicense: "MIT-brace-expansion.txt",

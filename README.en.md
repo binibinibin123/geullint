@@ -12,7 +12,7 @@
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-f1efe6?labelColor=18211c"></a>
 </p>
 
-<p align="center"><strong>Open-source Korean spelling and grammar checker that keeps your writing local</strong><br>Check spelling, spacing, grammar, and style in your browser, VS Code, or terminal. Your writing is never sent to an external server.</p>
+<p align="center"><strong>Fast, private, open-source Korean spelling checker</strong><br>Check spelling, spacing, grammar, and style without sending your document to an external server.</p>
 
 <p align="center">
   <a href="https://binibinibin123.github.io/geullint/"><strong>Check a sentence now →</strong></a> ·
@@ -33,7 +33,7 @@ Check a sentence on the web, then bring the same checker into your editor, termi
 | CI | Prevents document-quality regressions and produces SARIF results |
 | Your vocabulary | Adds a user dictionary, dictionary overlays, and project rule packs |
 
-Writing, diagnostics, and telemetry are never sent to an external service. The published alpha release is **v0.3.0-alpha.1**; this repository's rule catalogue evolves independently of a fixed rule-count target.
+Writing, diagnostics, and telemetry are never sent to an external service. The published alpha release is **v0.3.0-alpha.2**; this repository's rule catalogue evolves independently of a fixed rule-count target.
 
 ## Why GeulLint
 
@@ -54,22 +54,22 @@ Try the [local WebAssembly playground](https://binibinibin123.github.io/geullint
 **Windows**
 
 ```powershell
-$env:GEULLINT_VERSION='0.3.0-alpha.1'
-irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.ps1 | iex
+$env:GEULLINT_VERSION='0.3.0-alpha.2'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.ps1 | iex
 geullint .
 ```
 
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.sh | GEULLINT_VERSION=0.3.0-alpha.1 sh
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.sh | GEULLINT_VERSION=0.3.0-alpha.2 sh
 geullint .
 ```
 
 The scripts verify the SHA-256 checksum of the matching GitHub Release. Read [install.ps1](install.ps1) or [install.sh](install.sh) before running it. With a Rust toolchain:
 
 ```bash
-cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.1 --locked geullint-cli
+  cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.2 --locked geullint-cli
 ```
 
 Manual archives on [GitHub Releases](https://github.com/binibinibin123/geullint/releases) are the fallback.

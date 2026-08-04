@@ -22,8 +22,8 @@
 </p>
 
 <p align="center">
-  <strong>글을 밖으로 보내지 않는 오픈소스 한국어 맞춤법 검사기</strong><br>
-  맞춤법·띄어쓰기·문법·문체를 브라우저, VS Code, 터미널에서 검사합니다. 문장은 외부 서버로 전송되지 않습니다.
+  <strong>빠르고 안전한 오픈소스 한국어 맞춤법 검사기</strong><br>
+  문서를 외부 서버로 보내지 않고 맞춤법, 띄어쓰기, 문법, 문체를 검사합니다.
 </p>
 
 <p align="center">
@@ -49,7 +49,7 @@
 | CI에서 품질 지키기 | 문서 품질 저하를 자동 차단하고 SARIF 결과 생성 |
 | 내 표현에 맞추기 | 사용자 사전, dictionary overlay, 프로젝트 rule pack 추가 |
 
-현재 공개 버전은 **v0.3.0-alpha.1**입니다. 문장·진단·텔레메트리는 외부로 전송하지 않습니다.
+현재 공개 버전은 **v0.3.0-alpha.2**입니다. 문장·진단·텔레메트리는 외부로 전송하지 않습니다.
 
 ## 무엇이 다른가
 
@@ -70,25 +70,25 @@ GeulLint는 브라우저·편집기·터미널에서 **완전히 로컬로** 실
 
 ### Windows
 
-아래 명령은 v0.3.0-alpha.1 설치 스크립트와 Release를 함께 고정하고, 체크섬을 검증한 뒤 사용자 디렉터리에 설치합니다. 실행 전 [원문](install.ps1)을 읽을 수 있습니다.
+아래 명령은 v0.3.0-alpha.2 설치 스크립트와 Release를 함께 고정하고, 체크섬을 검증한 뒤 사용자 디렉터리에 설치합니다. 실행 전 [원문](install.ps1)을 읽을 수 있습니다.
 
 ```powershell
-$env:GEULLINT_VERSION='0.3.0-alpha.1'
-irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.ps1 | iex
+$env:GEULLINT_VERSION='0.3.0-alpha.2'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.ps1 | iex
 geullint .
 ```
 
 ### macOS · Linux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.sh | GEULLINT_VERSION=0.3.0-alpha.1 sh
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.sh | GEULLINT_VERSION=0.3.0-alpha.2 sh
 geullint .
 ```
 
 Rust 도구 체인이 이미 있다면 소스에서 고정 설치할 수도 있습니다.
 
 ```bash
-cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.1 --locked geullint-cli
+  cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.2 --locked geullint-cli
 ```
 
 수동 압축 파일은 [GitHub Releases](https://github.com/binibinibin123/geullint/releases)의 대안(fallback)입니다. 사용자가 개별 실행 파일을 찾아 설치하는 방식을 기본 경로로 삼지 않습니다.
@@ -140,7 +140,7 @@ CI에서는 설치 후 `geullint .` 한 줄을 실행하면 됩니다. 디렉터
 | 문체 | 중복·군더더기·편집 제안 |
 | 문장부호 | 쉼표 중복과 문장 부호 앞뒤 공백 |
 
-현재 카탈로그는 113개 규칙입니다. 새 문맥 규칙 11개는 서로 다른 오류 문장 33개와 정상·고유명사 반례 56개를 통과했고, 출시 안전 회귀 144개와 KoLLA v2 정상 제어 문장 249개에서도 확인된 오탐은 0건이었습니다. 모두 제한된 회귀·정상 표본이므로 일반 정밀도나 재현율로 홍보하지 않습니다. 재현 명령과 원본 해시는 [알파 품질 보고서](docs/quality-report-v0.3.0-alpha.1.md)에 공개합니다.
+현재 카탈로그는 116개 규칙입니다. 새 표기·띄어쓰기·조사 회귀는 서로 다른 오류 문장과 정상 반례를 통과했습니다. 저장소 소유 회귀 표본은 제한된 표본이므로 일반 정밀도나 재현율로 홍보하지 않습니다. 재현 명령과 한계는 [알파 품질 보고서](docs/quality-report-v0.3.0-alpha.2.md)에 공개합니다.
 
 - [현재 규칙 전체 목록](docs/rules.md)
 - [규칙 품질 게이트](docs/quality.md)
