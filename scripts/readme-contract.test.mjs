@@ -66,7 +66,7 @@ test("keeps the four README translations aligned", () => {
     assert.match(source, /assets\/screenshots\/vscode\.png/u, `${path} shows the editor`);
     assert.match(source, /binibinibin123\.github\.io\/geullint/u, `${path} links the live playground`);
     assert.match(source, /github\.com\/binibinibin123\/geullint\/releases/u, `${path} links releases`);
-    assert.match(source, /0\.3\.0-alpha\.2/u, `${path} identifies the alpha release`);
+    assert.match(source, /0\.4\.0-beta\.1/u, `${path} identifies the beta release`);
     assert.match(source, /Windows/iu, `${path} documents Windows`);
     assert.match(source, /macOS/iu, `${path} documents macOS`);
     assert.match(source, /Linux/iu, `${path} documents Linux`);
@@ -101,11 +101,11 @@ test("keeps archives behind installers and records optional npm publishing", () 
   assert.match(readme, /fallback|대안/i);
   assert.match(distributionGuide, /NPM_TOKEN/);
   assert.match(distributionGuide, /npm is optional/i);
-  assert.match(distributionGuide, /v0\.3\.0-alpha\.2/);
+  assert.match(distributionGuide, /v0\.4\.0-beta\.1/);
 });
 
 test("documents an externally verifiable SBOM attestation command", () => {
-  assert.match(distributionGuide, /geullint-v0\.3\.0-alpha\.2-vscode-win32-x64\.vsix/);
+  assert.match(distributionGuide, /geullint-v0\.4\.0-beta\.1-vscode-win32-x64\.vsix/);
   assert.match(
     distributionGuide,
     /--predicate-type\s+https:\/\/spdx\.dev\/Document\/v2\.3/u,

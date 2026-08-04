@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://github.com/binibinibin123/geullint/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/binibinibin123/geullint/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/binibinibin123/geullint/releases"><img alt="Release" src="https://img.shields.io/github/v/release/binibinibin123/geullint?display_name=tag&include_prereleases&sort=semver&color=ff5b35"></a>
-  <a href="CHANGELOG.md"><img alt="Early alpha" src="https://img.shields.io/badge/status-early_alpha-dfff38?labelColor=18211c"></a>
+  <a href="CHANGELOG.md"><img alt="Early beta" src="https://img.shields.io/badge/status-early_beta-dfff38?labelColor=18211c"></a>
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-f1efe6?labelColor=18211c"></a>
 </p>
 
@@ -33,7 +33,7 @@
 | CI | 文書品質の低下を自動で防ぎ、SARIF結果を生成 |
 | 自分の語彙 | ユーザー辞書、dictionary overlay、プロジェクトrule packを追加 |
 
-文章・診断・テレメトリーを外部サービスへ送信しません。公開済みのアルファ版は**v0.3.0-alpha.2**ですが、このリポジトリのルールカタログは固定の件数目標とは独立して更新されます。
+文章・診断・テレメトリーを外部サービスへ送信しません。公開済みのベータ版は**v0.4.0-beta.1**ですが、このリポジトリのルールカタログは固定の件数目標とは独立して更新されます。
 
 ## 特徴
 
@@ -54,22 +54,22 @@ GeulLintはブラウザー、エディター、ターミナルで完全に**オ�
 **Windows**
 
 ```powershell
-$env:GEULLINT_VERSION='0.3.0-alpha.2'
-irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.ps1 | iex
+$env:GEULLINT_VERSION='0.4.0-beta.1'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.4.0-beta.1/install.ps1 | iex
 geullint .
 ```
 
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.sh | GEULLINT_VERSION=0.3.0-alpha.2 sh
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.4.0-beta.1/install.sh | GEULLINT_VERSION=0.4.0-beta.1 sh
 geullint .
 ```
 
 スクリプトはGitHub ReleaseのSHA-256を検証します。実行前に[install.ps1](install.ps1)または[install.sh](install.sh)を確認できます。Rust環境がある場合：
 
 ```bash
-  cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.2 --locked geullint-cli
+  cargo install --git https://github.com/binibinibin123/geullint --tag v0.4.0-beta.1 --locked geullint-cli
 ```
 
 手動アーカイブは[GitHub Releases](https://github.com/binibinibin123/geullint/releases)のfallbackです。

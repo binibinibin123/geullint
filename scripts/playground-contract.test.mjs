@@ -180,9 +180,9 @@ test("ships an opt-in browser E2E contract for offline correction workflows", ()
 test("advertises only installation paths that exist at release time", () => {
   assert.match(index, /install\.ps1/u);
   assert.match(index, /install\.sh/u);
-  assert.match(index, /geullint\/v0\.3\.0-alpha\.2\/install\.ps1/u);
-  assert.match(index, /geullint\/v0\.3\.0-alpha\.2\/install\.sh/u);
-  assert.match(index, /GEULLINT_VERSION=0\.3\.0-alpha\.2/u);
+  assert.match(index, /geullint\/v0\.4\.0-beta\.1\/install\.ps1/u);
+  assert.match(index, /geullint\/v0\.4\.0-beta\.1\/install\.sh/u);
+  assert.match(index, /GEULLINT_VERSION=0\.4\.0-beta\.1/u);
   assert.doesNotMatch(index, /npm install --save-dev geullint/u);
   assert.doesNotMatch(index, /npmjs\.com\/package\/geullint/u);
 });
