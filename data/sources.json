@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "policy": {
+    "rawCacheDirectory": "data/raw",
+    "neverBundleReviewOnly": true,
+    "hashAlgorithm": "sha256",
+    "maxBytes": 67108864
+  },
+  "sources": [
+    {
+      "id": "kolla-v2-multi-refs",
+      "url": "https://zenodo.org/api/records/16908784/files/KoLLA_multi-refs.m2/content",
+      "recordUrl": "https://zenodo.org/records/16908784",
+      "license": "GPL-3.0-or-later",
+      "licenseUrl": "https://www.gnu.org/licenses/gpl-3.0.html",
+      "sha256": "d848bac8095bf4280e9c8f6bb7ef2733434cf0eb2c2977d34fd4a0eb6c061ed4",
+      "filename": "kolla-v2/KoLLA_multi-refs.m2",
+      "redistributable": false,
+      "role": "human-annotation-review-queue"
+    },
+    {
+      "id": "tatoeba-korean-sentences",
+      "url": "https://downloads.tatoeba.org/exports/per_language/kor/kor_sentences.tsv.bz2",
+      "recordUrl": "https://tatoeba.org/en/downloads",
+      "license": "CC-BY-2.0",
+      "licenseUrl": "https://tatoeba.org/en/terms_of_use#section-6",
+      "sha256": "ad680378d418e22b659fb6de2e34a4e55827e641cae013e01f976c14f6a4ed9d",
+      "filename": "tatoeba/kor_sentences.tsv.bz2",
+      "redistributable": false,
+      "role": "natural-sentence-training-only"
+    },
+    {
+      "id": "nikl-spelling-correction-2021",
+      "url": "https://kli.korean.go.kr/request/corpusRegist.do?lang=en",
+      "recordUrl": "https://kli.korean.go.kr/request/corpusRegist.do?lang=en",
+      "license": "NO-REDISTRIBUTION",
+      "licenseUrl": "https://kli.korean.go.kr/request/corpusRegist.do?lang=en",
+      "sha256": null,
+      "filename": "nikl/spelling-correction-2021.jsonl",
+      "redistributable": false,
+      "access": "manual_authorization",
+      "role": "independent-release-holdout-pending"
+    }
+  ]
+}

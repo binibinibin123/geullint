@@ -1,8 +1,12 @@
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "standard")]
 use geullint_core::{
-    DictionaryOverlay, Engine, LintConfig, RuleMetadata, RulePack, Severity, SourceKind,
-    rule_catalog,
+    ContextRanker, DiagnosticV2, FixSafety, GeulRankSmall, StandardLexicon, StandardPipeline,
+};
+use geullint_core::{
+    Diagnostic as CoreDiagnostic, DictionaryOverlay, Engine, LintConfig, RuleMetadata, RulePack,
+    Severity, SourceKind, rule_catalog,
 };
 use std::collections::HashMap;
 use tokio::sync::RwLock;
@@ -14,8 +18,8 @@ use tower_lsp_server::{
         CodeActionProviderCapability, CodeActionResponse, Diagnostic, DiagnosticSeverity,
         DidChangeConfigurationParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
         DidOpenTextDocumentParams, InitializeParams, InitializeResult, InitializedParams,
-        NumberOrString, Position, Range, ServerCapabilities, TextDocumentSyncCapability,
-        TextDocumentSyncKind, TextEdit, Uri, WorkspaceEdit,
+        NumberOrString, Position, Range, ServerCapabilities, TextDocumentContentChangeEvent,
+        TextDocumentSyncCapability, TextDocumentSyncKind, TextEdit, Uri, WorkspaceEdit,
     },
 };
 
@@ -39,22 +43,66 @@ struct DocumentState {
 #[derive(Debug)]
 struct Backend {
     client: Client,
-    engine: RwLock<Engine>,
+    engine: RwLock<ConfiguredEngine>,
     documents: RwLock<HashMap<Uri, DocumentState>>,
+}
+
+#[derive(Debug)]
+enum ConfiguredEngine {
+    Compact(Engine),
+    #[cfg(feature = "standard")]
+    Standard(StandardPipeline),
+    #[cfg(feature = "standard")]
+    Context(StandardPipeline),
+}
+
+impl ConfiguredEngine {
+    fn check(&self, text: &str, source_kind: SourceKind) -> Vec<CoreDiagnostic> {
+        match self {
+            Self::Compact(engine) => engine.check(text, source_kind),
+            #[cfg(feature = "standard")]
+            Self::Standard(pipeline) | Self::Context(pipeline) => pipeline
+                .check(text, source_kind)
+                .iter()
+                .map(legacy_diagnostic_from_v2)
+                .collect(),
+        }
+    }
+}
+
+#[cfg(feature = "standard")]
+fn legacy_diagnostic_from_v2(diagnostic: &DiagnosticV2) -> CoreDiagnostic {
+    CoreDiagnostic {
+        rule_id: diagnostic.rule_id.clone(),
+        severity: diagnostic.severity,
+        message: diagnostic.message.clone(),
+        range: diagnostic.range,
+        original: diagnostic.original.clone(),
+        suggestions: diagnostic
+            .suggestions
+            .iter()
+            .map(|suggestion| suggestion.text.clone())
+            .collect(),
+        safe_fix: diagnostic.safety == FixSafety::Safe,
+    }
 }
 
 impl Backend {
     fn new(client: Client) -> Self {
         Self {
             client,
-            engine: RwLock::new(Engine::new(LintConfig::default())),
+            engine: RwLock::new(ConfiguredEngine::Compact(
+                Engine::new(LintConfig::default()),
+            )),
             documents: RwLock::new(HashMap::new()),
         }
     }
 
     async fn publish(&self, uri: Uri, state: &DocumentState) {
-        let engine = self.engine.read().await.clone();
-        let diagnostics = engine
+        let diagnostics = self
+            .engine
+            .read()
+            .await
             .check(&state.text, state.source_kind)
             .into_iter()
             .map(|diagnostic| {
@@ -129,7 +177,7 @@ impl LanguageServer for Backend {
             server_info: None,
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                    TextDocumentSyncKind::FULL,
+                    TextDocumentSyncKind::INCREMENTAL,
                 )),
                 code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
                 ..ServerCapabilities::default()
@@ -168,12 +216,28 @@ impl LanguageServer for Backend {
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
-        let Some(last_change) = params.content_changes.last() else {
+        if params.content_changes.is_empty() {
+            return;
+        }
+        let previous = self.documents.read().await.get(&uri).cloned();
+        let Some(previous) = previous else {
             return;
         };
+        let text = match apply_content_changes(&previous.text, &params.content_changes) {
+            Ok(text) => text,
+            Err(error) => {
+                self.client
+                    .log_message(
+                        tower_lsp_server::ls_types::MessageType::WARNING,
+                        format!("GeulLint 증분 변경을 적용하지 못했습니다: {error}"),
+                    )
+                    .await;
+                return;
+            }
+        };
         let state = DocumentState {
-            text: last_change.text.clone(),
-            source_kind: source_kind_for_uri(&uri),
+            text,
+            source_kind: previous.source_kind,
             version: params.text_document.version,
         };
         self.documents.write().await.insert(uri.clone(), state);
@@ -269,12 +333,65 @@ fn position_for_byte_offset(text: &str, byte_offset: usize) -> Position {
     )
 }
 
+fn apply_content_changes(
+    original: &str,
+    changes: &[TextDocumentContentChangeEvent],
+) -> std::result::Result<String, String> {
+    let mut text = original.to_owned();
+    for change in changes {
+        let Some(range) = change.range else {
+            text.clone_from(&change.text);
+            continue;
+        };
+        let start = byte_offset_for_position(&text, range.start)
+            .ok_or_else(|| "증분 변경의 시작 위치가 텍스트 범위를 벗어났습니다".to_owned())?;
+        let end = byte_offset_for_position(&text, range.end)
+            .ok_or_else(|| "증분 변경의 끝 위치가 텍스트 범위를 벗어났습니다".to_owned())?;
+        if start > end {
+            return Err("증분 변경의 시작 위치가 끝 위치보다 큽니다".to_owned());
+        }
+        text.replace_range(start..end, &change.text);
+    }
+    Ok(text)
+}
+
+fn byte_offset_for_position(text: &str, position: Position) -> Option<usize> {
+    let mut line = 0_u32;
+    let mut line_start = 0_usize;
+    for (offset, character) in text.char_indices() {
+        if line == position.line {
+            let column =
+                u32::try_from(text[line_start..offset].encode_utf16().count()).unwrap_or(u32::MAX);
+            if column == position.character {
+                return Some(offset);
+            }
+            if column > position.character {
+                return None;
+            }
+        }
+        if character == '\n' {
+            if line == position.line {
+                return (position.character == 0).then_some(offset);
+            }
+            line += 1;
+            line_start = offset + character.len_utf8();
+        }
+    }
+    if line == position.line {
+        let column = u32::try_from(text[line_start..].encode_utf16().count()).unwrap_or(u32::MAX);
+        if column == position.character {
+            return Some(text.len());
+        }
+    }
+    None
+}
+
 #[cfg(test)]
 #[allow(clippy::items_after_test_module)] // Configuration parsers remain below the focused LSP tests.
 mod tests {
     use super::{
-        engine_from_lsp_value, lint_config_from_lsp_value, position_for_byte_offset,
-        quick_fix_for_diagnostic, rule_catalog_response,
+        ConfiguredEngine, apply_content_changes, engine_from_lsp_value, lint_config_from_lsp_value,
+        position_for_byte_offset, quick_fix_for_diagnostic, rule_catalog_response,
     };
     use geullint_core::{Profile, SourceKind};
     use serde_json::json;
@@ -282,7 +399,9 @@ mod tests {
         fs,
         time::{SystemTime, UNIX_EPOCH},
     };
-    use tower_lsp_server::ls_types::{CodeActionKind, Diagnostic, Position, Range, Uri};
+    use tower_lsp_server::ls_types::{
+        CodeActionKind, Diagnostic, Position, Range, TextDocumentContentChangeEvent, Uri,
+    };
 
     #[test]
     fn converts_utf8_offsets_to_utf16_lsp_positions() {
@@ -290,6 +409,36 @@ mod tests {
 
         assert_eq!(position_for_byte_offset(source, 7), Position::new(0, 3));
         assert_eq!(position_for_byte_offset(source, 14), Position::new(1, 1));
+    }
+
+    #[test]
+    fn applies_incremental_utf16_changes_in_order() {
+        let changes = vec![
+            TextDocumentContentChangeEvent {
+                range: Some(Range::new(Position::new(0, 1), Position::new(0, 3))),
+                range_length: None,
+                text: "X".to_owned(),
+            },
+            TextDocumentContentChangeEvent {
+                range: Some(Range::new(Position::new(1, 0), Position::new(1, 1))),
+                range_length: None,
+                text: "Y".to_owned(),
+            },
+        ];
+        assert_eq!(
+            apply_content_changes("a😀\nbc", &changes).unwrap(),
+            "aX\nYc"
+        );
+    }
+
+    #[test]
+    fn rejects_incremental_changes_at_non_boundary_positions() {
+        let changes = vec![TextDocumentContentChangeEvent {
+            range: Some(Range::new(Position::new(0, 2), Position::new(0, 3))),
+            range_length: None,
+            text: "X".to_owned(),
+        }];
+        assert!(apply_content_changes("a😀", &changes).is_err());
     }
 
     #[test]
@@ -414,6 +563,22 @@ mod tests {
         fs::remove_file(path).expect("remove rule pack");
         assert_eq!(diagnostics[0].rule_id, "spelling.project.product-name");
     }
+
+    #[cfg(feature = "standard")]
+    #[test]
+    fn accepts_standard_and_context_engines_from_editor_configuration() {
+        let standard = engine_from_lsp_value(json!({
+            "geullint": { "engine": "standard" }
+        }))
+        .expect("standard engine configuration");
+        assert!(matches!(standard, ConfiguredEngine::Standard(_)));
+
+        let context = engine_from_lsp_value(json!({
+            "geullint": { "engine": "context" }
+        }))
+        .expect("context engine configuration");
+        assert!(matches!(context, ConfiguredEngine::Context(_)));
+    }
 }
 
 fn lint_config_from_lsp_value(value: serde_json::Value) -> Option<LintConfig> {
@@ -421,7 +586,9 @@ fn lint_config_from_lsp_value(value: serde_json::Value) -> Option<LintConfig> {
     serde_json::from_value(settings).ok()
 }
 
-fn engine_from_lsp_value(value: serde_json::Value) -> std::result::Result<Engine, String> {
+fn engine_from_lsp_value(
+    value: serde_json::Value,
+) -> std::result::Result<ConfiguredEngine, String> {
     let settings = value.get("geullint").cloned().unwrap_or(value);
     let mut config = lint_config_from_lsp_value(settings.clone())
         .ok_or_else(|| "기본 설정 형식이 올바르지 않습니다".to_owned())?;
@@ -459,6 +626,38 @@ fn engine_from_lsp_value(value: serde_json::Value) -> std::result::Result<Engine
                 .map_err(|error| format!("규칙 팩 ‘{path}’이 올바르지 않습니다: {error}"))
         })
         .collect::<std::result::Result<Vec<_>, _>>()?;
+    let engine_name = settings
+        .get("engine")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("compact");
+    if engine_name != "compact" {
+        #[cfg(feature = "standard")]
+        {
+            let engine = Engine::with_rule_packs(config, packs)
+                .map_err(|error| format!("rule-pack configuration collides: {error}"))?;
+            let lexicon = StandardLexicon::bundled().map_err(|error| error.to_string())?;
+            let ranker = GeulRankSmall::bundled().map_err(|error| error.clone())?;
+            let pipeline = StandardPipeline::new(engine, lexicon, ranker);
+            return match engine_name {
+                "standard" => Ok(ConfiguredEngine::Standard(pipeline)),
+                "context" => {
+                    let context = ContextRanker::bundled().map_err(|error| error.clone())?;
+                    Ok(ConfiguredEngine::Context(
+                        pipeline.with_context_ranker(context),
+                    ))
+                }
+                other => Err(format!("unknown GeulLint engine: {other}")),
+            };
+        }
+        #[cfg(not(feature = "standard"))]
+        {
+            return Err(
+                "standard/context engine requires geullint-lsp built with the standard feature"
+                    .to_owned(),
+            );
+        }
+    }
     Engine::with_rule_packs(config, packs)
+        .map(ConfiguredEngine::Compact)
         .map_err(|error| format!("규칙 팩 구성이 충돌합니다: {error}"))
 }

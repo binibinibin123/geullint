@@ -56,6 +56,11 @@
           <label class="sr-only" for="editor" data-i18n="editorLabel">검사할 한국어 문장</label>
           <textarea id="editor" spellcheck="false">안녕하세용 감사해용 왠만하면 돼게 할려고 하였다.</textarea>
           <div class="editor-foot"><span id="character-count">0자</span><span><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span></div>
+          <div class="file-actions" aria-label="파일 입출력">
+            <label class="text-button" for="file-input">파일 열기</label>
+            <input id="file-input" type="file" accept=".txt,.md,.markdown,text/plain,text/markdown" hidden />
+            <button class="text-button" id="export-text" type="button">TXT 저장</button>
+          </div>
         </div>
 
         <div class="control-panel panel">
@@ -67,6 +72,12 @@
             <option value="strict">Strict — 더 넓은 점검</option>
             <option value="editorial">Editorial — 문장 다듬기 포함</option>
           </select>
+          <label for="engine" data-i18n="engineLabel">검사 엔진</label>
+          <select id="engine">
+            <option value="standard" selected>Standard — 사전 후보 포함</option>
+            <option value="compact">Compact — 빠른 안전 검사</option>
+            <option value="context">Context — 실험적 문맥 후보</option>
+          </select>
           <label for="source-kind" data-i18n="sourceLabel">입력 형식</label>
           <select id="source-kind">
             <option value="plain_text">Plain text</option>
@@ -76,8 +87,17 @@
             <option value="python">Python comments</option>
             <option value="rust">Rust comments</option>
           </select>
+          <details class="dictionary-control">
+            <summary data-i18n="dictionaryTitle">내 사전</summary>
+            <label class="sr-only" for="dictionary-entry" data-i18n="dictionaryLabel">사전에 추가할 단어</label>
+            <div class="dictionary-form">
+              <input id="dictionary-entry" type="text" autocomplete="off" data-i18n-placeholder="dictionaryPlaceholder" placeholder="제품명·고유명사" />
+              <button class="text-button" id="dictionary-add" type="button" data-i18n="dictionaryAdd">추가</button>
+            </div>
+            <ul id="dictionary-list" class="dictionary-list" aria-live="polite"></ul>
+          </details>
           <button class="scan-button" id="scan" type="button"><span data-i18n="scan">문장 점검</span><b aria-hidden="true">↗</b></button>
-          <p class="privacy-note" data-i18n="privacy">모든 검사는 이 브라우저에서만 실행됩니다. 입력 내용은 저장하거나 전송하지 않습니다.</p>
+          <p class="privacy-note" data-i18n="privacy">모든 검사는 이 브라우저에서만 실행됩니다. 입력 내용은 외부로 전송되지 않으며 이 기기의 로컬 저장소에만 임시 보관합니다.</p>
         </div>
 
         <section class="correction-panel panel" id="correction-panel" aria-labelledby="correction-heading">
@@ -95,6 +115,7 @@
             <button class="correction-action secondary" id="copy-correction" type="button" data-i18n="copyCorrection" disabled>교정문 복사</button>
             <button class="correction-action primary" id="apply-correction" type="button" data-i18n="applyCorrection" disabled>원문에 반영</button>
             <button class="correction-action secondary" id="undo-correction" type="button" data-i18n="undoCorrection" disabled>원문 복원</button>
+            <button class="correction-action secondary" id="redo-correction" type="button" data-i18n="redoCorrection" disabled>다시 적용</button>
           </div>
         </section>
 
@@ -104,6 +125,10 @@
             <span class="finding-count" id="finding-count">준비 중</span>
           </div>
           <div id="results" aria-live="polite" aria-busy="true"><p class="loading" data-i18n="engineLoading">오프라인 엔진을 준비하고 있습니다…</p></div>
+          <div class="feedback-actions" aria-label="피드백 내보내기">
+            <button class="text-button" id="feedback-export" type="button" data-i18n="feedbackExport">익명 피드백 JSONL 저장</button>
+            <a class="text-button" id="feedback-issue" href="https://github.com/binibinibin123/geullint/issues/new?template=bug.yml" target="_blank" rel="noreferrer" data-i18n="feedbackIssue">GitHub 이슈 열기</a>
+          </div>
         </section>
       </section>
 

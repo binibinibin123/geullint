@@ -1,5 +1,11 @@
 {
   "name": "geullint-playground",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "e2e": "node ../../scripts/playground-e2e.spec.mjs --no-build"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
 }

@@ -44,7 +44,7 @@ test("falls back to the PATH command for local development", () => {
   assert.equal(command, "geullint-lsp");
 });
 
-test("declares profile, personal dictionary, local overlay path, and rule pack settings", () => {
+test("declares engine, profile, personal dictionary, local overlay path, and rule pack settings", () => {
   const manifest = JSON.parse(fs.readFileSync("package.json", "utf8")) as {
     contributes: {
       configuration: {
@@ -54,12 +54,15 @@ test("declares profile, personal dictionary, local overlay path, and rule pack s
   };
   const properties = manifest.contributes.configuration.properties;
 
+  assert.deepEqual(properties["geullint.engine"].enum, ["standard", "compact", "context"]);
+  assert.equal(properties["geullint.engine"].default, "standard");
   assert.deepEqual(properties["geullint.profile"].enum, [
     "default",
     "strict",
     "editorial",
   ]);
   assert.equal(properties["geullint.profile"].default, "default");
+  assert.deepEqual(properties["geullint.disabledRules"].default, []);
   assert.deepEqual(properties["geullint.userDictionary"].default, []);
   assert.deepEqual(properties["geullint.dictionaryOverlay"].default, []);
   assert.deepEqual(properties["geullint.dictionaryOverlayPaths"].default, []);

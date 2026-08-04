@@ -84,6 +84,50 @@ gate 결과는 보고서의 `qualityGate`에 `passed`와 실패한 지표·실�
 
 `expectedRuleIds`만 쓴 사례는 규칙 ID와 발생 횟수를 비교합니다. `expectedDiagnostics`를 쓰면 위치·제안도 대조합니다. 수정 후 멱등성과 편집기 UTF-16 위치는 Rust fixture 계약이 별도로 검사합니다.
 
+## 독립 평가 메타데이터
+
+독립 품질 수치에 사용할 행은 다음 필드를 추가합니다.
+
+| 필드 | 설명 |
+| --- | --- |
+| `origin` | `independent_human`, `revision`, `project`, `synthetic` 중 하나. 기본값은 기존 fixture 호환을 위한 `project` |
+| `split` | `train`, `dev`, `release_holdout` 중 하나 |
+| `genre` | 뉴스, 기술, 업무, 교육 등 장르 |
+| `documentId` | 원문 문서의 해시 기반 ID. 문서가 분할 사이에 재사용되면 누수로 판정 |
+| `authorId` | 가능한 경우 작성자 해시. 작성자 단위 분할에 사용 |
+| `errorFamilies` | `spelling`, `spacing`, `grammar` 등 오류 family 목록 |
+
+`origin`이 `project`가 아니면 `genre`, `split`, `documentId`가 필수입니다. `independent_human`과 `revision`의 오류 행만 인간 수정 edit 수에 포함하고, `synthetic` 행은 release gate에서 거부합니다. 평가 보고서의 `dataset`에는 전체 행, 자연 행, 인간 edit, 정상 행, synthetic 행, 장르·문서·split 수가 기록됩니다.
+
+```json
+{
+  "id": "holdout-news-0001",
+  "text": "몇일 뒤에 만나요.",
+  "genre": "news",
+  "origin": "independent_human",
+  "split": "release_holdout",
+  "documentId": "sha256:document-001",
+  "authorId": "sha256:author-001",
+  "errorFamilies": ["spelling"],
+  "expectedDiagnostics": [
+    {
+      "ruleId": "spelling.lexical.myeochil",
+      "range": { "start": 0, "end": 6 },
+      "suggestions": ["며칠"]
+    }
+  ]
+}
+```
+
+분할 사이의 exact text, 동일 documentId·authorId, 자모 5-gram Jaccard 0.85 이상의 near duplicate는 다음 명령으로 검사합니다.
+
+```bash
+node scripts/check-corpus-leakage.mjs --input splits.json
+node scripts/evaluate-quality-slices.mjs --corpus release-holdout.jsonl
+```
+
+누수 검사 결과가 하나라도 있으면 종료 코드 `1`이며 품질 수치를 공개하지 않습니다. 자세한 표본·지표·출시 기준은 [`docs/accuracy-methodology.md`](accuracy-methodology.md)에 기록합니다.
+
 ## 라이선스·출처 manifest
 
 배포하거나 출시 수치에 인용할 외부 코퍼스는 직접 `--corpus`로만 실행하지 말고, 옆에 provenance manifest를 두고 실행합니다. manifest는 로컬 원문 경로·라이선스·원 출처·SHA-256을 묶습니다. CLI는 해시가 맞지 않으면 평가를 시작하지 않고 종료 코드 `2`를 반환합니다.

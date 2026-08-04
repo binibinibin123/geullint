@@ -1,0 +1,22 @@
+{
+  "featureDim": 260,
+  "featureScale": 0.6141732283464567,
+  "format": "geulrank-context-linear-int8-v1",
+  "jsonArtifact": "context-linear-int8.json",
+  "jsonSha256": "c3933772b77e316d20a3c0961296c2c4064e4ac4b2adccf223508e049d83dd1e",
+  "name": "GeulRank-small-context",
+  "onnx": true,
+  "onnxArtifact": "context-linear-int8.onnx",
+  "onnxSha256": "743e3a37cf06375dec922f30c846bb0d1644e994925222abd62099e00c26623c",
+  "runtime": "geulrank-context-linear-int8-v1",
+  "schemaVersion": 1,
+  "training": {
+    "epochs": 24,
+    "releaseHoldoutExcluded": true,
+    "rows": 3649,
+    "source": "KoLLA v2 annotations; training-only, not independently adjudicated gold"
+  },
+  "trainingInputSha256": "8d17926c6e7b4f312e9b569f228a09cd1b693fe51372803f71508dc10b829e8a",
+  "version": "0.1.0-kolla-train",
+  "weightScale": 0.12488756642465952
+}

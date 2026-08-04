@@ -68,6 +68,13 @@ kbd { padding:2px 4px; border:1px solid var(--line); border-radius:3px; backgrou
 .control-panel label,.rule-browser>label { display:block; margin:18px 0 7px; font:700 .68rem ui-monospace,monospace; letter-spacing:.06em; text-transform:uppercase; }
 .control-panel select { width:100%; padding:11px 9px; border:1px solid #637169; border-radius:0; outline:none; background:#25312a; color:white; font:.84rem "Malgun Gothic",sans-serif; }
 .control-panel select:focus { border-color:var(--acid); }
+.dictionary-control { margin:2px 0 20px; border-top:1px solid #637169; border-bottom:1px solid #637169; }
+.dictionary-control summary { padding:12px 0; cursor:pointer; font:800 .72rem ui-monospace,monospace; }
+.dictionary-form { display:flex; gap:7px; padding-bottom:10px; }
+.dictionary-form input { min-width:0; flex:1; padding:10px; border:1px solid #637169; background:#25312a; color:var(--paper); font:.82rem "Malgun Gothic",sans-serif; }
+.dictionary-list { display:flex; flex-wrap:wrap; gap:6px; padding:0 0 12px; margin:0; list-style:none; }
+.dictionary-list li { display:flex; align-items:center; gap:5px; padding:4px 7px; background:var(--acid); color:var(--ink); font-size:.72rem; }
+.dictionary-remove { padding:0 2px; border:0; background:transparent; color:var(--ink); cursor:pointer; font-size:1rem; line-height:1; }
 .scan-button { display:flex; width:100%; justify-content:space-between; align-items:center; margin-top:31px; padding:14px 15px; border:0; background:var(--acid); color:var(--ink); font:900 .85rem ui-monospace,monospace; letter-spacing:.03em; transition:.18s ease; }
 .scan-button:hover:not(:disabled) { background:var(--orange); transform:translate(-2px,-2px); box-shadow:3px 3px 0 var(--paper); }
 .scan-button:disabled { cursor:wait; opacity:.65; }
@@ -107,6 +114,9 @@ kbd { padding:2px 4px; border:1px solid var(--line); border-radius:3px; backgrou
   transform:translate(-2px,-2px); box-shadow:3px 3px 0 var(--orange);
 }
 .correction-action:disabled { cursor:not-allowed; opacity:.42; }
+.feedback-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:18px; padding-top:14px; border-top:1px solid var(--line); }
+.feedback-actions .text-button { color:var(--muted); font-size:.68rem; }
+.feedback-actions .text-button:hover,.feedback-actions .text-button:focus-visible { color:var(--ink); }
 .result-panel { grid-column:1 / -1; min-height:250px; }
 .finding-count { padding:5px 8px; background:var(--acid); color:var(--ink); font:800 .68rem ui-monospace,monospace; }
 .finding { display:grid; grid-template-columns:auto 1fr auto; align-items:start; gap:13px; padding:17px 0; border-bottom:1px solid var(--line); animation:reveal .3s both; }

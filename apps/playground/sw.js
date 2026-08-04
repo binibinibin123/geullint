@@ -1,10 +1,12 @@
-const CACHE_NAME = "geullint-playground-v1";
+const CACHE_NAME = "geullint-playground-v2-standard";
 const SHELL = [
   "./",
   "./index.html",
   "./app.css",
   "./app.js",
   "./corrections.js",
+  "./history.js",
+  "./storage.js",
   "./i18n.js",
   "./worker.js",
   "./manifest.webmanifest",

@@ -133,6 +133,18 @@ jobs:
           node scripts/build-playground.mjs
           node scripts/wasm-runtime-parity.mjs
           node scripts/check-wasm-size.mjs
+      - name: Install locked browser E2E dependencies
+        working-directory: apps/playground
+        run: npm ci --ignore-scripts
+      - name: Audit browser E2E dependencies
+        working-directory: apps/playground
+        run: npm audit --audit-level=high
+      - name: Install Chromium for the offline E2E contract
+        working-directory: apps/playground
+        run: npx playwright install --with-deps chromium
+      - name: Exercise the offline correction workspace
+        working-directory: apps/playground
+        run: GEULLINT_E2E_REQUIRED=1 GEULLINT_E2E_VIEWPORTS=all npm run e2e
       - run: cargo build -p geullint-cli
       - name: Validate the committed Korean safety corpus
         run: >-
@@ -142,6 +154,10 @@ jobs:
           --cli target/debug/geullint
       - name: Evaluate exact diagnostics and corrected text
         run: target/debug/geullint --corpus-manifest corpus/safety-regressions-v1.manifest.json
+      - name: Verify the local training contract and Korean red team
+        run: |
+          PYTHONPATH=training python -m unittest discover -s training/tests -v
+          node scripts/red-team-korean.mjs --cli target/debug/geullint
       - name: Check the minimum supported Rust version
         run: |
           rustup toolchain install 1.88.0 --profile minimal
@@ -383,7 +399,7 @@ jobs:
       - name: Build and bundle the offline language server
         shell: pwsh
         run: |
-          cargo build --release --locked -p geullint-lsp
+          cargo build --release --locked -p geullint-lsp --features standard
           $serverDirectory = "extensions/vscode-geullint/server/${{ matrix.target_name }}"
           New-Item -ItemType Directory -Force -Path $serverDirectory | Out-Null
           Copy-Item "target/release/${{ matrix.binary_name }}" (Join-Path $serverDirectory "${{ matrix.binary_name }}")

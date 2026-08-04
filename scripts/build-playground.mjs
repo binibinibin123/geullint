@@ -20,6 +20,8 @@ execFileSync(
     "build",
     "-p",
     "geullint-wasm",
+    "--features",
+    "standard",
     "--locked",
     "--target",
     "wasm32-unknown-unknown",

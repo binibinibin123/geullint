@@ -1,0 +1,33 @@
+{
+  "artifact": "geulrank-small.int8.json",
+  "bytes": 164,
+  "features": [
+    "bias",
+    "edit_distance",
+    "phonology_distance",
+    "log_frequency",
+    "base_score"
+  ],
+  "format": "geulrank-linear-int8-v1",
+  "license": "MIT",
+  "name": "GeulRank-small",
+  "onnx": false,
+  "runtime": "rust-portable-json",
+  "scale": 0.031496062992125984,
+  "schemaVersion": 1,
+  "sha256": "ff63b880e645bff20ba54e589029869a541c04b36e8cfb65df93eecc528c1478",
+  "training": {
+    "documentDisjoint": true,
+    "releaseHoldoutRequired": true,
+    "status": "deterministic-baseline"
+  },
+  "trainingManifestSha256": "bd84a437f20bb2abac2d4c17ab1ebf6c1400641334e3b515e8cee7064f11cb55",
+  "version": "0.1.0-baseline",
+  "weights": {
+    "base_score": 11,
+    "bias": 127,
+    "edit_distance": -29,
+    "log_frequency": 6,
+    "phonology_distance": -14
+  }
+}

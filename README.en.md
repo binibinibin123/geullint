@@ -105,3 +105,10 @@ GeulLint is a conservative rule-based linter, not a substitute for semantic revi
 Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), the [architecture](ARCHITECTURE.md), and the [roadmap](ROADMAP.md). Report vulnerabilities through [SECURITY.md](SECURITY.md).
 
 MIT licensed. Third-party attributions are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+### Engine choices
+
+The playground and release VSIX use the standard feature by default. Select
+`compact` for the smallest conservative runtime or `context` for the experimental
+local ranker. Candidate suggestions remain Review-only until an independent
+adjudicated holdout supports a Safe promotion.

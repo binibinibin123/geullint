@@ -11,7 +11,7 @@
     {
       "name": "playground WebAssembly JavaScript wrapper",
       "path": "apps/playground/pkg/geullint_wasm.js",
-      "maxRawBytes": 10000,
+      "maxRawBytes": 14000,
       "maxGzipBytes": 2900
     }
   ]

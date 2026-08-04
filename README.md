@@ -17,7 +17,7 @@
   <a href="https://github.com/binibinibin123/geullint/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/binibinibin123/geullint/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/binibinibin123/geullint/releases"><img alt="Release" src="https://img.shields.io/github/v/release/binibinibin123/geullint?display_name=tag&include_prereleases&sort=semver&color=ff5b35"></a>
   <a href="CHANGELOG.md"><img alt="Early alpha" src="https://img.shields.io/badge/status-early_alpha-dfff38?labelColor=18211c"></a>
-  <a href="docs/offline.md"><img alt="Offline first" src="https://img.shields.io/badge/network_requests-0-67ce78?labelColor=18211c"></a>
+  <a href="docs/offline.md"><img alt="Text uploads" src="https://img.shields.io/badge/text_uploads-0-67ce78?labelColor=18211c"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-f1efe6?labelColor=18211c"></a>
 </p>
 
@@ -105,21 +105,29 @@ Rust 도구 체인이 이미 있다면 소스에서 고정 설치할 수도 있�
 ## 실제 출력
 
 ```text
-$ geullint memo.md
+$ geullint check memo.md
 memo.md:1:5: error [spelling.lexical.myeochil] ‘몇일’은 ‘며칠’로 쓰는 것이 맞습니다. → 며칠
 memo.md:2:4: warning [grammar.conjugation.doe-to-dwae] ‘되/돼’의 활용과 준말 표기를 바로잡으세요. → 돼서
 ```
 
 ```bash
-geullint .                                      # 저장소 검사
-geullint --format json docs/                    # JSON
-geullint --format sarif docs/ > geullint.sarif  # SARIF 2.1.0
-geullint rules --format markdown                # 공개 규칙 목록
+geullint check .                                # 저장소 검사
+geullint check --format json docs/              # JSON
+geullint check --format sarif docs/ > geullint.sarif  # SARIF 2.1.0
+geullint check --changed --no-color              # staged·수정·untracked 파일
+geullint check --engine standard --fail-on info  # 후보 생성(검토 전용, all-features 빌드)
+geullint fix --diff docs/                        # 안전한 수정 미리보기
+geullint fix docs/                               # 안전한 수정 적용
+geullint init                                     # 프로젝트 설정 생성
+geullint doctor --format json                    # 설정·사전 점검
+geullint rules --format markdown                 # 공개 규칙 목록
 geullint --disable spelling.lexical.myeochil note.txt
 geullint --dictionary-overlay .geullint.overlay docs/
 geullint --rule-pack .geullint-rules.yaml docs/
 geullint --corpus corpus/seed-v1.jsonl
 geullint --corpus-manifest gold.manifest.json
+geullint feedback export --output feedback.jsonl  # 로컬 피드백 정제
+geullint completion powershell > geullint.ps1
 geullint lsp --stdio
 ```
 
@@ -181,6 +189,9 @@ Release에서 운영체제와 CPU에 맞는 **VSIX**를 받아 VS Code의 `Exten
 - [dictionary overlay](docs/dictionary-overlay.md): 팀 고유명사·표면형 사전
 - [오프라인·개인정보 경계](docs/offline.md)
 - [배포·SBOM·attestation](docs/distribution.md)
+- [모델·사전 배포 경계](docs/model-distribution.md)
+- [개인정보 위협 모델](docs/privacy-threat-model.md)
+- [베타 GO/NO-GO 기준](docs/release-go-no-go.md)
 
 ## 현재 한계
 
@@ -190,6 +201,7 @@ Release에서 운영체제와 CPU에 맞는 **VSIX**를 받아 VS Code의 `Exten
 - matcher contract와 smoke corpus는 엔진 배선 확인용이며 실세계 정확도 수치가 아닙니다.
 - 외부 정상 제어군은 249문장뿐이므로 다양한 장르와 작성자를 대표하지 않습니다.
 - 외부 독립 코퍼스 평가는 라이선스와 검토 기록을 갖춘 데이터가 있을 때만 수치로 공개합니다.
+- `standard` 후보 경로는 현재 사전 근접 후보를 `Review`로만 표시하며 자동 수정하지 않습니다. 독립 holdout 검증 전에는 기본 compact 경로를 유지합니다.
 
 ## 기여
 
@@ -200,3 +212,9 @@ Release에서 운영체제와 CPU에 맞는 **VSIX**를 받아 VS Code의 `Exten
 ## 라이선스
 
 [MIT](LICENSE) © GeulLint contributors. 선택적 `morphology` 기능의 사전·의존성 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 있습니다.
+
+### 엔진 선택
+
+브라우저 플레이그라운드와 릴리스 VSIX는 `standard` 엔진을 기본으로 포함합니다.
+가장 작은 보수적 실행 경로는 `compact`, 실험적 로컬 문맥 랭커는 `context`를
+선택할 수 있습니다. 후보 제안은 독립 검증 전까지 항상 Review로만 표시됩니다.

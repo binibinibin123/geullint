@@ -3,10 +3,24 @@
 //! `GeulLint`'s offline linting core.
 
 mod analysis;
+mod candidate;
+#[cfg(feature = "standard")]
+mod context_ranker;
 mod endings;
+mod lexicon;
 mod matcher;
+mod pipeline;
+mod planner;
+mod policy;
 mod productive;
+mod ranking;
 mod source;
+#[cfg(feature = "standard")]
+mod standard;
+mod style;
+mod trace;
+
+pub mod api;
 
 use serde::{Deserialize, Serialize};
 use std::{
@@ -17,7 +31,28 @@ use std::{
 use matcher::{LiteralMatcher, MatchBoundary};
 pub(crate) use source::source_ranges;
 
+pub use analysis::lattice::AnalysisLattice;
+pub use analysis::phonology::{
+    SyllableFeatures, compose_syllable, decompose_syllable, phonology_distance,
+};
 pub use analysis::{AnalyzedDocument, AnalyzedWord};
+pub use api::{Candidate, DiagnosticV2, Evidence, RuleContext, Suggestion};
+pub use candidate::{
+    CandidateGenerator, GrammarCandidateGenerator, GrammarRule, SpacingCandidateGenerator,
+    SpellingCandidateGenerator,
+};
+#[cfg(feature = "standard")]
+pub use context_ranker::ContextRanker;
+pub use lexicon::{LexiconEntry, LexiconError, StandardLexicon};
+pub use pipeline::{Pipeline, PipelineOutcome};
+pub use planner::CorrectionPlan;
+pub use policy::FixPolicy;
+pub use policy::{PolicyDecision, PolicyThresholds};
+pub use ranking::{CandidateScorer, DeterministicScorer, GeulRankSmall, RankWeights};
+#[cfg(feature = "standard")]
+pub use standard::{StandardPipeline, StandardPipelineError, StandardPipelineOutcome};
+pub use style::{StyleContext, StyleProfile};
+pub use trace::{TraceEvent, TraceSink, VecTrace};
 
 /// A half-open UTF-8 byte range in the original source text.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -339,6 +374,12 @@ impl Engine {
             config,
             rule_pack_rules: Vec::new(),
         }
+    }
+
+    /// Returns the immutable configuration used by this engine.
+    #[must_use]
+    pub const fn config(&self) -> &LintConfig {
+        &self.config
     }
 
     /// Creates an offline linter with validated versioned rule packs.

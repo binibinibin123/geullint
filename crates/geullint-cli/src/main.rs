@@ -1,5 +1,9 @@
 use anyhow::{Context, Result, bail};
-use clap::{Parser, ValueEnum};
+use clap::{Parser, Subcommand, ValueEnum};
+#[cfg(feature = "standard")]
+use geullint_core::{
+    ContextRanker, DiagnosticV2, FixSafety, GeulRankSmall, StandardLexicon, StandardPipeline,
+};
 use geullint_core::{
     Diagnostic, DictionaryOverlay, Engine, LintConfig, Profile, RulePack, Severity, SourceKind,
     TextRange, rule_catalog, rule_metadata,
@@ -10,11 +14,21 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::fs;
-use std::io::{BufRead, BufReader};
+use std::io::{self, BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
-use std::process::ExitCode;
+use std::process::{Command as ProcessCommand, ExitCode};
+use std::thread;
+use std::time::Duration;
 
-#[derive(Debug, Parser)]
+mod cache;
+mod evaluation_v2;
+use evaluation_v2::{
+    CaseMetadata, CorpusOrigin, CorpusSplit, DatasetMetadata, DatasetQualityGate,
+    aggregate_metadata, evaluate_dataset_gate,
+};
+
+#[derive(Clone, Debug, Parser)]
+#[allow(clippy::struct_excessive_bools)]
 #[command(
     name = "geullint",
     about = "완전 오프라인 한국어 맞춤법·문법 린터",
@@ -29,6 +43,11 @@ struct Arguments {
     /// 출력 형식입니다.
     #[arg(long, value_enum, default_value_t = OutputFormat::Human)]
     format: OutputFormat,
+
+    /// 검사 실행 경로입니다. `standard`는 후보를 Review로 표시하고, `context`는 학습형
+    /// 문맥 랭커를 실험적으로 사용하지만 모든 후보를 계속 Review로 표시합니다.
+    #[arg(long, value_enum, default_value_t = EngineMode::Compact)]
+    engine: EngineMode,
 
     /// JSON Lines gold corpus를 평가하고 JSON 정밀도·재현율 보고서를 출력합니다.
     #[arg(
@@ -85,6 +104,33 @@ struct Arguments {
     /// 안전한 수정을 가상 적용하고 남는 진단만 출력합니다.
     #[arg(long, conflicts_with = "fix")]
     fix_dry_run: bool,
+
+    /// 표준 입력의 한 문서만 검사합니다.
+    #[arg(long, conflicts_with_all = ["changed", "watch", "corpus", "corpus_manifest"])]
+    stdin: bool,
+
+    /// Git의 staged·working tree·untracked 변경 중 지원 파일만 검사합니다.
+    #[arg(long, conflicts_with_all = ["stdin", "watch", "corpus", "corpus_manifest"])]
+    changed: bool,
+
+    /// 파일이 바뀔 때마다 다시 검사합니다. Ctrl+C로 종료합니다.
+    #[arg(long, conflicts_with_all = ["stdin", "changed", "corpus", "corpus_manifest"])]
+    watch: bool,
+
+    /// `--fix` 결과를 파일에 쓰지 않고 간단한 diff로 출력합니다.
+    #[arg(long, requires = "fix", conflicts_with = "fix_dry_run")]
+    diff: bool,
+
+    /// 내용 해시를 `.geullint/cache-v1.json`에 저장해 재검사 시간을 줄입니다.
+    #[arg(long, conflicts_with_all = ["stdin", "corpus", "corpus_manifest"])]
+    cache: bool,
+
+    /// ANSI 색상을 사용하지 않는 평문 출력을 고정합니다.
+    ///
+    /// `GeulLint`의 기본 출력도 평문이지만, 이 플래그를 CI·스크립트에 명시하면
+    /// 출력 계약이 색상 코드에 의존하지 않는다는 의도를 드러낼 수 있습니다.
+    #[arg(long)]
+    no_color: bool,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -92,6 +138,14 @@ enum OutputFormat {
     Human,
     Json,
     Sarif,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum EngineMode {
+    Compact,
+    Standard,
+    /// Experimental learned context ranking; all generated candidates remain Review-only.
+    Context,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -117,6 +171,82 @@ struct RulesArguments {
     /// 규칙 카탈로그 출력 형식입니다.
     #[arg(long, value_enum, default_value_t = CatalogFormat::Json)]
     format: CatalogFormat,
+}
+
+#[derive(Debug, Parser)]
+#[command(name = "geullint init", about = "프로젝트 설정 파일을 생성합니다")]
+struct InitArguments {
+    /// 설정 파일을 만들 프로젝트 경로입니다.
+    #[arg(value_name = "PATH", default_value = ".")]
+    path: PathBuf,
+    /// 이미 있는 파일도 기본 설정으로 덮어씁니다.
+    #[arg(long)]
+    force: bool,
+}
+
+#[derive(Debug, Parser)]
+#[command(name = "geullint doctor", about = "로컬 설정과 사전 상태를 점검합니다")]
+struct DoctorArguments {
+    /// 점검할 설정 파일입니다.
+    #[arg(long)]
+    config: Option<PathBuf>,
+    /// 출력 형식입니다.
+    #[arg(long, value_enum, default_value_t = OutputFormat::Human)]
+    format: OutputFormat,
+}
+
+#[derive(Debug, Parser)]
+#[command(name = "geullint dictionary", about = "프로젝트 사전을 관리합니다")]
+struct DictionaryArguments {
+    #[command(subcommand)]
+    command: DictionaryCommand,
+}
+
+#[derive(Debug, Parser)]
+#[command(name = "geullint feedback", about = "로컬 피드백을 내보냅니다")]
+struct FeedbackArguments {
+    #[command(subcommand)]
+    command: FeedbackCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum FeedbackCommand {
+    /// 로컬 JSONL 피드백을 개인정보 필드 없이 복사합니다.
+    Export {
+        /// 입력 JSONL. 기본값은 `.geullint/feedback.jsonl`입니다.
+        #[arg(long)]
+        input: Option<PathBuf>,
+        /// 출력 JSONL. 기본값은 `geullint-feedback.jsonl`입니다.
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+}
+
+#[derive(Debug, Parser)]
+#[command(
+    name = "geullint completion",
+    about = "셸 자동 완성 스크립트를 출력합니다"
+)]
+struct CompletionArguments {
+    #[arg(value_enum)]
+    shell: CompletionShell,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum CompletionShell {
+    Bash,
+    Zsh,
+    Fish,
+    Powershell,
+}
+
+#[derive(Debug, Subcommand)]
+enum DictionaryCommand {
+    /// overlay 파일을 파싱하고 항목 수를 확인합니다.
+    Validate {
+        #[arg(value_name = "PATH")]
+        path: PathBuf,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Default, ValueEnum)]
@@ -245,6 +375,16 @@ struct CorpusCase {
     #[serde(default)]
     provenance_id: Option<String>,
     #[serde(default)]
+    origin: CorpusOrigin,
+    #[serde(default)]
+    split: Option<CorpusSplit>,
+    #[serde(default)]
+    document_id: Option<String>,
+    #[serde(default)]
+    author_id: Option<String>,
+    #[serde(default)]
+    error_families: Vec<String>,
+    #[serde(default)]
     expected_rule_ids: Vec<String>,
     #[serde(default)]
     expected_diagnostics: Vec<CorpusExpectedDiagnostic>,
@@ -292,6 +432,8 @@ struct CorpusQualityGate {
     min_rule_precision_wilson_lower_95: f64,
     min_expected_per_rule: usize,
     required_rule_ids: Vec<String>,
+    #[serde(default)]
+    dataset: DatasetQualityGate,
 }
 
 #[derive(Clone, Serialize)]
@@ -373,6 +515,7 @@ struct CorpusReport {
     normal_cases: usize,
     false_positive_cases: usize,
     specificity: Option<f64>,
+    dataset: DatasetMetadata,
     rule_metrics: Vec<RuleCorpusMetric>,
     #[serde(skip_serializing_if = "Option::is_none")]
     quality_gate: Option<CorpusQualityGateReport>,
@@ -380,13 +523,39 @@ struct CorpusReport {
 }
 
 fn main() -> ExitCode {
-    if std::env::args().nth(1).as_deref() == Some("lsp") {
+    let raw_arguments: Vec<String> = std::env::args().collect();
+    if raw_arguments.get(1).map(String::as_str) == Some("lsp") {
         return run_lsp();
     }
-    if std::env::args().nth(1).as_deref() == Some("rules") {
+    if raw_arguments.get(1).map(String::as_str) == Some("rules") {
         return run_rules();
     }
-    match run(&Arguments::parse()) {
+    if raw_arguments.get(1).map(String::as_str) == Some("init") {
+        return run_init(&raw_arguments);
+    }
+    if raw_arguments.get(1).map(String::as_str) == Some("doctor") {
+        return run_doctor(&raw_arguments);
+    }
+    if raw_arguments.get(1).map(String::as_str) == Some("dictionary") {
+        return run_dictionary(&raw_arguments);
+    }
+    if raw_arguments.get(1).map(String::as_str) == Some("feedback") {
+        return run_feedback(&raw_arguments);
+    }
+    if raw_arguments.get(1).map(String::as_str) == Some("completion") {
+        return run_completion(&raw_arguments);
+    }
+
+    let normalized_arguments = normalize_alias(raw_arguments);
+    let arguments = match Arguments::try_parse_from(normalized_arguments) {
+        Ok(arguments) => arguments,
+        Err(error) => {
+            let exit_code = u8::try_from(error.exit_code()).unwrap_or(2);
+            let _ = error.print();
+            return ExitCode::from(exit_code);
+        }
+    };
+    match run(&arguments) {
         Ok(has_failure) if has_failure => ExitCode::from(1),
         Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
@@ -394,6 +563,112 @@ fn main() -> ExitCode {
             ExitCode::from(2)
         }
     }
+}
+
+fn normalize_alias(mut arguments: Vec<String>) -> Vec<String> {
+    match arguments.get(1).map(String::as_str) {
+        Some("check") => {
+            arguments.remove(1);
+        }
+        Some("fix") => {
+            arguments.remove(1);
+            if !arguments.iter().any(|argument| argument == "--fix") {
+                arguments.push("--fix".to_owned());
+            }
+        }
+        _ => {}
+    }
+    arguments
+}
+
+fn parse_subcommand<T>(arguments: &[String], name: &str) -> Result<T>
+where
+    T: Parser,
+{
+    T::try_parse_from(
+        std::iter::once(format!("geullint {name}")).chain(arguments.iter().skip(2).cloned()),
+    )
+    .map_err(|error| anyhow::anyhow!(error.to_string()))
+}
+
+fn run_init(raw_arguments: &[String]) -> ExitCode {
+    let arguments = match parse_subcommand::<InitArguments>(raw_arguments, "init") {
+        Ok(arguments) => arguments,
+        Err(error) => {
+            eprintln!("geullint init: {error:#}");
+            return ExitCode::from(2);
+        }
+    };
+    match initialize_project(&arguments) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("geullint init: {error:#}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+fn run_doctor(raw_arguments: &[String]) -> ExitCode {
+    let arguments = match parse_subcommand::<DoctorArguments>(raw_arguments, "doctor") {
+        Ok(arguments) => arguments,
+        Err(error) => {
+            eprintln!("geullint doctor: {error:#}");
+            return ExitCode::from(2);
+        }
+    };
+    match diagnose_project(&arguments) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("geullint doctor: {error:#}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+fn run_dictionary(raw_arguments: &[String]) -> ExitCode {
+    let arguments = match parse_subcommand::<DictionaryArguments>(raw_arguments, "dictionary") {
+        Ok(arguments) => arguments,
+        Err(error) => {
+            eprintln!("geullint dictionary: {error:#}");
+            return ExitCode::from(2);
+        }
+    };
+    match validate_dictionary(arguments) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("geullint dictionary: {error:#}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+fn run_feedback(raw_arguments: &[String]) -> ExitCode {
+    let arguments = match parse_subcommand::<FeedbackArguments>(raw_arguments, "feedback") {
+        Ok(arguments) => arguments,
+        Err(error) => {
+            eprintln!("geullint feedback: {error:#}");
+            return ExitCode::from(2);
+        }
+    };
+    match export_feedback(arguments) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("geullint feedback: {error:#}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+fn run_completion(raw_arguments: &[String]) -> ExitCode {
+    let arguments = match parse_subcommand::<CompletionArguments>(raw_arguments, "completion") {
+        Ok(arguments) => arguments,
+        Err(error) => {
+            eprintln!("geullint completion: {error:#}");
+            return ExitCode::from(2);
+        }
+    };
+    print_completion(arguments.shell);
+    ExitCode::SUCCESS
 }
 
 fn run_rules() -> ExitCode {
@@ -488,7 +763,223 @@ fn run_lsp() -> ExitCode {
     }
 }
 
+fn initialize_project(arguments: &InitArguments) -> Result<()> {
+    let project_path = if arguments.path.is_file() {
+        bail!("{} 경로는 디렉터리가 아닙니다", arguments.path.display());
+    } else {
+        &arguments.path
+    };
+    fs::create_dir_all(project_path)
+        .with_context(|| format!("{} 디렉터리를 만들 수 없습니다", project_path.display()))?;
+    let config_path = project_path.join(".geullint.json");
+    if config_path.exists() && !arguments.force {
+        bail!(
+            "{} 파일이 이미 있습니다 (--force로 덮어쓸 수 있습니다)",
+            config_path.display()
+        );
+    }
+    let config = serde_json::to_string_pretty(&LintConfig::default())? + "\n";
+    fs::write(&config_path, config)
+        .with_context(|| format!("{} 파일을 쓸 수 없습니다", config_path.display()))?;
+    let ignore_path = project_path.join(".geullintignore");
+    if !ignore_path.exists() {
+        fs::write(&ignore_path, "target/\nnode_modules/\n.next/\n")
+            .with_context(|| format!("{} 파일을 쓸 수 없습니다", ignore_path.display()))?;
+    }
+    println!(
+        "GeulLint 프로젝트를 초기화했습니다: {}",
+        project_path.display()
+    );
+    println!("  설정: {}", config_path.display());
+    Ok(())
+}
+
+fn diagnose_project(arguments: &DoctorArguments) -> Result<()> {
+    let config_path = arguments
+        .config
+        .clone()
+        .unwrap_or_else(|| PathBuf::from(".geullint.json"));
+    let config_exists = config_path.is_file();
+    let (config_valid, dictionary_entries, config_error) = if config_exists {
+        match fs::read_to_string(&config_path)
+            .with_context(|| format!("{} 파일을 읽을 수 없습니다", config_path.display()))
+            .and_then(|contents| {
+                serde_json::from_str::<LintConfig>(&contents).with_context(|| {
+                    format!("{} 설정 JSON이 올바르지 않습니다", config_path.display())
+                })
+            }) {
+            Ok(config) => (
+                true,
+                config.user_dictionary.len() + config.dictionary_overlay.len(),
+                None,
+            ),
+            Err(error) => (false, 0, Some(error.to_string())),
+        }
+    } else {
+        (false, 0, Some("설정 파일이 없습니다".to_owned()))
+    };
+    let status = if config_valid { "ok" } else { "warning" };
+    match arguments.format {
+        OutputFormat::Json => {
+            let report = serde_json::json!({
+                "version": 1,
+                "status": status,
+                "configuration": {
+                    "path": config_path,
+                    "exists": config_exists,
+                    "valid": config_valid,
+                    "error": config_error,
+                },
+                "dictionary": { "entries": dictionary_entries },
+            });
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        }
+        OutputFormat::Human => {
+            println!("GeulLint doctor: {status}");
+            println!("  configuration: {}", config_path.display());
+            println!("  exists: {config_exists}");
+            println!("  valid: {config_valid}");
+            println!("  dictionary entries: {dictionary_entries}");
+            if let Some(error) = config_error {
+                println!("  note: {error}");
+            }
+        }
+        OutputFormat::Sarif => bail!("doctor에는 --format human 또는 json을 사용하세요"),
+    }
+    Ok(())
+}
+
+fn validate_dictionary(arguments: DictionaryArguments) -> Result<()> {
+    match arguments.command {
+        DictionaryCommand::Validate { path } => {
+            let source = fs::read_to_string(&path)
+                .with_context(|| format!("{} 파일을 읽을 수 없습니다", path.display()))?;
+            let overlay = DictionaryOverlay::parse(&source)
+                .with_context(|| format!("{} overlay 형식이 올바르지 않습니다", path.display()))?;
+            println!(
+                "{}: valid geullint-overlay-v1 ({} entries)",
+                path.display(),
+                overlay.entry_count()
+            );
+        }
+    }
+    Ok(())
+}
+
+fn export_feedback(arguments: FeedbackArguments) -> Result<()> {
+    match arguments.command {
+        FeedbackCommand::Export { input, output } => {
+            let input = input.unwrap_or_else(|| PathBuf::from(".geullint/feedback.jsonl"));
+            let output = output.unwrap_or_else(|| PathBuf::from("geullint-feedback.jsonl"));
+            let source = if input.is_file() {
+                fs::read_to_string(&input)
+                    .with_context(|| format!("{} 피드백을 읽을 수 없습니다", input.display()))?
+            } else {
+                String::new()
+            };
+            let mut exported = Vec::new();
+            for line in source.lines() {
+                let Ok(value) = serde_json::from_str::<serde_json::Value>(line) else {
+                    continue;
+                };
+                let Some(object) = value.as_object() else {
+                    continue;
+                };
+                let mut sanitized = serde_json::Map::new();
+                for key in [
+                    "version",
+                    "ruleId",
+                    "accepted",
+                    "replacement",
+                    "sourceKind",
+                    "profile",
+                ] {
+                    if let Some(value) = object.get(key) {
+                        sanitized.insert(key.to_owned(), value.clone());
+                    }
+                }
+                if sanitized.contains_key("ruleId") {
+                    exported.push(serde_json::Value::Object(sanitized));
+                }
+            }
+            let mut serialized = String::new();
+            for value in &exported {
+                writeln!(serialized, "{}", serde_json::to_string(value)?)?;
+            }
+            cache::write_atomic_text(&output, &serialized)?;
+            println!(
+                "로컬 피드백 {}건을 {}에 내보냈습니다 (네트워크 전송 없음)",
+                exported.len(),
+                output.display()
+            );
+        }
+    }
+    Ok(())
+}
+
+fn print_completion(shell: CompletionShell) {
+    let script = match shell {
+        CompletionShell::Bash => {
+            r#"_geullint_complete() {
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=( $(compgen -W "check fix init doctor dictionary feedback completion rules lsp --stdin --changed --watch --fix --format --engine --no-color" -- "$cur") )
+}
+complete -F _geullint_complete geullint
+"#
+        }
+        CompletionShell::Zsh => {
+            r"#compdef geullint
+_arguments '1:command:(check fix init doctor dictionary feedback completion rules lsp)' '*:path:_files'
+"
+        }
+        CompletionShell::Fish => {
+            r"complete -c geullint -f -n '__fish_use_subcommand' -a 'check fix init doctor dictionary feedback completion rules lsp'
+complete -c geullint -l stdin -d 'read one document from stdin'
+complete -c geullint -l changed -d 'check changed files'
+complete -c geullint -l fix -d 'apply safe fixes'
+complete -c geullint -l engine -a 'compact standard context' -d 'select lint engine'
+complete -c geullint -l no-color -d 'disable ANSI color output'
+"
+        }
+        CompletionShell::Powershell => {
+            r#"Register-ArgumentCompleter -Native -CommandName geullint -ScriptBlock {
+  param($wordToComplete, $commandAst, $cursorPosition)
+  'check','fix','init','doctor','dictionary','feedback','completion','rules','lsp','--stdin','--changed','--watch','--fix','--format','--engine','--no-color' |
+    Where-Object { $_ -like "$wordToComplete*" } |
+    ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterName', $_) }
+}
+"#
+        }
+    };
+    print!("{script}");
+}
+
 fn run(arguments: &Arguments) -> Result<bool> {
+    if arguments.watch {
+        return run_watch(arguments);
+    }
+    run_once(arguments)
+}
+
+fn run_watch(arguments: &Arguments) -> Result<bool> {
+    let mut first_run = true;
+    loop {
+        let mut one_shot = arguments.clone();
+        one_shot.watch = false;
+        let has_failure = run_once(&one_shot)?;
+        if first_run {
+            eprintln!("geullint: watching for changes (Ctrl+C to stop)");
+            first_run = false;
+        }
+        thread::sleep(Duration::from_millis(700));
+        if has_failure {
+            // Keep watching after a failed lint; editors commonly save transiently invalid text.
+        }
+    }
+}
+
+#[allow(clippy::too_many_lines)]
+fn run_once(arguments: &Arguments) -> Result<bool> {
     if let Some(rule_id) = &arguments.explain {
         print_rule_explanation(rule_id, arguments.format)?;
         return Ok(false);
@@ -516,40 +1007,281 @@ fn run(arguments: &Arguments) -> Result<bool> {
     if quality_gate.is_some() {
         bail!("--corpus-gate에는 --corpus 또는 --corpus-manifest가 필요합니다");
     }
+
+    if matches!(arguments.engine, EngineMode::Standard | EngineMode::Context) {
+        #[cfg(feature = "standard")]
+        {
+            return run_standard_once(
+                arguments,
+                config,
+                packs,
+                matches!(arguments.engine, EngineMode::Context),
+            );
+        }
+        #[cfg(not(feature = "standard"))]
+        {
+            let _ = (config, packs);
+            bail!("이 CLI는 standard feature 없이 빌드되었습니다; all-features로 다시 빌드하세요");
+        }
+    }
     let engine = build_engine(config, packs)?;
     let mut reported = Vec::new();
+    let cache_path = PathBuf::from(".geullint/cache-v1.json");
+    let mut cache_file = arguments
+        .cache
+        .then(|| cache::load(&cache_path))
+        .transpose()?;
 
-    for path in collect_files(&arguments.paths)? {
-        let mut text = fs::read_to_string(&path)
-            .with_context(|| format!("{} 파일을 UTF-8로 읽을 수 없습니다", path.display()))?;
-        let source_kind = source_kind_for_path(&path);
-        if arguments.fix || arguments.fix_dry_run {
-            let fixed = engine
-                .check_with_fixes(&text, source_kind, false)
-                .fixed_text;
-            if arguments.fix && fixed != text {
-                fs::write(&path, &fixed).with_context(|| {
-                    format!("{} 파일에 수정 사항을 쓸 수 없습니다", path.display())
-                })?;
+    if arguments.stdin {
+        let mut text = String::new();
+        io::stdin()
+            .read_to_string(&mut text)
+            .context("표준 입력을 읽을 수 없습니다")?;
+        append_diagnostics(
+            &engine,
+            "<stdin>",
+            &text,
+            SourceKind::PlainText,
+            &mut reported,
+        );
+    } else {
+        let paths = if arguments.changed {
+            collect_changed_files()?
+        } else {
+            collect_files(&arguments.paths)?
+        };
+        for path in paths {
+            let original = fs::read_to_string(&path)
+                .with_context(|| format!("{} 파일을 UTF-8로 읽을 수 없습니다", path.display()))?;
+            let source_kind = source_kind_for_path(&path);
+            let mut text = original.clone();
+            if arguments.fix || arguments.fix_dry_run {
+                let fixed = engine
+                    .check_with_fixes(&text, source_kind, false)
+                    .fixed_text;
+                if arguments.fix && !arguments.diff && fixed != text {
+                    cache::write_atomic_text(&path, &fixed).with_context(|| {
+                        format!("{} 파일에 수정 사항을 쓸 수 없습니다", path.display())
+                    })?;
+                }
+                if arguments.diff && fixed != text {
+                    print_diff(&path, &text, &fixed);
+                }
+                text = fixed;
             }
-            text = fixed;
-        }
-        for diagnostic in engine.check(&text, source_kind) {
-            let (line, column) = line_and_column(&text, diagnostic.range.start);
-            reported.push(ReportedDiagnostic {
-                path: path.display().to_string(),
-                line,
-                column,
-                diagnostic,
+            let cache_key = path.display().to_string();
+            let source_hash = cache::source_hash(&text);
+            let cached = cache_file.as_ref().and_then(|file| {
+                file.files
+                    .get(&cache_key)
+                    .filter(|entry| entry.source_hash == source_hash)
             });
+            if let Some(entry) = cached {
+                append_reported_diagnostics(&cache_key, &text, &entry.diagnostics, &mut reported);
+            } else {
+                let diagnostics = engine.check(&text, source_kind);
+                if let Some(file) = cache_file.as_mut() {
+                    file.files.insert(
+                        cache_key.clone(),
+                        cache::CacheEntry {
+                            source_hash,
+                            diagnostics: diagnostics.clone(),
+                        },
+                    );
+                }
+                append_reported_diagnostics(&cache_key, &text, &diagnostics, &mut reported);
+            }
         }
     }
 
     let has_failure = reported.iter().any(|reported_diagnostic| {
         reaches_threshold(reported_diagnostic.diagnostic.severity, arguments.fail_on)
     });
-    print_report(&reported, arguments.format)?;
+    print_report(&reported, arguments.format, arguments.no_color)?;
+    if let Some(cache_file) = cache_file {
+        cache::save(&cache_path, &cache_file)?;
+    }
     Ok(has_failure)
+}
+
+#[cfg(feature = "standard")]
+fn run_standard_once(
+    arguments: &Arguments,
+    config: LintConfig,
+    packs: Vec<RulePack>,
+    use_context_ranker: bool,
+) -> Result<bool> {
+    if arguments.cache {
+        bail!("--cache는 현재 compact 엔진에서만 지원합니다 (--engine compact)");
+    }
+    let engine = build_engine(config, packs)?;
+    let lexicon = StandardLexicon::bundled()
+        .map_err(|error| anyhow::anyhow!("표준 사전을 읽을 수 없습니다: {error}"))?;
+    let ranker = GeulRankSmall::bundled()
+        .map_err(|error| anyhow::anyhow!("standard ranker를 읽을 수 없습니다: {error}"))?;
+    let pipeline = if use_context_ranker {
+        let context_ranker = ContextRanker::bundled()
+            .map_err(|error| anyhow::anyhow!("context ranker를 읽을 수 없습니다: {error}"))?;
+        StandardPipeline::new(engine, lexicon, ranker).with_context_ranker(context_ranker)
+    } else {
+        StandardPipeline::new(engine, lexicon, ranker)
+    };
+    let mut reported = Vec::new();
+
+    if arguments.stdin {
+        let mut text = String::new();
+        io::stdin()
+            .read_to_string(&mut text)
+            .context("표준 입력을 읽을 수 없습니다")?;
+        let diagnostics = pipeline
+            .check(&text, SourceKind::PlainText)
+            .iter()
+            .map(standard_diagnostic_to_legacy)
+            .collect::<Vec<_>>();
+        append_reported_diagnostics("<stdin>", &text, &diagnostics, &mut reported);
+    } else {
+        let paths = if arguments.changed {
+            collect_changed_files()?
+        } else {
+            collect_files(&arguments.paths)?
+        };
+        for path in paths {
+            let original = fs::read_to_string(&path)
+                .with_context(|| format!("{} 파일을 UTF-8로 읽을 수 없습니다", path.display()))?;
+            let source_kind = source_kind_for_path(&path);
+            let mut text = original.clone();
+            if arguments.fix || arguments.fix_dry_run {
+                let fixed = pipeline
+                    .check_with_fixes(&text, source_kind, false)
+                    .fixed_text;
+                if arguments.fix && !arguments.diff && fixed != text {
+                    cache::write_atomic_text(&path, &fixed).with_context(|| {
+                        format!("{} 파일에 수정 사항을 쓸 수 없습니다", path.display())
+                    })?;
+                }
+                if arguments.diff && fixed != text {
+                    print_diff(&path, &text, &fixed);
+                }
+                text = fixed;
+            }
+            let diagnostics = pipeline
+                .check(&text, source_kind)
+                .iter()
+                .map(standard_diagnostic_to_legacy)
+                .collect::<Vec<_>>();
+            let cache_key = path.display().to_string();
+            append_reported_diagnostics(&cache_key, &text, &diagnostics, &mut reported);
+        }
+    }
+
+    let has_failure = reported.iter().any(|reported_diagnostic| {
+        reaches_threshold(reported_diagnostic.diagnostic.severity, arguments.fail_on)
+    });
+    print_report(&reported, arguments.format, arguments.no_color)?;
+    Ok(has_failure)
+}
+
+#[cfg(feature = "standard")]
+fn standard_diagnostic_to_legacy(diagnostic: &DiagnosticV2) -> Diagnostic {
+    Diagnostic {
+        rule_id: diagnostic.rule_id.clone(),
+        severity: diagnostic.severity,
+        message: diagnostic.message.clone(),
+        range: diagnostic.range,
+        original: diagnostic.original.clone(),
+        suggestions: diagnostic
+            .suggestions
+            .iter()
+            .map(|suggestion| suggestion.text.clone())
+            .collect(),
+        safe_fix: diagnostic.safety == FixSafety::Safe,
+    }
+}
+
+fn append_diagnostics(
+    engine: &Engine,
+    path: &str,
+    text: &str,
+    source_kind: SourceKind,
+    reported: &mut Vec<ReportedDiagnostic>,
+) {
+    let diagnostics = engine.check(text, source_kind);
+    append_reported_diagnostics(path, text, &diagnostics, reported);
+}
+
+fn append_reported_diagnostics(
+    path: &str,
+    text: &str,
+    diagnostics: &[Diagnostic],
+    reported: &mut Vec<ReportedDiagnostic>,
+) {
+    for diagnostic in diagnostics {
+        let (line, column) = line_and_column(text, diagnostic.range.start);
+        reported.push(ReportedDiagnostic {
+            path: path.to_owned(),
+            line,
+            column,
+            diagnostic: diagnostic.clone(),
+        });
+    }
+}
+
+fn collect_changed_files() -> Result<Vec<PathBuf>> {
+    let mut candidates = Vec::new();
+    for arguments in [
+        &["diff", "--name-only", "-z", "--diff-filter=ACMR"][..],
+        &[
+            "diff",
+            "--cached",
+            "--name-only",
+            "-z",
+            "--diff-filter=ACMR",
+        ][..],
+        &["ls-files", "--others", "--exclude-standard", "-z"][..],
+    ] {
+        candidates.extend(git_name_only_paths(arguments)?);
+    }
+
+    let mut paths = Vec::new();
+    for path in candidates {
+        if path.is_file() && supported_source_kind(&path).is_some() {
+            paths.push(path);
+        }
+    }
+    paths.sort();
+    paths.dedup();
+    Ok(paths)
+}
+
+fn git_name_only_paths(arguments: &[&str]) -> Result<Vec<PathBuf>> {
+    let output = ProcessCommand::new("git")
+        .args(arguments)
+        .output()
+        .with_context(|| format!("git {}를 실행할 수 없습니다", arguments.join(" ")))?;
+    if !output.status.success() {
+        bail!("git {}가 실패했습니다", arguments.join(" "));
+    }
+    Ok(output
+        .stdout
+        .split(|byte| *byte == 0)
+        .filter(|entry| !entry.is_empty())
+        .map(|entry| PathBuf::from(String::from_utf8_lossy(entry).into_owned()))
+        .collect())
+}
+
+fn print_diff(path: &Path, original: &str, fixed: &str) {
+    println!("--- {}", path.display());
+    println!("+++ {} (geullint --fix)", path.display());
+    for (line_number, (before, after)) in original.lines().zip(fixed.lines()).enumerate() {
+        if before != after {
+            println!("@@ line {} @@", line_number + 1);
+            println!("-{before}");
+            println!("+{after}");
+        }
+    }
+    if original.lines().count() != fixed.lines().count() {
+        println!("@@ line count changed @@");
+    }
 }
 
 fn profile_engine_index(profile: Profile) -> usize {
@@ -640,7 +1372,61 @@ fn resolve_expected_diagnostic_ranges(
     Ok(())
 }
 
+fn validate_corpus_metadata(path: &Path, line: usize, case: &CorpusCase) -> Result<()> {
+    if case.origin == CorpusOrigin::Project {
+        return Ok(());
+    }
+    if case
+        .genre
+        .as_deref()
+        .is_none_or(|genre| genre.trim().is_empty())
+    {
+        bail!(
+            "{} corpus line {line} non-project origin requires a non-empty genre",
+            path.display()
+        );
+    }
+    if case
+        .document_id
+        .as_deref()
+        .is_none_or(|document_id| document_id.trim().is_empty())
+    {
+        bail!(
+            "{} corpus line {line} non-project origin requires a documentId",
+            path.display()
+        );
+    }
+    if case.split.is_none() {
+        bail!(
+            "{} corpus line {line} non-project origin requires a split",
+            path.display()
+        );
+    }
+    if case
+        .author_id
+        .as_deref()
+        .is_some_and(|author_id| author_id.trim().is_empty())
+    {
+        bail!(
+            "{} corpus line {line} authorId cannot be empty",
+            path.display()
+        );
+    }
+    if case
+        .error_families
+        .iter()
+        .any(|family| family.trim().is_empty())
+    {
+        bail!(
+            "{} corpus line {line} errorFamilies cannot contain empty values",
+            path.display()
+        );
+    }
+    Ok(())
+}
+
 #[allow(clippy::too_many_lines)] // Keeps streaming parsing, validation, matching, and metric aggregation together.
+#[allow(clippy::cast_precision_loss)]
 fn evaluate_corpus(
     path: &Path,
     base_config: &LintConfig,
@@ -660,6 +1446,7 @@ fn evaluate_corpus(
     let mut case_failures = Vec::new();
     let mut rule_metric_counts = BTreeMap::<String, RuleMetricCounts>::new();
     let mut seen_case_ids = BTreeMap::<String, usize>::new();
+    let mut metadata_cases = Vec::new();
     let mut engines: [Option<Engine>; 3] = [None, None, None];
     let mut has_fixed_text_mismatch = false;
 
@@ -710,6 +1497,7 @@ fn evaluate_corpus(
                 );
             }
         }
+        validate_corpus_metadata(path, index + 1, &case)?;
 
         let mut config = base_config.clone();
         if let Some(profile) = case.profile {
@@ -737,6 +1525,14 @@ fn evaluate_corpus(
         };
         validate_corpus_case_type(path, index + 1, case.case_type, expected_diagnostics.len())?;
         resolve_expected_diagnostic_ranges(path, index + 1, &case.text, &mut expected_diagnostics)?;
+        metadata_cases.push(CaseMetadata {
+            id: case.id.clone(),
+            origin: case.origin,
+            split: case.split,
+            genre: case.genre.clone(),
+            document_id: case.document_id.clone(),
+            normal: expected_diagnostics.is_empty(),
+        });
         let engine_index = profile_engine_index(config.profile);
         if engines[engine_index].is_none() {
             engines[engine_index] = Some(build_engine(config, packs.to_vec())?);
@@ -803,6 +1599,7 @@ fn evaluate_corpus(
     let precision_denominator = true_positives + false_positives;
     let recall_denominator = true_positives + false_negatives;
     let clean_normal_cases = normal_cases - false_positive_cases;
+    let dataset = aggregate_metadata(&metadata_cases);
     let rule_metrics: Vec<_> = rule_metric_counts
         .into_iter()
         .map(|(rule_id, counts)| {
@@ -833,12 +1630,24 @@ fn evaluate_corpus(
         normal_cases,
         false_positive_cases,
         specificity: ratio(clean_normal_cases, normal_cases),
+        dataset,
         rule_metrics,
         quality_gate: None,
         case_failures,
     };
     let has_failure = if let Some(gate) = quality_gate {
-        let gate_report = evaluate_corpus_quality_gate(&report, gate);
+        let mut gate_report = evaluate_corpus_quality_gate(&report, gate);
+        gate_report.failures.extend(
+            evaluate_dataset_gate(&report.dataset, &gate.dataset)
+                .into_iter()
+                .map(|failure| CorpusQualityGateFailure {
+                    metric: failure.metric,
+                    actual: Some(failure.actual as f64),
+                    minimum: failure.minimum as f64,
+                    rule_id: None,
+                }),
+        );
+        gate_report.passed = gate_report.failures.is_empty();
         let passed = gate_report.passed;
         report.quality_gate = Some(gate_report);
         !passed || has_fixed_text_mismatch
@@ -1371,7 +2180,14 @@ fn reaches_threshold(severity: Severity, threshold: FailOn) -> bool {
     )
 }
 
-fn print_report(reported: &[ReportedDiagnostic], format: OutputFormat) -> Result<()> {
+fn print_report(
+    reported: &[ReportedDiagnostic],
+    format: OutputFormat,
+    no_color: bool,
+) -> Result<()> {
+    // Human, JSON, and SARIF output intentionally contain no ANSI escapes. Reading the flag here
+    // keeps `--no-color` an explicit, tested contract without introducing a styling dependency.
+    let _ = no_color;
     match format {
         OutputFormat::Human => {
             for finding in reported {

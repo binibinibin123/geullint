@@ -34,8 +34,8 @@ test("documents reproducible measurements without unsupported comparisons", () =
 
   assert.match(performance, /fface5df1efec24e8ca5270710e8b86d7bbfe9c2/u);
   assert.match(performance, /warmup 3회.*20회/u);
-  assert.match(performance, /498,703 B/u);
-  assert.match(performance, /180,252 B/u);
+  assert.match(performance, /621,434 B/u);
+  assert.match(performance, /212,557 B/u);
   assert.match(performance, /benchmark-native\.mjs/u);
   assert.match(performance, /benchmark-wasm\.mjs/u);
   assert.doesNotMatch(performance, /Tree-sitter|source-parsing/u);

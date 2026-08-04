@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "model": "geulrank-small",
+  "features": ["bias", "edit_distance", "phonology_distance", "log_frequency", "base_score"],
+  "weights": {
+    "bias": 4.0,
+    "edit_distance": -0.9,
+    "phonology_distance": -0.45,
+    "log_frequency": 0.18,
+    "base_score": 0.35
+  }
+}

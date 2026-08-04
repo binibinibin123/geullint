@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "name": "GeulLint standard Korean lexicon",
+  "version": "1.0.0",
+  "format": "geullint-standard-lexicon-v1",
+  "entryCount": 1407,
+  "rawBytes": 24499,
+  "gzipBytes": 7138,
+  "sha256": "8052c49d7e81fc0367421dcd781110b4b0d3f1cb33d5157571668e0648fc8c6c",
+  "gzipSha256": "91584306d25f181fd48728c2e69c238703cd6cc6c561e068f49c3a8db14ecbea",
+  "source": {
+    "path": "dictionaries/standard-ko-v1.seed.tsv",
+    "license": "MIT",
+    "sourceUrl": "https://github.com/binibinibin123/geullint",
+    "sourceSha256": "0beaf25b7bac4af9248ed64722a760f705ef8cdf66e0f799382b586341b2c6ec"
+  },
+  "distribution": {
+    "rawPath": "standard-ko-v1.txt",
+    "gzipPath": "standard-ko-v1.txt.gz",
+    "bundledInDefaultNative": false,
+    "bundledInWeb": false,
+    "maxGzipBytes": 20971520
+  }
+}

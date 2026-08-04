@@ -1,12 +1,17 @@
 import { applyLocale } from "./i18n.js";
 import { replaceUtf8Range } from "./corrections.js";
+import { createHistory } from "./history.js";
+import { createLocalStore } from "./storage.js";
 
 const editor = document.querySelector("#editor");
 const profile = document.querySelector("#profile");
+const engineMode = document.querySelector("#engine");
 const sourceKind = document.querySelector("#source-kind");
 const language = document.querySelector("#language");
 const scanButton = document.querySelector("#scan");
 const sampleButton = document.querySelector("#sample");
+const fileInput = document.querySelector("#file-input");
+const exportText = document.querySelector("#export-text");
 const results = document.querySelector("#results");
 const findingCount = document.querySelector("#finding-count");
 const characterCount = document.querySelector("#character-count");
@@ -16,7 +21,13 @@ const correctionStatus = document.querySelector("#correction-status");
 const copyCorrection = document.querySelector("#copy-correction");
 const applyCorrection = document.querySelector("#apply-correction");
 const undoCorrection = document.querySelector("#undo-correction");
+const redoCorrection = document.querySelector("#redo-correction");
 const includeReviewCorrections = document.querySelector("#include-review-corrections");
+const dictionaryEntry = document.querySelector("#dictionary-entry");
+const dictionaryAdd = document.querySelector("#dictionary-add");
+const dictionaryList = document.querySelector("#dictionary-list");
+const feedbackExport = document.querySelector("#feedback-export");
+const feedbackIssue = document.querySelector("#feedback-issue");
 const ruleSearch = document.querySelector("#rule-search");
 const ruleList = document.querySelector("#rule-list");
 const ruleCount = document.querySelector("#rule-count");
@@ -36,8 +47,12 @@ let currentCopy;
 let correctionState = "correctionLoading";
 let requestedText = "";
 let latestCorrection;
+let latestDiagnostics = [];
+let userDictionary = [];
 let undoText;
 const initialText = editor.value;
+const history = createHistory(initialText, 50);
+const localStore = createLocalStore();
 
 export function createRuleIndex(catalog) {
   return catalog.rules.map((rule) => ({
@@ -55,6 +70,28 @@ export function createRuleIndex(catalog) {
 
 function updateCharacterCount() {
   characterCount.textContent = `${[...editor.value].length}자`;
+}
+
+function renderDictionary() {
+  dictionaryList.replaceChildren();
+  for (const entry of userDictionary) {
+    const item = document.createElement("li");
+    const label = document.createElement("code");
+    label.textContent = entry;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "dictionary-remove";
+    remove.textContent = "×";
+    remove.setAttribute("aria-label", `${entry} 삭제`);
+    remove.addEventListener("click", () => {
+      userDictionary = userDictionary.filter((candidate) => candidate !== entry);
+      void localStore.saveDictionary(userDictionary).catch(() => {});
+      renderDictionary();
+      scan();
+    });
+    item.append(label, remove);
+    dictionaryList.append(item);
+  }
 }
 
 function setBusy(isBusy) {
@@ -88,11 +125,18 @@ function invalidateCorrection() {
 
 function rememberBeforeOverwrite() {
   undoText = editor.value;
-  undoCorrection.disabled = false;
+  history.push(editor.value);
+  updateHistoryActions();
+}
+
+function updateHistoryActions() {
+  undoCorrection.disabled = !history.canUndo();
+  redoCorrection.disabled = !history.canRedo();
 }
 
 function renderCorrection(originalText, fixedText, reviewFixedText, diagnostics) {
   latestCorrection = { originalText, fixedText, reviewFixedText, diagnostics };
+  latestDiagnostics = diagnostics;
   const includesReview = includeReviewCorrections.checked
     && diagnostics.some((diagnostic) => !diagnostic.safeFix && diagnostic.suggestions?.[0]);
   const previewText = includesReview
@@ -130,6 +174,7 @@ function setMessage(className, text) {
 }
 
 function renderDiagnostics(diagnostics) {
+  latestDiagnostics = diagnostics;
   results.replaceChildren();
   findingCount.textContent = `${diagnostics.length}건 발견`;
   if (diagnostics.length === 0) {
@@ -219,9 +264,10 @@ function scan() {
   prepareCorrection();
   worker.postMessage({
     id,
+    engine: engineMode.value,
     text: requestedText,
     sourceKind: sourceKind.value,
-    config: { profile: profile.value },
+    config: { profile: profile.value, userDictionary },
     includeReviewFixes: includeReviewCorrections.checked,
   });
 }
@@ -260,6 +306,9 @@ worker.addEventListener("message", ({ data }) => {
 });
 
 editor.addEventListener("input", () => {
+  history.push(editor.value);
+  updateHistoryActions();
+  void localStore.saveDraft(editor.value).catch(() => {});
   updateCharacterCount();
   invalidateCorrection();
 });
@@ -272,6 +321,31 @@ sampleButton.addEventListener("click", () => {
   editor.value = samples[sampleIndex];
   updateCharacterCount();
   scan();
+});
+fileInput.addEventListener("change", async () => {
+  const file = fileInput.files?.[0];
+  if (!file) return;
+  try {
+    rememberBeforeOverwrite();
+    editor.value = await file.text();
+    history.push(editor.value);
+    void localStore.saveDraft(editor.value).catch(() => {});
+    updateCharacterCount();
+    scan();
+  } catch {
+    setCorrectionState("correctionError");
+  } finally {
+    fileInput.value = "";
+  }
+});
+exportText.addEventListener("click", () => {
+  const blob = new Blob([editor.value], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "geullint-corrected.txt";
+  link.click();
+  URL.revokeObjectURL(url);
 });
 scanButton.addEventListener("click", scan);
 copyCorrection.addEventListener("click", async () => {
@@ -287,23 +361,78 @@ copyCorrection.addEventListener("click", async () => {
 applyCorrection.addEventListener("click", () => {
   rememberBeforeOverwrite();
   editor.value = correctedOutput.value;
+  history.push(editor.value);
   updateCharacterCount();
   editor.focus();
   scan();
 });
 undoCorrection.addEventListener("click", () => {
-  if (undoText === undefined) return;
-  editor.value = undoText;
+  const historyRestored = history.undo();
+  const restored = undoText ?? historyRestored;
+  if (restored === undefined) return;
+  editor.value = restored;
   undoText = undefined;
-  undoCorrection.disabled = true;
+  updateHistoryActions();
   updateCharacterCount();
+  void localStore.saveDraft(editor.value).catch(() => {});
+  editor.focus();
+  scan();
+});
+redoCorrection.addEventListener("click", () => {
+  const restored = history.redo();
+  if (restored === undefined) return;
+  editor.value = restored;
+  updateHistoryActions();
+  updateCharacterCount();
+  void localStore.saveDraft(editor.value).catch(() => {});
   editor.focus();
   scan();
 });
 includeReviewCorrections.addEventListener("change", () => {
   scan();
 });
+engineMode.addEventListener("change", scan);
+profile.addEventListener("change", scan);
+sourceKind.addEventListener("change", scan);
+dictionaryAdd.addEventListener("click", () => {
+  const entry = dictionaryEntry.value.trim();
+  if (!entry || userDictionary.includes(entry)) return;
+  userDictionary = [...userDictionary, entry].sort((left, right) => left.localeCompare(right));
+  dictionaryEntry.value = "";
+  void localStore.saveDictionary(userDictionary).catch(() => {});
+  renderDictionary();
+  scan();
+});
+dictionaryEntry.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    dictionaryAdd.click();
+  }
+});
 ruleSearch.addEventListener("input", renderRuleList);
+const GITHUB_ISSUE_URL = "https://github.com/binibinibin123/geullint/issues/new?template=bug.yml";
+if (feedbackIssue) feedbackIssue.href = GITHUB_ISSUE_URL;
+feedbackExport.addEventListener("click", () => {
+  // JSONL export contains only rule metadata and lengths; source text never leaves the tab.
+  const records = latestDiagnostics.map((diagnostic) => ({
+    version: 1,
+    ruleId: diagnostic.ruleId,
+    severity: diagnostic.severity,
+    safeFix: Boolean(diagnostic.safeFix),
+    profile: profile.value,
+    engine: engineMode.value,
+    sourceKind: sourceKind.value,
+    originalLength: [...(diagnostic.original || "")].length,
+  }));
+  const jsonl = records.map((record) => JSON.stringify(record)).join("\n");
+  const blob = new Blob([jsonl ? `${jsonl}\n` : ""], { type: "application/jsonl;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "geullint-feedback.jsonl";
+  link.click();
+  URL.revokeObjectURL(url);
+});
 language.addEventListener("change", () => {
   currentCopy = applyLocale(language.value);
   setCorrectionState(correctionState);
@@ -322,6 +451,18 @@ try {
 currentCopy = applyLocale(language.value);
 setCorrectionState(correctionState);
 updateCharacterCount();
+updateHistoryActions();
+void localStore.loadDictionary().then((dictionary) => {
+  userDictionary = dictionary;
+  renderDictionary();
+}).catch(() => {});
+void localStore.loadDraft().then((draft) => {
+  if (!draft || editor.value !== initialText) return;
+  editor.value = draft;
+  history.push(draft);
+  updateCharacterCount();
+  invalidateCorrection();
+}).catch(() => {});
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {
     // The app remains usable when opened from a local file or a host without SW support.

@@ -37,18 +37,34 @@
     "onLanguage:python",
     "onLanguage:rust",
     "onLanguage:plaintext",
-    "onCommand:geullint.openRuleCatalog"
+    "onCommand:geullint.openRuleCatalog",
+    "onCommand:geullint.fixAllSafe"
   ],
   "contributes": {
     "commands": [
       {
         "command": "geullint.openRuleCatalog",
         "title": "GeulLint: 규칙 목록 열기"
+      },
+      {
+        "command": "geullint.fixAllSafe",
+        "title": "GeulLint: 안전 교정 모두 적용"
       }
     ],
     "configuration": {
       "title": "GeulLint",
       "properties": {
+        "geullint.engine": {
+          "type": "string",
+          "default": "standard",
+          "enum": [
+            "standard",
+            "compact",
+            "context"
+          ],
+          "scope": "resource",
+          "description": "분석 엔진입니다. standard는 사전 후보를 Review로 표시하고, context는 실험적 문맥 랭커를 사용합니다. Safe 자동 수정은 보수적으로 유지됩니다."
+        },
         "geullint.serverPath": {
           "type": "string",
           "default": "",
@@ -64,6 +80,15 @@
           ],
           "scope": "resource",
           "description": "검사 규칙 묶음입니다. default는 고신뢰 규칙, strict는 더 엄격한 검사, editorial은 문체 제안까지 포함합니다."
+        },
+        "geullint.disabledRules": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "scope": "resource",
+          "description": "이 프로젝트에서 비활성화할 규칙 ID 목록입니다."
         },
         "geullint.userDictionary": {
           "type": "array",

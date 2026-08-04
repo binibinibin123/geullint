@@ -6,9 +6,12 @@ const index = readFileSync("apps/playground/index.html", "utf8");
 const app = readFileSync("apps/playground/app.js", "utf8");
 const worker = readFileSync("apps/playground/worker.js", "utf8");
 const serviceWorker = readFileSync("apps/playground/sw.js", "utf8");
+const history = readFileSync("apps/playground/history.js", "utf8");
+const storage = readFileSync("apps/playground/storage.js", "utf8");
 const manifest = readFileSync("apps/playground/manifest.webmanifest", "utf8");
 const i18n = readFileSync("apps/playground/i18n.js", "utf8");
 const buildScript = readFileSync("scripts/build-playground.mjs", "utf8");
+const e2eScript = readFileSync("scripts/playground-e2e.spec.mjs", "utf8");
 const pagesWorkflow = readFileSync(".github/workflows/pages.yml", "utf8");
 
 test("presents the web app as a private Korean spelling checker first", () => {
@@ -22,11 +25,15 @@ test("presents the web app as a private Korean spelling checker first", () => {
 test("ships an input, profile selector, and accessible diagnosis output", () => {
   assert.match(index, /id="editor"/);
   assert.match(index, /id="profile"/);
+  assert.match(index, /id="engine"/);
+  assert.match(index, /value="standard"/);
   assert.match(index, /aria-live="polite"/);
   assert.match(index, /모든 검사는 이 브라우저에서만/u);
   assert.match(index, /id="language"/);
   assert.match(index, /id="rule-search"/);
   assert.match(index, /id="rule-list"/);
+  assert.match(index, /id="file-input"/);
+  assert.match(index, /id="export-text"/);
   assert.match(index, /href="https:\/\/github\.com\/binibinibin123\/geullint\/releases"/);
 });
 
@@ -36,6 +43,7 @@ test("ships a separate corrected sentence with copy and apply actions", () => {
     "copy-correction",
     "apply-correction",
     "undo-correction",
+    "redo-correction",
     "correction-status",
     "include-review-corrections",
   ]) {
@@ -44,12 +52,15 @@ test("ships a separate corrected sentence with copy and apply actions", () => {
   assert.match(index, /readonly/);
   assert.match(index, /aria-labelledby="correction-heading"/);
   assert.match(app, /data\.response\.fixedText/);
+  assert.match(app, /engine:\s*engineMode\.value/u);
   assert.match(app, /data\.response\.reviewFixedText/);
   assert.match(app, /includeReviewFixes:\s*includeReviewCorrections\.checked/u);
   assert.match(worker, /includeReviewFixes:\s*data\.includeReviewFixes/u);
   assert.match(app, /editor\.value\s*!==\s*requestedText/);
   assert.match(app, /navigator\.clipboard\.writeText/);
   assert.match(app, /editor\.value\s*=\s*correctedOutput\.value/);
+  assert.match(app, /history\.push\(editor\.value\)/u);
+  assert.match(app, /const historyRestored = history\.undo\(\)/u);
   assert.match(app, /reviewFixedText/);
   assert.match(app, /includeReviewCorrections\.addEventListener\("change"/);
   for (const key of [
@@ -66,6 +77,23 @@ test("ships a separate corrected sentence with copy and apply actions", () => {
   ]) {
     assert.match(i18n, new RegExp(`${key}:`));
   }
+});
+
+test("offers privacy-preserving feedback export and explicit issue handoff", () => {
+  assert.match(index, /id="feedback-export"/u);
+  assert.match(index, /id="feedback-issue"/u);
+  assert.match(app, /JSONL/u);
+  assert.match(app, /github\.com\/binibinibin123\/geullint\/issues\/new/u);
+});
+
+test("keeps a local project dictionary ahead of bundled rules", () => {
+  for (const id of ["dictionary-entry", "dictionary-add", "dictionary-list"]) {
+    assert.match(index, new RegExp(`id="${id}"`));
+  }
+  assert.match(app, /userDictionary/u);
+  assert.match(app, /saveDictionary/u);
+  assert.match(app, /config: \{ profile: profile\.value, userDictionary \}/u);
+  assert.match(worker, /config: data\.config/u);
 });
 
 test("starts the human-facing demo with conservative safe corrections", () => {
@@ -87,6 +115,9 @@ test("sends text only to a local Web Worker and never to a network endpoint", ()
   assert.doesNotMatch(app, /fetch\s*\(/);
   assert.doesNotMatch(worker, /fetch\s*\(/);
   assert.match(worker, /lint_json/);
+  assert.match(worker, /lint_standard_json/);
+  assert.match(worker, /lint_context_json/);
+  assert.match(worker, /diagnostic\.safety\s*===\s*"safe"/u);
   assert.match(worker, /rule_catalog_json/);
   assert.match(app, /data\.catalog/);
   assert.match(app, /replaceUtf8Range/);
@@ -104,6 +135,7 @@ test("ships four interface languages and a searchable curated local catalogue", 
 
 test("builds the browser package from the checked Rust WASM artifact", () => {
   assert.match(buildScript, /wasm-bindgen/);
+  assert.match(buildScript, /--features[\s\S]*standard/u);
   assert.match(buildScript, /geullint_wasm\.wasm/);
   assert.match(buildScript, /"apps", "playground", "pkg"/);
 });
@@ -115,16 +147,34 @@ test("deploys the generated static playground through GitHub Pages", () => {
   assert.match(pagesWorkflow, /apps\/playground/);
   assert.match(index, /src="\.\/app\.js"/);
   assert.match(index, /href="\.\/app\.css"/);
+  assert.match(pagesWorkflow, /playwright install --with-deps chromium/u);
+  assert.match(pagesWorkflow, /GEULLINT_E2E_REQUIRED=1 GEULLINT_E2E_VIEWPORTS=all npm run e2e/u);
 });
 
 test("keeps a cold reload usable without a network connection", () => {
   assert.match(index, /rel="manifest" href="\.\/manifest\.webmanifest"/u);
   assert.match(app, /serviceWorker\.register\("\.\/sw\.js"/u);
   assert.match(serviceWorker, /cache\.addAll/iu);
+  assert.match(serviceWorker, /history\.js/u);
+  assert.match(serviceWorker, /storage\.js/u);
+  assert.match(storage, /indexedDB/u);
+  assert.match(app, /loadDraft\(\)/u);
+  assert.match(history, /createHistory/u);
   assert.match(serviceWorker, /apps\/playground|\.\/app\.js/u);
   const parsedManifest = JSON.parse(manifest);
   assert.equal(parsedManifest.start_url, "./index.html");
   assert.equal(parsedManifest.display, "standalone");
+});
+
+test("ships an opt-in browser E2E contract for offline correction workflows", () => {
+  assert.match(e2eScript, /serviceWorker/iu);
+  assert.match(e2eScript, /setOffline\(true\)/u);
+  assert.match(e2eScript, /corrected-output/u);
+  assert.match(e2eScript, /externalRequests/u);
+  assert.match(e2eScript, /Pixel 7/u);
+  assert.match(e2eScript, /GEULLINT_E2E_VIEWPORTS/u);
+  assert.match(e2eScript, /\["chromium", "firefox", "webkit"\]/u);
+  assert.match(e2eScript, /GEULLINT_E2E_REQUIRED/u);
 });
 
 test("advertises only installation paths that exist at release time", () => {
