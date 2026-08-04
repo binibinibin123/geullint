@@ -100,7 +100,7 @@ struct Arguments {
     #[arg(long, conflicts_with_all = ["changed", "watch", "corpus", "corpus_manifest"])]
     stdin: bool,
 
-    /// Git 작업 트리에서 변경된 지원 파일만 검사합니다.
+    /// Git의 staged·working tree·untracked 변경 중 지원 파일만 검사합니다.
     #[arg(long, conflicts_with_all = ["stdin", "watch", "corpus", "corpus_manifest"])]
     changed: bool,
 
@@ -115,6 +115,13 @@ struct Arguments {
     /// 내용 해시를 `.geullint/cache-v1.json`에 저장해 재검사 시간을 줄입니다.
     #[arg(long, conflicts_with_all = ["stdin", "corpus", "corpus_manifest"])]
     cache: bool,
+
+    /// ANSI 색상을 사용하지 않는 평문 출력을 고정합니다.
+    ///
+    /// `GeulLint`의 기본 출력도 평문이지만, 이 플래그를 CI·스크립트에 명시하면
+    /// 출력 계약이 색상 코드에 의존하지 않는다는 의도를 드러낼 수 있습니다.
+    #[arg(long)]
+    no_color: bool,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -898,7 +905,7 @@ fn print_completion(shell: CompletionShell) {
         CompletionShell::Bash => {
             r#"_geullint_complete() {
   local cur="${COMP_WORDS[COMP_CWORD]}"
-  COMPREPLY=( $(compgen -W "check fix init doctor dictionary feedback completion rules lsp --stdin --changed --watch --fix --format" -- "$cur") )
+  COMPREPLY=( $(compgen -W "check fix init doctor dictionary feedback completion rules lsp --stdin --changed --watch --fix --format --no-color" -- "$cur") )
 }
 complete -F _geullint_complete geullint
 "#
@@ -913,12 +920,13 @@ _arguments '1:command:(check fix init doctor dictionary feedback completion rule
 complete -c geullint -l stdin -d 'read one document from stdin'
 complete -c geullint -l changed -d 'check changed files'
 complete -c geullint -l fix -d 'apply safe fixes'
+complete -c geullint -l no-color -d 'disable ANSI color output'
 "
         }
         CompletionShell::Powershell => {
             r#"Register-ArgumentCompleter -Native -CommandName geullint -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  'check','fix','init','doctor','dictionary','feedback','completion','rules','lsp','--stdin','--changed','--watch','--fix','--format' |
+  'check','fix','init','doctor','dictionary','feedback','completion','rules','lsp','--stdin','--changed','--watch','--fix','--format','--no-color' |
     Where-Object { $_ -like "$wordToComplete*" } |
     ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterName', $_) }
 }
@@ -1054,7 +1062,7 @@ fn run_once(arguments: &Arguments) -> Result<bool> {
     let has_failure = reported.iter().any(|reported_diagnostic| {
         reaches_threshold(reported_diagnostic.diagnostic.severity, arguments.fail_on)
     });
-    print_report(&reported, arguments.format)?;
+    print_report(&reported, arguments.format, arguments.no_color)?;
     if let Some(cache_file) = cache_file {
         cache::save(&cache_path, &cache_file)?;
     }
@@ -1090,16 +1098,23 @@ fn append_reported_diagnostics(
 }
 
 fn collect_changed_files() -> Result<Vec<PathBuf>> {
-    let output = ProcessCommand::new("git")
-        .args(["diff", "--name-only", "--diff-filter=ACMR"])
-        .output()
-        .context("git diff를 실행할 수 없습니다")?;
-    if !output.status.success() {
-        bail!("git diff가 실패했습니다");
+    let mut candidates = Vec::new();
+    for arguments in [
+        &["diff", "--name-only", "-z", "--diff-filter=ACMR"][..],
+        &[
+            "diff",
+            "--cached",
+            "--name-only",
+            "-z",
+            "--diff-filter=ACMR",
+        ][..],
+        &["ls-files", "--others", "--exclude-standard", "-z"][..],
+    ] {
+        candidates.extend(git_name_only_paths(arguments)?);
     }
+
     let mut paths = Vec::new();
-    for line in String::from_utf8_lossy(&output.stdout).lines() {
-        let path = PathBuf::from(line);
+    for path in candidates {
         if path.is_file() && supported_source_kind(&path).is_some() {
             paths.push(path);
         }
@@ -1107,6 +1122,22 @@ fn collect_changed_files() -> Result<Vec<PathBuf>> {
     paths.sort();
     paths.dedup();
     Ok(paths)
+}
+
+fn git_name_only_paths(arguments: &[&str]) -> Result<Vec<PathBuf>> {
+    let output = ProcessCommand::new("git")
+        .args(arguments)
+        .output()
+        .with_context(|| format!("git {}를 실행할 수 없습니다", arguments.join(" ")))?;
+    if !output.status.success() {
+        bail!("git {}가 실패했습니다", arguments.join(" "));
+    }
+    Ok(output
+        .stdout
+        .split(|byte| *byte == 0)
+        .filter(|entry| !entry.is_empty())
+        .map(|entry| PathBuf::from(String::from_utf8_lossy(entry).into_owned()))
+        .collect())
 }
 
 fn print_diff(path: &Path, original: &str, fixed: &str) {
@@ -2020,7 +2051,14 @@ fn reaches_threshold(severity: Severity, threshold: FailOn) -> bool {
     )
 }
 
-fn print_report(reported: &[ReportedDiagnostic], format: OutputFormat) -> Result<()> {
+fn print_report(
+    reported: &[ReportedDiagnostic],
+    format: OutputFormat,
+    no_color: bool,
+) -> Result<()> {
+    // Human, JSON, and SARIF output intentionally contain no ANSI escapes. Reading the flag here
+    // keeps `--no-color` an explicit, tested contract without introducing a styling dependency.
+    let _ = no_color;
     match format {
         OutputFormat::Human => {
             for finding in reported {

@@ -71,6 +71,10 @@
 
 > **진행 기록 (2026-08-05):** Task 1의 JSONL 메타데이터, dataset quality gate, 장르·출처 slice 집계, exact/document/author/5-gram 누수 검사와 회귀 테스트는 구현했다. 독립 자연 문장 풀을 실제로 취득해 20,000건·인간 edit 5,000건 기준을 충족하는 단계는 아직 남아 있다.
 
+> **구현 기록 (2026-08-05, 현재 브랜치):** API·pipeline 경계, 후보 생성기·안전 정책, 증분 LSP, 오프라인 PWA 저장/피드백, CLI의 `init`·`doctor`·`--stdin`·`--changed`·`--watch`·원자적 `fix`·내용 해시 캐시·completion, 표준 사전 자산, portable ranker 계약, red-team/품질 보고서와 CI/release 검증 연결까지 구현했다. `--changed`는 staged·working tree·untracked 파일을 모두 검사하며 CLI에는 평문 출력 계약인 `--no-color`가 있다. 전체 Rust·Node·Python 게이트는 통과한다.
+>
+> **아직 닫히지 않은 출구조건:** 외부 독립 인간 교정 5,000 edit와 20,000 자연 문장·두 개 release holdout, 실제 학습된 INT8 ONNX 모델, Native/Web E2E와 6개 runner 설치 검증, 베타 tag·GitHub Release는 아직 없다. 따라서 현재 품질 문서는 NO-GO이며 `상용급`·`Harper급`·`네이버급` 비교를 사용하지 않는다.
+
 ### Task 1: 기준선과 잠긴 평가 계약
 
 **Files:**

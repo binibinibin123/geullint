@@ -1,5 +1,7 @@
 use assert_cmd::Command;
+use predicates::prelude::PredicateBooleanExt;
 use std::fs;
+use std::process::Command as ProcessCommand;
 
 #[test]
 fn check_stdin_accepts_text_without_a_path() {
@@ -121,4 +123,54 @@ fn completion_outputs_a_shell_specific_script() {
         .assert()
         .success()
         .stdout(predicates::str::contains("Register-ArgumentCompleter"));
+}
+
+#[test]
+fn no_color_is_an_explicit_plain_output_contract() {
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    command
+        .args(["check", "--stdin", "--no-color", "--format", "human"])
+        .write_stdin("몇일 뒤에 만나요.")
+        .assert()
+        .code(1)
+        .stdout(predicates::str::contains("spelling.lexical.myeochil"))
+        .stdout(predicates::str::is_match("\\x1b\\[").unwrap().not());
+}
+
+#[test]
+fn changed_checks_staged_worktree_and_untracked_source_files() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    run_git(directory.path(), ["init", "-q"]);
+    run_git(
+        directory.path(),
+        ["config", "user.email", "tests@example.invalid"],
+    );
+    run_git(directory.path(), ["config", "user.name", "GeulLint Tests"]);
+
+    let tracked = directory.path().join("tracked.txt");
+    fs::write(&tracked, "며칠 뒤에 만나요.\n").expect("tracked source");
+    run_git(directory.path(), ["add", "tracked.txt"]);
+    run_git(directory.path(), ["commit", "-qm", "baseline"]);
+    fs::write(&tracked, "몇일 뒤에 만나요.\n").expect("modified source");
+
+    let untracked = directory.path().join("untracked.md");
+    fs::write(&untracked, "몇일 뒤에 만나요.\n").expect("untracked source");
+
+    Command::cargo_bin("geullint")
+        .expect("geullint binary")
+        .current_dir(directory.path())
+        .args(["check", "--changed", "--format", "json"])
+        .assert()
+        .code(1)
+        .stdout(predicates::str::contains("tracked.txt"))
+        .stdout(predicates::str::contains("untracked.md"));
+}
+
+fn run_git<const N: usize>(directory: &std::path::Path, args: [&str; N]) {
+    let status = ProcessCommand::new("git")
+        .args(args)
+        .current_dir(directory)
+        .status()
+        .expect("git available");
+    assert!(status.success(), "git command failed");
 }

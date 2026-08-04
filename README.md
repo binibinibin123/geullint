@@ -105,21 +105,28 @@ Rust 도구 체인이 이미 있다면 소스에서 고정 설치할 수도 있�
 ## 실제 출력
 
 ```text
-$ geullint memo.md
+$ geullint check memo.md
 memo.md:1:5: error [spelling.lexical.myeochil] ‘몇일’은 ‘며칠’로 쓰는 것이 맞습니다. → 며칠
 memo.md:2:4: warning [grammar.conjugation.doe-to-dwae] ‘되/돼’의 활용과 준말 표기를 바로잡으세요. → 돼서
 ```
 
 ```bash
-geullint .                                      # 저장소 검사
-geullint --format json docs/                    # JSON
-geullint --format sarif docs/ > geullint.sarif  # SARIF 2.1.0
-geullint rules --format markdown                # 공개 규칙 목록
+geullint check .                                # 저장소 검사
+geullint check --format json docs/              # JSON
+geullint check --format sarif docs/ > geullint.sarif  # SARIF 2.1.0
+geullint check --changed --no-color              # staged·수정·untracked 파일
+geullint fix --diff docs/                        # 안전한 수정 미리보기
+geullint fix docs/                               # 안전한 수정 적용
+geullint init                                     # 프로젝트 설정 생성
+geullint doctor --format json                    # 설정·사전 점검
+geullint rules --format markdown                 # 공개 규칙 목록
 geullint --disable spelling.lexical.myeochil note.txt
 geullint --dictionary-overlay .geullint.overlay docs/
 geullint --rule-pack .geullint-rules.yaml docs/
 geullint --corpus corpus/seed-v1.jsonl
 geullint --corpus-manifest gold.manifest.json
+geullint feedback export --output feedback.jsonl  # 로컬 피드백 정제
+geullint completion powershell > geullint.ps1
 geullint lsp --stdio
 ```
 
