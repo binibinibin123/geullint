@@ -911,6 +911,74 @@ fn evaluates_a_local_corpus_against_declared_quality_thresholds() {
 }
 
 #[test]
+fn reports_dataset_metadata_and_rejects_synthetic_quality_data() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let corpus = directory.path().join("dataset-quality.jsonl");
+    fs::write(
+        &corpus,
+        concat!(
+            r#"{"id":"human-error","text":"몇일 뒤에 만나요.","genre":"news","origin":"independent_human","split":"release_holdout","documentId":"doc-a","authorId":"author-a","expectedRuleIds":["spelling.lexical.myeochil"]}"#,
+            "\n",
+            r#"{"id":"human-normal","text":"오늘 문서를 읽는다.","genre":"news","origin":"independent_human","split":"release_holdout","documentId":"doc-a","authorId":"author-a","caseType":"normal","expectedRuleIds":[]}"#,
+            "\n",
+            r#"{"id":"synthetic-error","text":"몇일 뒤에 만나요.","genre":"technical","origin":"synthetic","split":"train","documentId":"doc-b","expectedRuleIds":["spelling.lexical.myeochil"]}"#,
+            "\n",
+        ),
+    )
+    .expect("dataset quality corpus");
+    let gate = directory.path().join("dataset-quality-gate.json");
+    fs::write(
+        &gate,
+        r#"{"schemaVersion":1,"minMicroPrecision":0,"minMacroPrecision":0,"minRecall":0,"minRulePrecisionWilsonLower95":0,"minExpectedPerRule":1,"requiredRuleIds":["spelling.lexical.myeochil"],"dataset":{"minCases":3,"minNaturalCases":2,"minHumanEditCases":2,"minNormalCases":1,"minGenres":2,"minDocuments":2,"requireReleaseHoldout":true,"requireIndependentHuman":true,"rejectSynthetic":true}}"#,
+    )
+    .expect("dataset quality gate");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    let output = command
+        .args([
+            "--corpus",
+            corpus.to_str().expect("UTF-8 path"),
+            "--corpus-gate",
+            gate.to_str().expect("UTF-8 path"),
+        ])
+        .output()
+        .expect("run geullint");
+
+    assert_eq!(output.status.code(), Some(1));
+    let report: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid dataset quality report");
+    assert_eq!(report["dataset"]["cases"], 3);
+    assert_eq!(report["dataset"]["naturalCases"], 2);
+    assert_eq!(report["dataset"]["humanEditCases"], 1);
+    assert_eq!(report["dataset"]["syntheticCases"], 1);
+    assert!(
+        report["qualityGate"]["failures"]
+            .as_array()
+            .expect("quality failures")
+            .iter()
+            .any(|failure| failure["metric"] == "syntheticCases")
+    );
+}
+
+#[test]
+fn rejects_non_project_corpus_rows_without_provenance_metadata() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let corpus = directory.path().join("missing-provenance.jsonl");
+    fs::write(
+        &corpus,
+        r#"{"id":"revision-error","text":"몇일 뒤에 만나요.","origin":"revision","split":"dev","expectedRuleIds":["spelling.lexical.myeochil"]}"#,
+    )
+    .expect("provenance corpus");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    command
+        .args(["--corpus", corpus.to_str().expect("UTF-8 path")])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains("requires a non-empty genre"));
+}
+
+#[test]
 fn corpus_evaluation_fails_when_annotations_and_diagnostics_do_not_match() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let corpus = directory.path().join("corpus.jsonl");

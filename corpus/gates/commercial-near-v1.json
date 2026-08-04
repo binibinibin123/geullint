@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "minMicroPrecision": 0.98,
+  "minMacroPrecision": 0.97,
+  "minRecall": 0.85,
+  "minRulePrecisionWilsonLower95": 0.995,
+  "minExpectedPerRule": 50,
+  "requiredRuleIds": [
+    "spelling.lexical.myeochil",
+    "spelling.conjugation.dwaet",
+    "spacing.compound.database"
+  ],
+  "dataset": {
+    "minCases": 20000,
+    "minNaturalCases": 20000,
+    "minHumanEditCases": 5000,
+    "minNormalCases": 10000,
+    "minGenres": 8,
+    "minDocuments": 100,
+    "requireReleaseHoldout": true,
+    "requireIndependentHuman": true,
+    "rejectSynthetic": true
+  }
+}

@@ -14,6 +14,12 @@ use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+mod evaluation_v2;
+use evaluation_v2::{
+    CaseMetadata, CorpusOrigin, CorpusSplit, DatasetMetadata, DatasetQualityGate,
+    aggregate_metadata, evaluate_dataset_gate,
+};
+
 #[derive(Debug, Parser)]
 #[command(
     name = "geullint",
@@ -245,6 +251,16 @@ struct CorpusCase {
     #[serde(default)]
     provenance_id: Option<String>,
     #[serde(default)]
+    origin: CorpusOrigin,
+    #[serde(default)]
+    split: Option<CorpusSplit>,
+    #[serde(default)]
+    document_id: Option<String>,
+    #[serde(default)]
+    author_id: Option<String>,
+    #[serde(default)]
+    error_families: Vec<String>,
+    #[serde(default)]
     expected_rule_ids: Vec<String>,
     #[serde(default)]
     expected_diagnostics: Vec<CorpusExpectedDiagnostic>,
@@ -292,6 +308,8 @@ struct CorpusQualityGate {
     min_rule_precision_wilson_lower_95: f64,
     min_expected_per_rule: usize,
     required_rule_ids: Vec<String>,
+    #[serde(default)]
+    dataset: DatasetQualityGate,
 }
 
 #[derive(Clone, Serialize)]
@@ -373,6 +391,7 @@ struct CorpusReport {
     normal_cases: usize,
     false_positive_cases: usize,
     specificity: Option<f64>,
+    dataset: DatasetMetadata,
     rule_metrics: Vec<RuleCorpusMetric>,
     #[serde(skip_serializing_if = "Option::is_none")]
     quality_gate: Option<CorpusQualityGateReport>,
@@ -640,6 +659,59 @@ fn resolve_expected_diagnostic_ranges(
     Ok(())
 }
 
+fn validate_corpus_metadata(path: &Path, line: usize, case: &CorpusCase) -> Result<()> {
+    if case.origin == CorpusOrigin::Project {
+        return Ok(());
+    }
+    if case
+        .genre
+        .as_deref()
+        .is_none_or(|genre| genre.trim().is_empty())
+    {
+        bail!(
+            "{} corpus line {line} non-project origin requires a non-empty genre",
+            path.display()
+        );
+    }
+    if case
+        .document_id
+        .as_deref()
+        .is_none_or(|document_id| document_id.trim().is_empty())
+    {
+        bail!(
+            "{} corpus line {line} non-project origin requires a documentId",
+            path.display()
+        );
+    }
+    if case.split.is_none() {
+        bail!(
+            "{} corpus line {line} non-project origin requires a split",
+            path.display()
+        );
+    }
+    if case
+        .author_id
+        .as_deref()
+        .is_some_and(|author_id| author_id.trim().is_empty())
+    {
+        bail!(
+            "{} corpus line {line} authorId cannot be empty",
+            path.display()
+        );
+    }
+    if case
+        .error_families
+        .iter()
+        .any(|family| family.trim().is_empty())
+    {
+        bail!(
+            "{} corpus line {line} errorFamilies cannot contain empty values",
+            path.display()
+        );
+    }
+    Ok(())
+}
+
 #[allow(clippy::too_many_lines)] // Keeps streaming parsing, validation, matching, and metric aggregation together.
 fn evaluate_corpus(
     path: &Path,
@@ -660,6 +732,7 @@ fn evaluate_corpus(
     let mut case_failures = Vec::new();
     let mut rule_metric_counts = BTreeMap::<String, RuleMetricCounts>::new();
     let mut seen_case_ids = BTreeMap::<String, usize>::new();
+    let mut metadata_cases = Vec::new();
     let mut engines: [Option<Engine>; 3] = [None, None, None];
     let mut has_fixed_text_mismatch = false;
 
@@ -710,6 +783,7 @@ fn evaluate_corpus(
                 );
             }
         }
+        validate_corpus_metadata(path, index + 1, &case)?;
 
         let mut config = base_config.clone();
         if let Some(profile) = case.profile {
@@ -737,6 +811,14 @@ fn evaluate_corpus(
         };
         validate_corpus_case_type(path, index + 1, case.case_type, expected_diagnostics.len())?;
         resolve_expected_diagnostic_ranges(path, index + 1, &case.text, &mut expected_diagnostics)?;
+        metadata_cases.push(CaseMetadata {
+            id: case.id.clone(),
+            origin: case.origin,
+            split: case.split,
+            genre: case.genre.clone(),
+            document_id: case.document_id.clone(),
+            normal: expected_diagnostics.is_empty(),
+        });
         let engine_index = profile_engine_index(config.profile);
         if engines[engine_index].is_none() {
             engines[engine_index] = Some(build_engine(config, packs.to_vec())?);
@@ -803,6 +885,7 @@ fn evaluate_corpus(
     let precision_denominator = true_positives + false_positives;
     let recall_denominator = true_positives + false_negatives;
     let clean_normal_cases = normal_cases - false_positive_cases;
+    let dataset = aggregate_metadata(&metadata_cases);
     let rule_metrics: Vec<_> = rule_metric_counts
         .into_iter()
         .map(|(rule_id, counts)| {
@@ -833,12 +916,24 @@ fn evaluate_corpus(
         normal_cases,
         false_positive_cases,
         specificity: ratio(clean_normal_cases, normal_cases),
+        dataset,
         rule_metrics,
         quality_gate: None,
         case_failures,
     };
     let has_failure = if let Some(gate) = quality_gate {
-        let gate_report = evaluate_corpus_quality_gate(&report, gate);
+        let mut gate_report = evaluate_corpus_quality_gate(&report, gate);
+        gate_report.failures.extend(
+            evaluate_dataset_gate(&report.dataset, &gate.dataset)
+                .into_iter()
+                .map(|failure| CorpusQualityGateFailure {
+                    metric: failure.metric,
+                    actual: Some(failure.actual as f64),
+                    minimum: failure.minimum as f64,
+                    rule_id: None,
+                }),
+        );
+        gate_report.passed = gate_report.failures.is_empty();
         let passed = gate_report.passed;
         report.quality_gate = Some(gate_report);
         !passed || has_fixed_text_mismatch
