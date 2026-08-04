@@ -6,6 +6,7 @@ export interface ConfigurationReader {
 
 export interface LspConfiguration {
   profile: string;
+  disabledRules: string[];
   userDictionary: string[];
   dictionaryOverlay: string[];
   dictionaryOverlayPaths: string[];
@@ -25,6 +26,7 @@ export function createLspConfiguration(
 ): LspConfiguration {
   return {
     profile: configuration.get<string>("profile", "default"),
+    disabledRules: configuration.get<string[]>("disabledRules", []),
     userDictionary: configuration.get<string[]>("userDictionary", []),
     dictionaryOverlay: configuration.get<string[]>("dictionaryOverlay", []),
     dictionaryOverlayPaths: resolveWorkspacePaths(

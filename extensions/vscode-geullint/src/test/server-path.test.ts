@@ -60,6 +60,7 @@ test("declares profile, personal dictionary, local overlay path, and rule pack s
     "editorial",
   ]);
   assert.equal(properties["geullint.profile"].default, "default");
+  assert.deepEqual(properties["geullint.disabledRules"].default, []);
   assert.deepEqual(properties["geullint.userDictionary"].default, []);
   assert.deepEqual(properties["geullint.dictionaryOverlay"].default, []);
   assert.deepEqual(properties["geullint.dictionaryOverlayPaths"].default, []);

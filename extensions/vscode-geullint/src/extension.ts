@@ -11,6 +11,7 @@ import {
 import { createLspConfiguration, firstWorkspaceFolderUri } from "./configuration";
 import { createRuleQuickPickItems, type RuleCatalog } from "./rule-catalog";
 import { resolveServerCommand } from "./server-path";
+import { collectSafeFixEdits, type GeulLintDiagnostic } from "./safe-fixes";
 
 let client: LanguageClient | undefined;
 
@@ -57,6 +58,47 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   client = new LanguageClient("geullint", "GeulLint", serverOptions, clientOptions);
   await client.start();
   context.subscriptions.push({ dispose: () => void client?.stop() });
+  context.subscriptions.push(
+    vscode.commands.registerCommand("geullint.fixAllSafe", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
+      const diagnostics = vscode.languages.getDiagnostics(editor.document.uri);
+      const edits = collectSafeFixEdits(
+        diagnostics.map<GeulLintDiagnostic>((diagnostic) => ({
+          range: {
+            start: {
+              line: diagnostic.range.start.line,
+              character: diagnostic.range.start.character,
+            },
+            end: {
+              line: diagnostic.range.end.line,
+              character: diagnostic.range.end.character,
+            },
+          },
+          source: diagnostic.source,
+          data: diagnostic.data as GeulLintDiagnostic["data"],
+        })),
+      );
+      if (edits.length === 0) {
+        await vscode.window.showInformationMessage("적용할 GeulLint 안전 교정이 없습니다.");
+        return;
+      }
+      const workspaceEdit = new vscode.WorkspaceEdit();
+      for (const edit of edits) {
+        workspaceEdit.replace(
+          editor.document.uri,
+          new vscode.Range(
+            edit.range.start.line,
+            edit.range.start.character,
+            edit.range.end.line,
+            edit.range.end.character,
+          ),
+          edit.newText,
+        );
+      }
+      await vscode.workspace.applyEdit(workspaceEdit);
+    }),
+  );
   context.subscriptions.push(
     vscode.commands.registerCommand("geullint.openRuleCatalog", async () => {
       try {
