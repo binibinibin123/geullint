@@ -22,7 +22,36 @@ export function createLocalStore({
     });
   }
 
+  function readLocalMirror(key) {
+    if (!canUseLocalStorage) return undefined;
+    try {
+      return localStorage.getItem(key) ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  function writeLocalMirror(key, value) {
+    if (!canUseLocalStorage) return;
+    try {
+      localStorage.setItem(key, String(value));
+    } catch {
+      // IndexedDB remains the durable store when the synchronous mirror is unavailable.
+    }
+  }
+
+  function removeLocalMirror(key) {
+    if (!canUseLocalStorage) return;
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore private-mode storage errors; IndexedDB deletion still proceeds.
+    }
+  }
+
   async function read(key) {
+    const mirrored = readLocalMirror(key);
+    if (mirrored !== undefined) return mirrored;
     if (canUseIndexedDb) {
       const db = await database();
       return new Promise((resolve, reject) => {
@@ -31,11 +60,11 @@ export function createLocalStore({
         request.onerror = () => reject(request.error ?? new Error("로컬 데이터를 읽을 수 없습니다."));
       });
     }
-    if (canUseLocalStorage) return localStorage.getItem(key) ?? undefined;
     return undefined;
   }
 
   async function write(key, value) {
+    writeLocalMirror(key, value);
     if (canUseIndexedDb) {
       const db = await database();
       return new Promise((resolve, reject) => {
@@ -45,7 +74,6 @@ export function createLocalStore({
         transaction.onerror = () => reject(transaction.error ?? new Error("로컬 데이터를 저장할 수 없습니다."));
       });
     }
-    if (canUseLocalStorage) localStorage.setItem(key, String(value));
   }
 
   async function loadJson(key, fallback) {
@@ -71,6 +99,7 @@ export function createLocalStore({
       return write(draftKey, String(text));
     },
     async clearDraft() {
+      removeLocalMirror(draftKey);
       if (canUseIndexedDb) {
         const db = await database();
         return new Promise((resolve, reject) => {
@@ -80,7 +109,6 @@ export function createLocalStore({
           transaction.onerror = () => reject(transaction.error ?? new Error("초안을 삭제할 수 없습니다."));
         });
       }
-      if (canUseLocalStorage) localStorage.removeItem(draftKey);
     },
     async loadSettings() {
       return loadJson(SETTINGS_KEY, {});
