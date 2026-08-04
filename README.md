@@ -17,7 +17,7 @@
   <a href="https://github.com/binibinibin123/geullint/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/binibinibin123/geullint/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/binibinibin123/geullint/releases"><img alt="Release" src="https://img.shields.io/github/v/release/binibinibin123/geullint?display_name=tag&include_prereleases&sort=semver&color=ff5b35"></a>
   <a href="CHANGELOG.md"><img alt="Early alpha" src="https://img.shields.io/badge/status-early_alpha-dfff38?labelColor=18211c"></a>
-  <a href="docs/offline.md"><img alt="Offline first" src="https://img.shields.io/badge/network_requests-0-67ce78?labelColor=18211c"></a>
+  <a href="docs/offline.md"><img alt="Text uploads" src="https://img.shields.io/badge/text_uploads-0-67ce78?labelColor=18211c"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-f1efe6?labelColor=18211c"></a>
 </p>
 

@@ -81,6 +81,11 @@ test("makes one-command cross-platform installers the first quick start", () => 
   assert.doesNotMatch(readme, /npm install --save-dev geullint/);
 });
 
+test("scopes the privacy badge to text uploads rather than all network traffic", () => {
+  assert.match(readme, /text_uploads-0/u);
+  assert.doesNotMatch(readme, /network_requests-0/u);
+});
+
 test("documents CI use, supported targets, and the actual repository", () => {
   assert.match(readme, /geullint \./);
   assert.match(readme, /Windows x64/);
