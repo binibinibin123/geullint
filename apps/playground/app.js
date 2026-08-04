@@ -359,12 +359,14 @@ copyCorrection.addEventListener("click", async () => {
 applyCorrection.addEventListener("click", () => {
   rememberBeforeOverwrite();
   editor.value = correctedOutput.value;
+  history.push(editor.value);
   updateCharacterCount();
   editor.focus();
   scan();
 });
 undoCorrection.addEventListener("click", () => {
-  const restored = history.undo() ?? undoText;
+  const historyRestored = history.undo();
+  const restored = undoText ?? historyRestored;
   if (restored === undefined) return;
   editor.value = restored;
   undoText = undefined;

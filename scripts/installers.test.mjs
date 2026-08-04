@@ -5,6 +5,7 @@ import test from "node:test";
 const shell = readFileSync("install.sh", "utf8");
 const powershell = readFileSync("install.ps1", "utf8");
 const release = readFileSync(".github/workflows/release.yml", "utf8");
+const attributes = readFileSync(".gitattributes", "utf8");
 
 test("shell installer selects every Unix release target and verifies SHA-256", () => {
   assert.match(shell, /Darwin\) operating_system="darwin"/u);
@@ -37,4 +38,9 @@ test("release attaches both readable installer scripts", () => {
   assert.match(release, /one-command installers/iu);
   assert.match(release, /Compress-Archive -Path \$stagingDirectory -DestinationPath \$archive/u);
   assert.doesNotMatch(release, /Compress-Archive -Path "\$stagingDirectory\/\*"/u);
+});
+
+test("keeps the PowerShell installer byte-identical to the raw GitHub script", () => {
+  assert.match(attributes, /^\*\.ps1 text eol=lf$/mu);
+  assert.match(release, /cp install\.sh install\.ps1 release-assets\//u);
 });

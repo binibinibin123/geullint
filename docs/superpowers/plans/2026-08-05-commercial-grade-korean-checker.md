@@ -73,9 +73,10 @@
 
 > **구현 기록 (2026-08-05, 현재 브랜치):** API·pipeline 경계, 후보 생성기·안전 정책, 증분 LSP, 오프라인 PWA 저장/피드백, CLI의 `init`·`doctor`·`--stdin`·`--changed`·`--watch`·원자적 `fix`·내용 해시 캐시·completion, 표준 사전 자산, portable ranker 계약, red-team/품질 보고서와 CI/release 검증 연결까지 구현했다. `--changed`는 staged·working tree·untracked 파일을 모두 검사하며 CLI에는 평문 출력 계약인 `--no-color`가 있다. 전체 Rust·Node·Python 게이트는 통과한다.
 >
-> **아직 닫히지 않은 출구조건:** 외부 독립 인간 교정 5,000 edit와 20,000 자연 문장·두 개 release holdout, 실제 학습된 INT8 ONNX 모델, Native/Web E2E와 6개 runner 설치 검증, 베타 tag·GitHub Release는 아직 없다. 따라서 현재 품질 문서는 NO-GO이며 `상용급`·`Harper급`·`네이버급` 비교를 사용하지 않는다.
+> **아직 닫히지 않은 출구조건:** 외부 독립 인간 교정 5,000 edit와 20,000 자연 문장·두 개 release holdout, 실제 학습된 INT8 ONNX 모델, Firefox/WebKit·모바일을 포함한 전체 Native/Web E2E와 6개 runner 설치 검증, 베타 tag·GitHub Release는 아직 없다. 따라서 현재 품질 문서는 NO-GO이며 `상용급`·`Harper급`·`네이버급` 비교를 사용하지 않는다.
 >
 > **추가 구현 기록:** `geullint-core`의 `standard` feature에 `StandardPipeline`을 연결했고, 같은 후보·ranker 경계를 native·WASM·CLI(`--engine standard`)에서 호출할 수 있게 했다. 표준 후보는 현재 한 진단 안의 최대 8개 Review 제안으로 묶이며 compact safe fix와 분리된다. 기본 빌드와 all-features 빌드 모두 별도 회귀 테스트를 통과한다.
+> **브라우저 검증 기록:** 오프라인 Chromium E2E가 데스크톱·모바일 뷰포트에서 서비스 워커 준비, 별도 원문·교정문, 복사·적용, undo/redo, 사용자 사전 재로드, 네트워크 차단 후 재검사를 검증한다. 적용 직후 undo가 초기 샘플로 되돌아가던 실제 회귀를 수정했고, Pages·release workflow가 잠금된 Playwright Chromium 게이트를 실행한다. Firefox/WebKit과 6개 release runner 검증은 아직 남아 있다.
 
 ### Task 1: 기준선과 잠긴 평가 계약
 

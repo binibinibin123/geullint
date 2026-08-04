@@ -11,6 +11,7 @@ const storage = readFileSync("apps/playground/storage.js", "utf8");
 const manifest = readFileSync("apps/playground/manifest.webmanifest", "utf8");
 const i18n = readFileSync("apps/playground/i18n.js", "utf8");
 const buildScript = readFileSync("scripts/build-playground.mjs", "utf8");
+const e2eScript = readFileSync("scripts/playground-e2e.spec.mjs", "utf8");
 const pagesWorkflow = readFileSync(".github/workflows/pages.yml", "utf8");
 
 test("presents the web app as a private Korean spelling checker first", () => {
@@ -55,6 +56,8 @@ test("ships a separate corrected sentence with copy and apply actions", () => {
   assert.match(app, /editor\.value\s*!==\s*requestedText/);
   assert.match(app, /navigator\.clipboard\.writeText/);
   assert.match(app, /editor\.value\s*=\s*correctedOutput\.value/);
+  assert.match(app, /history\.push\(editor\.value\)/u);
+  assert.match(app, /const historyRestored = history\.undo\(\)/u);
   assert.match(app, /reviewFixedText/);
   assert.match(app, /includeReviewCorrections\.addEventListener\("change"/);
   for (const key of [
@@ -137,6 +140,8 @@ test("deploys the generated static playground through GitHub Pages", () => {
   assert.match(pagesWorkflow, /apps\/playground/);
   assert.match(index, /src="\.\/app\.js"/);
   assert.match(index, /href="\.\/app\.css"/);
+  assert.match(pagesWorkflow, /playwright install --with-deps chromium/u);
+  assert.match(pagesWorkflow, /GEULLINT_E2E_REQUIRED=1 GEULLINT_E2E_VIEWPORTS=all npm run e2e/u);
 });
 
 test("keeps a cold reload usable without a network connection", () => {
@@ -152,6 +157,17 @@ test("keeps a cold reload usable without a network connection", () => {
   const parsedManifest = JSON.parse(manifest);
   assert.equal(parsedManifest.start_url, "./index.html");
   assert.equal(parsedManifest.display, "standalone");
+});
+
+test("ships an opt-in browser E2E contract for offline correction workflows", () => {
+  assert.match(e2eScript, /serviceWorker/iu);
+  assert.match(e2eScript, /setOffline\(true\)/u);
+  assert.match(e2eScript, /corrected-output/u);
+  assert.match(e2eScript, /externalRequests/u);
+  assert.match(e2eScript, /Pixel 7/u);
+  assert.match(e2eScript, /GEULLINT_E2E_VIEWPORTS/u);
+  assert.match(e2eScript, /\["chromium", "firefox", "webkit"\]/u);
+  assert.match(e2eScript, /GEULLINT_E2E_REQUIRED/u);
 });
 
 test("advertises only installation paths that exist at release time", () => {
