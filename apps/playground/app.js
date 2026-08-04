@@ -22,6 +22,9 @@ const applyCorrection = document.querySelector("#apply-correction");
 const undoCorrection = document.querySelector("#undo-correction");
 const redoCorrection = document.querySelector("#redo-correction");
 const includeReviewCorrections = document.querySelector("#include-review-corrections");
+const dictionaryEntry = document.querySelector("#dictionary-entry");
+const dictionaryAdd = document.querySelector("#dictionary-add");
+const dictionaryList = document.querySelector("#dictionary-list");
 const feedbackExport = document.querySelector("#feedback-export");
 const feedbackIssue = document.querySelector("#feedback-issue");
 const ruleSearch = document.querySelector("#rule-search");
@@ -44,6 +47,7 @@ let correctionState = "correctionLoading";
 let requestedText = "";
 let latestCorrection;
 let latestDiagnostics = [];
+let userDictionary = [];
 let undoText;
 const initialText = editor.value;
 const history = createHistory(initialText, 50);
@@ -65,6 +69,28 @@ export function createRuleIndex(catalog) {
 
 function updateCharacterCount() {
   characterCount.textContent = `${[...editor.value].length}자`;
+}
+
+function renderDictionary() {
+  dictionaryList.replaceChildren();
+  for (const entry of userDictionary) {
+    const item = document.createElement("li");
+    const label = document.createElement("code");
+    label.textContent = entry;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "dictionary-remove";
+    remove.textContent = "×";
+    remove.setAttribute("aria-label", `${entry} 삭제`);
+    remove.addEventListener("click", () => {
+      userDictionary = userDictionary.filter((candidate) => candidate !== entry);
+      void localStore.saveDictionary(userDictionary).catch(() => {});
+      renderDictionary();
+      scan();
+    });
+    item.append(label, remove);
+    dictionaryList.append(item);
+  }
 }
 
 function setBusy(isBusy) {
@@ -239,7 +265,7 @@ function scan() {
     id,
     text: requestedText,
     sourceKind: sourceKind.value,
-    config: { profile: profile.value },
+    config: { profile: profile.value, userDictionary },
     includeReviewFixes: includeReviewCorrections.checked,
   });
 }
@@ -361,6 +387,21 @@ redoCorrection.addEventListener("click", () => {
 includeReviewCorrections.addEventListener("change", () => {
   scan();
 });
+dictionaryAdd.addEventListener("click", () => {
+  const entry = dictionaryEntry.value.trim();
+  if (!entry || userDictionary.includes(entry)) return;
+  userDictionary = [...userDictionary, entry].sort((left, right) => left.localeCompare(right));
+  dictionaryEntry.value = "";
+  void localStore.saveDictionary(userDictionary).catch(() => {});
+  renderDictionary();
+  scan();
+});
+dictionaryEntry.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    dictionaryAdd.click();
+  }
+});
 ruleSearch.addEventListener("input", renderRuleList);
 const GITHUB_ISSUE_URL = "https://github.com/binibinibin123/geullint/issues/new?template=bug.yml";
 if (feedbackIssue) feedbackIssue.href = GITHUB_ISSUE_URL;
@@ -403,6 +444,10 @@ currentCopy = applyLocale(language.value);
 setCorrectionState(correctionState);
 updateCharacterCount();
 updateHistoryActions();
+void localStore.loadDictionary().then((dictionary) => {
+  userDictionary = dictionary;
+  renderDictionary();
+}).catch(() => {});
 void localStore.loadDraft().then((draft) => {
   if (!draft || editor.value !== initialText) return;
   editor.value = draft;

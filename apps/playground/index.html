@@ -81,6 +81,15 @@
             <option value="python">Python comments</option>
             <option value="rust">Rust comments</option>
           </select>
+          <details class="dictionary-control">
+            <summary data-i18n="dictionaryTitle">내 사전</summary>
+            <label class="sr-only" for="dictionary-entry" data-i18n="dictionaryLabel">사전에 추가할 단어</label>
+            <div class="dictionary-form">
+              <input id="dictionary-entry" type="text" autocomplete="off" data-i18n-placeholder="dictionaryPlaceholder" placeholder="제품명·고유명사" />
+              <button class="text-button" id="dictionary-add" type="button" data-i18n="dictionaryAdd">추가</button>
+            </div>
+            <ul id="dictionary-list" class="dictionary-list" aria-live="polite"></ul>
+          </details>
           <button class="scan-button" id="scan" type="button"><span data-i18n="scan">문장 점검</span><b aria-hidden="true">↗</b></button>
           <p class="privacy-note" data-i18n="privacy">모든 검사는 이 브라우저에서만 실행됩니다. 입력 내용은 외부로 전송되지 않으며 이 기기의 로컬 저장소에만 임시 보관합니다.</p>
         </div>

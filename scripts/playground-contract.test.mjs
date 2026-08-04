@@ -80,6 +80,16 @@ test("offers privacy-preserving feedback export and explicit issue handoff", () 
   assert.match(app, /github\.com\/binibinibin123\/geullint\/issues\/new/u);
 });
 
+test("keeps a local project dictionary ahead of bundled rules", () => {
+  for (const id of ["dictionary-entry", "dictionary-add", "dictionary-list"]) {
+    assert.match(index, new RegExp(`id="${id}"`));
+  }
+  assert.match(app, /userDictionary/u);
+  assert.match(app, /saveDictionary/u);
+  assert.match(app, /config: \{ profile: profile\.value, userDictionary \}/u);
+  assert.match(worker, /config: data\.config/u);
+});
+
 test("starts the human-facing demo with conservative safe corrections", () => {
   assert.match(index, /<option value="default" selected>/u);
   assert.match(index, /id="include-review-corrections" type="checkbox"/u);

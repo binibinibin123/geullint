@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createHistory } from "../apps/playground/history.js";
+import { createLocalStore } from "../apps/playground/storage.js";
 
 test("history keeps bounded reversible text states without duplicating entries", () => {
   const history = createHistory("첫 문장", 3);
@@ -24,4 +25,11 @@ test("history truncates redo states after a new edit", () => {
   history.push("d");
   assert.equal(history.redo(), undefined);
   assert.deepEqual(history.states(), ["a", "b", "d"]);
+});
+
+test("local store exposes draft, settings, and dictionary persistence without a server", () => {
+  const store = createLocalStore();
+  for (const method of ["loadDraft", "saveDraft", "loadSettings", "saveSettings", "loadDictionary", "saveDictionary"]) {
+    assert.equal(typeof store[method], "function");
+  }
 });
