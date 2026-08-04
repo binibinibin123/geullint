@@ -181,6 +181,9 @@ Release에서 운영체제와 CPU에 맞는 **VSIX**를 받아 VS Code의 `Exten
 - [dictionary overlay](docs/dictionary-overlay.md): 팀 고유명사·표면형 사전
 - [오프라인·개인정보 경계](docs/offline.md)
 - [배포·SBOM·attestation](docs/distribution.md)
+- [모델·사전 배포 경계](docs/model-distribution.md)
+- [개인정보 위협 모델](docs/privacy-threat-model.md)
+- [베타 GO/NO-GO 기준](docs/release-go-no-go.md)
 
 ## 현재 한계
 

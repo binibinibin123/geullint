@@ -51,3 +51,10 @@ fn ranker_is_bounded_and_deterministic_for_empty_evidence() {
     assert_eq!(first, second);
     assert!((0.0..=1.0).contains(&first));
 }
+
+#[cfg(feature = "standard")]
+#[test]
+fn bundled_ranker_artifact_round_trips_to_the_runtime_contract() {
+    let ranker = GeulRankSmall::bundled().expect("bundled ranker");
+    assert!((ranker.weights().bias - 4.0).abs() < 0.05);
+}

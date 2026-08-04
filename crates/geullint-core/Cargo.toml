@@ -15,6 +15,7 @@ morphology = ["dep:lindera"]
 aho-corasick.workspace = true
 lindera = { version = "4.0.1", default-features = false, features = ["embed-ko-dic"], optional = true }
 serde.workspace = true
+serde_json.workspace = true
 serde_yaml = "0.9.34"
 thiserror.workspace = true
 

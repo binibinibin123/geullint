@@ -1,4 +1,5 @@
 use crate::{Candidate, Confidence, RuleContext};
+use serde::Deserialize;
 
 /// Scores a candidate using only local, deterministic features.
 pub trait CandidateScorer {
@@ -41,6 +42,13 @@ pub struct GeulRankSmall {
     weights: RankWeights,
 }
 
+#[derive(Debug, Deserialize)]
+struct RankerManifest {
+    format: String,
+    scale: f32,
+    weights: std::collections::BTreeMap<String, i8>,
+}
+
 impl Default for GeulRankSmall {
     fn default() -> Self {
         Self {
@@ -59,6 +67,41 @@ impl GeulRankSmall {
     #[must_use]
     pub const fn from_weights(weights: RankWeights) -> Self {
         Self { weights }
+    }
+
+    /// Load the checked-in portable INT8 artifact without a dynamic runtime or network access.
+    pub fn from_manifest_str(source: &str) -> Result<Self, String> {
+        let manifest: RankerManifest =
+            serde_json::from_str(source).map_err(|error| error.to_string())?;
+        if manifest.format != "geulrank-linear-int8-v1"
+            || !manifest.scale.is_finite()
+            || manifest.scale <= 0.0
+        {
+            return Err("unsupported GeulRank manifest".to_owned());
+        }
+        let weight = |name: &str| {
+            manifest
+                .weights
+                .get(name)
+                .map_or(Err(format!("missing ranker weight: {name}")), |value| {
+                    Ok(f32::from(*value) * manifest.scale)
+                })
+        };
+        Ok(Self::from_weights(RankWeights {
+            bias: weight("bias")?,
+            edit_distance: weight("edit_distance")?,
+            phonology_distance: weight("phonology_distance")?,
+            log_frequency: weight("log_frequency")?,
+            base_score: weight("base_score")?,
+        }))
+    }
+
+    /// Load the versioned baseline artifact bundled by the `standard` feature.
+    #[cfg(feature = "standard")]
+    pub fn bundled() -> Result<Self, String> {
+        Self::from_manifest_str(include_str!(
+            "../../../../models/geulrank-small/manifest.json"
+        ))
     }
 
     #[must_use]
