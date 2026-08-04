@@ -1,5 +1,7 @@
 import { applyLocale } from "./i18n.js";
 import { replaceUtf8Range } from "./corrections.js";
+import { createHistory } from "./history.js";
+import { createLocalStore } from "./storage.js";
 
 const editor = document.querySelector("#editor");
 const profile = document.querySelector("#profile");
@@ -7,6 +9,8 @@ const sourceKind = document.querySelector("#source-kind");
 const language = document.querySelector("#language");
 const scanButton = document.querySelector("#scan");
 const sampleButton = document.querySelector("#sample");
+const fileInput = document.querySelector("#file-input");
+const exportText = document.querySelector("#export-text");
 const results = document.querySelector("#results");
 const findingCount = document.querySelector("#finding-count");
 const characterCount = document.querySelector("#character-count");
@@ -38,6 +42,8 @@ let requestedText = "";
 let latestCorrection;
 let undoText;
 const initialText = editor.value;
+const history = createHistory(initialText, 50);
+const localStore = createLocalStore();
 
 export function createRuleIndex(catalog) {
   return catalog.rules.map((rule) => ({
@@ -88,6 +94,7 @@ function invalidateCorrection() {
 
 function rememberBeforeOverwrite() {
   undoText = editor.value;
+  history.push(editor.value);
   undoCorrection.disabled = false;
 }
 
@@ -260,6 +267,8 @@ worker.addEventListener("message", ({ data }) => {
 });
 
 editor.addEventListener("input", () => {
+  history.push(editor.value);
+  void localStore.saveDraft(editor.value).catch(() => {});
   updateCharacterCount();
   invalidateCorrection();
 });
@@ -272,6 +281,31 @@ sampleButton.addEventListener("click", () => {
   editor.value = samples[sampleIndex];
   updateCharacterCount();
   scan();
+});
+fileInput.addEventListener("change", async () => {
+  const file = fileInput.files?.[0];
+  if (!file) return;
+  try {
+    rememberBeforeOverwrite();
+    editor.value = await file.text();
+    history.push(editor.value);
+    void localStore.saveDraft(editor.value).catch(() => {});
+    updateCharacterCount();
+    scan();
+  } catch {
+    setCorrectionState("correctionError");
+  } finally {
+    fileInput.value = "";
+  }
+});
+exportText.addEventListener("click", () => {
+  const blob = new Blob([editor.value], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "geullint-corrected.txt";
+  link.click();
+  URL.revokeObjectURL(url);
 });
 scanButton.addEventListener("click", scan);
 copyCorrection.addEventListener("click", async () => {
@@ -292,11 +326,13 @@ applyCorrection.addEventListener("click", () => {
   scan();
 });
 undoCorrection.addEventListener("click", () => {
-  if (undoText === undefined) return;
-  editor.value = undoText;
+  const restored = history.undo() ?? undoText;
+  if (restored === undefined) return;
+  editor.value = restored;
   undoText = undefined;
-  undoCorrection.disabled = true;
+  undoCorrection.disabled = !history.canUndo();
   updateCharacterCount();
+  void localStore.saveDraft(editor.value).catch(() => {});
   editor.focus();
   scan();
 });
@@ -322,6 +358,13 @@ try {
 currentCopy = applyLocale(language.value);
 setCorrectionState(correctionState);
 updateCharacterCount();
+void localStore.loadDraft().then((draft) => {
+  if (!draft || editor.value !== initialText) return;
+  editor.value = draft;
+  history.push(draft);
+  updateCharacterCount();
+  invalidateCorrection();
+}).catch(() => {});
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {
     // The app remains usable when opened from a local file or a host without SW support.

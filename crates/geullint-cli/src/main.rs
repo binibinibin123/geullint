@@ -1,5 +1,5 @@
 use anyhow::{Context, Result, bail};
-use clap::{Parser, ValueEnum};
+use clap::{Parser, Subcommand, ValueEnum};
 use geullint_core::{
     Diagnostic, DictionaryOverlay, Engine, LintConfig, Profile, RulePack, Severity, SourceKind,
     TextRange, rule_catalog, rule_metadata,
@@ -10,9 +10,11 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::fs;
-use std::io::{BufRead, BufReader};
+use std::io::{self, BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
-use std::process::ExitCode;
+use std::process::{Command as ProcessCommand, ExitCode};
+use std::thread;
+use std::time::Duration;
 
 mod evaluation_v2;
 use evaluation_v2::{
@@ -20,7 +22,7 @@ use evaluation_v2::{
     aggregate_metadata, evaluate_dataset_gate,
 };
 
-#[derive(Debug, Parser)]
+#[derive(Clone, Debug, Parser)]
 #[command(
     name = "geullint",
     about = "완전 오프라인 한국어 맞춤법·문법 린터",
@@ -91,6 +93,22 @@ struct Arguments {
     /// 안전한 수정을 가상 적용하고 남는 진단만 출력합니다.
     #[arg(long, conflicts_with = "fix")]
     fix_dry_run: bool,
+
+    /// 표준 입력의 한 문서만 검사합니다.
+    #[arg(long, conflicts_with_all = ["changed", "watch", "corpus", "corpus_manifest"])]
+    stdin: bool,
+
+    /// Git 작업 트리에서 변경된 지원 파일만 검사합니다.
+    #[arg(long, conflicts_with_all = ["stdin", "watch", "corpus", "corpus_manifest"])]
+    changed: bool,
+
+    /// 파일이 바뀔 때마다 다시 검사합니다. Ctrl+C로 종료합니다.
+    #[arg(long, conflicts_with_all = ["stdin", "changed", "corpus", "corpus_manifest"])]
+    watch: bool,
+
+    /// `--fix` 결과를 파일에 쓰지 않고 간단한 diff로 출력합니다.
+    #[arg(long, requires = "fix", conflicts_with = "fix_dry_run")]
+    diff: bool,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -123,6 +141,44 @@ struct RulesArguments {
     /// 규칙 카탈로그 출력 형식입니다.
     #[arg(long, value_enum, default_value_t = CatalogFormat::Json)]
     format: CatalogFormat,
+}
+
+#[derive(Debug, Parser)]
+#[command(name = "geullint init", about = "프로젝트 설정 파일을 생성합니다")]
+struct InitArguments {
+    /// 설정 파일을 만들 프로젝트 경로입니다.
+    #[arg(value_name = "PATH", default_value = ".")]
+    path: PathBuf,
+    /// 이미 있는 파일도 기본 설정으로 덮어씁니다.
+    #[arg(long)]
+    force: bool,
+}
+
+#[derive(Debug, Parser)]
+#[command(name = "geullint doctor", about = "로컬 설정과 사전 상태를 점검합니다")]
+struct DoctorArguments {
+    /// 점검할 설정 파일입니다.
+    #[arg(long)]
+    config: Option<PathBuf>,
+    /// 출력 형식입니다.
+    #[arg(long, value_enum, default_value_t = OutputFormat::Human)]
+    format: OutputFormat,
+}
+
+#[derive(Debug, Parser)]
+#[command(name = "geullint dictionary", about = "프로젝트 사전을 관리합니다")]
+struct DictionaryArguments {
+    #[command(subcommand)]
+    command: DictionaryCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum DictionaryCommand {
+    /// overlay 파일을 파싱하고 항목 수를 확인합니다.
+    Validate {
+        #[arg(value_name = "PATH")]
+        path: PathBuf,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Default, ValueEnum)]
@@ -399,17 +455,114 @@ struct CorpusReport {
 }
 
 fn main() -> ExitCode {
-    if std::env::args().nth(1).as_deref() == Some("lsp") {
+    let raw_arguments: Vec<String> = std::env::args().collect();
+    if raw_arguments.get(1).map(String::as_str) == Some("lsp") {
         return run_lsp();
     }
-    if std::env::args().nth(1).as_deref() == Some("rules") {
+    if raw_arguments.get(1).map(String::as_str) == Some("rules") {
         return run_rules();
     }
-    match run(&Arguments::parse()) {
+    if raw_arguments.get(1).map(String::as_str) == Some("init") {
+        return run_init(&raw_arguments);
+    }
+    if raw_arguments.get(1).map(String::as_str) == Some("doctor") {
+        return run_doctor(&raw_arguments);
+    }
+    if raw_arguments.get(1).map(String::as_str) == Some("dictionary") {
+        return run_dictionary(&raw_arguments);
+    }
+
+    let normalized_arguments = normalize_alias(raw_arguments);
+    let arguments = match Arguments::try_parse_from(normalized_arguments) {
+        Ok(arguments) => arguments,
+        Err(error) => {
+            let exit_code = u8::try_from(error.exit_code()).unwrap_or(2);
+            let _ = error.print();
+            return ExitCode::from(exit_code);
+        }
+    };
+    match run(&arguments) {
         Ok(has_failure) if has_failure => ExitCode::from(1),
         Ok(_) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("geullint: {error:#}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+fn normalize_alias(mut arguments: Vec<String>) -> Vec<String> {
+    match arguments.get(1).map(String::as_str) {
+        Some("check") => {
+            arguments.remove(1);
+        }
+        Some("fix") => {
+            arguments.remove(1);
+            if !arguments.iter().any(|argument| argument == "--fix") {
+                arguments.push("--fix".to_owned());
+            }
+        }
+        _ => {}
+    }
+    arguments
+}
+
+fn parse_subcommand<T>(arguments: &[String], name: &str) -> Result<T>
+where
+    T: Parser,
+{
+    T::try_parse_from(
+        std::iter::once(format!("geullint {name}")).chain(arguments.iter().skip(2).cloned()),
+    )
+    .map_err(|error| anyhow::anyhow!(error.to_string()))
+}
+
+fn run_init(raw_arguments: &[String]) -> ExitCode {
+    let arguments = match parse_subcommand::<InitArguments>(raw_arguments, "init") {
+        Ok(arguments) => arguments,
+        Err(error) => {
+            eprintln!("geullint init: {error:#}");
+            return ExitCode::from(2);
+        }
+    };
+    match initialize_project(&arguments) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("geullint init: {error:#}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+fn run_doctor(raw_arguments: &[String]) -> ExitCode {
+    let arguments = match parse_subcommand::<DoctorArguments>(raw_arguments, "doctor") {
+        Ok(arguments) => arguments,
+        Err(error) => {
+            eprintln!("geullint doctor: {error:#}");
+            return ExitCode::from(2);
+        }
+    };
+    match diagnose_project(&arguments) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("geullint doctor: {error:#}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+fn run_dictionary(raw_arguments: &[String]) -> ExitCode {
+    let arguments = match parse_subcommand::<DictionaryArguments>(raw_arguments, "dictionary") {
+        Ok(arguments) => arguments,
+        Err(error) => {
+            eprintln!("geullint dictionary: {error:#}");
+            return ExitCode::from(2);
+        }
+    };
+    match validate_dictionary(arguments) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("geullint dictionary: {error:#}");
             ExitCode::from(2)
         }
     }
@@ -507,7 +660,134 @@ fn run_lsp() -> ExitCode {
     }
 }
 
+fn initialize_project(arguments: &InitArguments) -> Result<()> {
+    let project_path = if arguments.path.is_file() {
+        bail!("{} 경로는 디렉터리가 아닙니다", arguments.path.display());
+    } else {
+        &arguments.path
+    };
+    fs::create_dir_all(project_path)
+        .with_context(|| format!("{} 디렉터리를 만들 수 없습니다", project_path.display()))?;
+    let config_path = project_path.join(".geullint.json");
+    if config_path.exists() && !arguments.force {
+        bail!(
+            "{} 파일이 이미 있습니다 (--force로 덮어쓸 수 있습니다)",
+            config_path.display()
+        );
+    }
+    let config = serde_json::to_string_pretty(&LintConfig::default())? + "\n";
+    fs::write(&config_path, config)
+        .with_context(|| format!("{} 파일을 쓸 수 없습니다", config_path.display()))?;
+    let ignore_path = project_path.join(".geullintignore");
+    if !ignore_path.exists() {
+        fs::write(&ignore_path, "target/\nnode_modules/\n.next/\n")
+            .with_context(|| format!("{} 파일을 쓸 수 없습니다", ignore_path.display()))?;
+    }
+    println!(
+        "GeulLint 프로젝트를 초기화했습니다: {}",
+        project_path.display()
+    );
+    println!("  설정: {}", config_path.display());
+    Ok(())
+}
+
+fn diagnose_project(arguments: &DoctorArguments) -> Result<()> {
+    let config_path = arguments
+        .config
+        .clone()
+        .unwrap_or_else(|| PathBuf::from(".geullint.json"));
+    let config_exists = config_path.is_file();
+    let (config_valid, dictionary_entries, config_error) = if config_exists {
+        match fs::read_to_string(&config_path)
+            .with_context(|| format!("{} 파일을 읽을 수 없습니다", config_path.display()))
+            .and_then(|contents| {
+                serde_json::from_str::<LintConfig>(&contents).with_context(|| {
+                    format!("{} 설정 JSON이 올바르지 않습니다", config_path.display())
+                })
+            }) {
+            Ok(config) => (
+                true,
+                config.user_dictionary.len() + config.dictionary_overlay.len(),
+                None,
+            ),
+            Err(error) => (false, 0, Some(error.to_string())),
+        }
+    } else {
+        (false, 0, Some("설정 파일이 없습니다".to_owned()))
+    };
+    let status = if config_valid { "ok" } else { "warning" };
+    match arguments.format {
+        OutputFormat::Json => {
+            let report = serde_json::json!({
+                "version": 1,
+                "status": status,
+                "configuration": {
+                    "path": config_path,
+                    "exists": config_exists,
+                    "valid": config_valid,
+                    "error": config_error,
+                },
+                "dictionary": { "entries": dictionary_entries },
+            });
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        }
+        OutputFormat::Human => {
+            println!("GeulLint doctor: {status}");
+            println!("  configuration: {}", config_path.display());
+            println!("  exists: {config_exists}");
+            println!("  valid: {config_valid}");
+            println!("  dictionary entries: {dictionary_entries}");
+            if let Some(error) = config_error {
+                println!("  note: {error}");
+            }
+        }
+        OutputFormat::Sarif => bail!("doctor에는 --format human 또는 json을 사용하세요"),
+    }
+    Ok(())
+}
+
+fn validate_dictionary(arguments: DictionaryArguments) -> Result<()> {
+    match arguments.command {
+        DictionaryCommand::Validate { path } => {
+            let source = fs::read_to_string(&path)
+                .with_context(|| format!("{} 파일을 읽을 수 없습니다", path.display()))?;
+            let overlay = DictionaryOverlay::parse(&source)
+                .with_context(|| format!("{} overlay 형식이 올바르지 않습니다", path.display()))?;
+            println!(
+                "{}: valid geullint-overlay-v1 ({} entries)",
+                path.display(),
+                overlay.entry_count()
+            );
+        }
+    }
+    Ok(())
+}
+
 fn run(arguments: &Arguments) -> Result<bool> {
+    if arguments.watch {
+        return run_watch(arguments);
+    }
+    run_once(arguments)
+}
+
+fn run_watch(arguments: &Arguments) -> Result<bool> {
+    let mut first_run = true;
+    loop {
+        let mut one_shot = arguments.clone();
+        one_shot.watch = false;
+        let has_failure = run_once(&one_shot)?;
+        if first_run {
+            eprintln!("geullint: watching for changes (Ctrl+C to stop)");
+            first_run = false;
+        }
+        thread::sleep(Duration::from_millis(700));
+        if has_failure {
+            // Keep watching after a failed lint; editors commonly save transiently invalid text.
+        }
+    }
+}
+
+fn run_once(arguments: &Arguments) -> Result<bool> {
     if let Some(rule_id) = &arguments.explain {
         print_rule_explanation(rule_id, arguments.format)?;
         return Ok(false);
@@ -538,29 +818,50 @@ fn run(arguments: &Arguments) -> Result<bool> {
     let engine = build_engine(config, packs)?;
     let mut reported = Vec::new();
 
-    for path in collect_files(&arguments.paths)? {
-        let mut text = fs::read_to_string(&path)
-            .with_context(|| format!("{} 파일을 UTF-8로 읽을 수 없습니다", path.display()))?;
-        let source_kind = source_kind_for_path(&path);
-        if arguments.fix || arguments.fix_dry_run {
-            let fixed = engine
-                .check_with_fixes(&text, source_kind, false)
-                .fixed_text;
-            if arguments.fix && fixed != text {
-                fs::write(&path, &fixed).with_context(|| {
-                    format!("{} 파일에 수정 사항을 쓸 수 없습니다", path.display())
-                })?;
+    if arguments.stdin {
+        let mut text = String::new();
+        io::stdin()
+            .read_to_string(&mut text)
+            .context("표준 입력을 읽을 수 없습니다")?;
+        append_diagnostics(
+            &engine,
+            "<stdin>",
+            &text,
+            SourceKind::PlainText,
+            &mut reported,
+        );
+    } else {
+        let paths = if arguments.changed {
+            collect_changed_files()?
+        } else {
+            collect_files(&arguments.paths)?
+        };
+        for path in paths {
+            let original = fs::read_to_string(&path)
+                .with_context(|| format!("{} 파일을 UTF-8로 읽을 수 없습니다", path.display()))?;
+            let source_kind = source_kind_for_path(&path);
+            let mut text = original.clone();
+            if arguments.fix || arguments.fix_dry_run {
+                let fixed = engine
+                    .check_with_fixes(&text, source_kind, false)
+                    .fixed_text;
+                if arguments.fix && !arguments.diff && fixed != text {
+                    fs::write(&path, &fixed).with_context(|| {
+                        format!("{} 파일에 수정 사항을 쓸 수 없습니다", path.display())
+                    })?;
+                }
+                if arguments.diff && fixed != text {
+                    print_diff(&path, &text, &fixed);
+                }
+                text = fixed;
             }
-            text = fixed;
-        }
-        for diagnostic in engine.check(&text, source_kind) {
-            let (line, column) = line_and_column(&text, diagnostic.range.start);
-            reported.push(ReportedDiagnostic {
-                path: path.display().to_string(),
-                line,
-                column,
-                diagnostic,
-            });
+            append_diagnostics(
+                &engine,
+                &path.display().to_string(),
+                &text,
+                source_kind,
+                &mut reported,
+            );
         }
     }
 
@@ -569,6 +870,59 @@ fn run(arguments: &Arguments) -> Result<bool> {
     });
     print_report(&reported, arguments.format)?;
     Ok(has_failure)
+}
+
+fn append_diagnostics(
+    engine: &Engine,
+    path: &str,
+    text: &str,
+    source_kind: SourceKind,
+    reported: &mut Vec<ReportedDiagnostic>,
+) {
+    for diagnostic in engine.check(text, source_kind) {
+        let (line, column) = line_and_column(text, diagnostic.range.start);
+        reported.push(ReportedDiagnostic {
+            path: path.to_owned(),
+            line,
+            column,
+            diagnostic,
+        });
+    }
+}
+
+fn collect_changed_files() -> Result<Vec<PathBuf>> {
+    let output = ProcessCommand::new("git")
+        .args(["diff", "--name-only", "--diff-filter=ACMR"])
+        .output()
+        .context("git diff를 실행할 수 없습니다")?;
+    if !output.status.success() {
+        bail!("git diff가 실패했습니다");
+    }
+    let mut paths = Vec::new();
+    for line in String::from_utf8_lossy(&output.stdout).lines() {
+        let path = PathBuf::from(line);
+        if path.is_file() && supported_source_kind(&path).is_some() {
+            paths.push(path);
+        }
+    }
+    paths.sort();
+    paths.dedup();
+    Ok(paths)
+}
+
+fn print_diff(path: &Path, original: &str, fixed: &str) {
+    println!("--- {}", path.display());
+    println!("+++ {} (geullint --fix)", path.display());
+    for (line_number, (before, after)) in original.lines().zip(fixed.lines()).enumerate() {
+        if before != after {
+            println!("@@ line {} @@", line_number + 1);
+            println!("-{}", before);
+            println!("+{}", after);
+        }
+    }
+    if original.lines().count() != fixed.lines().count() {
+        println!("@@ line count changed @@");
+    }
 }
 
 fn profile_engine_index(profile: Profile) -> usize {

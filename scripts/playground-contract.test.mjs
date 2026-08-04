@@ -6,6 +6,8 @@ const index = readFileSync("apps/playground/index.html", "utf8");
 const app = readFileSync("apps/playground/app.js", "utf8");
 const worker = readFileSync("apps/playground/worker.js", "utf8");
 const serviceWorker = readFileSync("apps/playground/sw.js", "utf8");
+const history = readFileSync("apps/playground/history.js", "utf8");
+const storage = readFileSync("apps/playground/storage.js", "utf8");
 const manifest = readFileSync("apps/playground/manifest.webmanifest", "utf8");
 const i18n = readFileSync("apps/playground/i18n.js", "utf8");
 const buildScript = readFileSync("scripts/build-playground.mjs", "utf8");
@@ -27,6 +29,8 @@ test("ships an input, profile selector, and accessible diagnosis output", () => 
   assert.match(index, /id="language"/);
   assert.match(index, /id="rule-search"/);
   assert.match(index, /id="rule-list"/);
+  assert.match(index, /id="file-input"/);
+  assert.match(index, /id="export-text"/);
   assert.match(index, /href="https:\/\/github\.com\/binibinibin123\/geullint\/releases"/);
 });
 
@@ -121,6 +125,11 @@ test("keeps a cold reload usable without a network connection", () => {
   assert.match(index, /rel="manifest" href="\.\/manifest\.webmanifest"/u);
   assert.match(app, /serviceWorker\.register\("\.\/sw\.js"/u);
   assert.match(serviceWorker, /cache\.addAll/iu);
+  assert.match(serviceWorker, /history\.js/u);
+  assert.match(serviceWorker, /storage\.js/u);
+  assert.match(storage, /indexedDB/u);
+  assert.match(app, /loadDraft\(\)/u);
+  assert.match(history, /createHistory/u);
   assert.match(serviceWorker, /apps\/playground|\.\/app\.js/u);
   const parsedManifest = JSON.parse(manifest);
   assert.equal(parsedManifest.start_url, "./index.html");
