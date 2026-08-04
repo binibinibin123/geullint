@@ -212,3 +212,9 @@ Release에서 운영체제와 CPU에 맞는 **VSIX**를 받아 VS Code의 `Exten
 ## 라이선스
 
 [MIT](LICENSE) © GeulLint contributors. 선택적 `morphology` 기능의 사전·의존성 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 있습니다.
+
+### 엔진 선택
+
+브라우저 플레이그라운드와 릴리스 VSIX는 `standard` 엔진을 기본으로 포함합니다.
+가장 작은 보수적 실행 경로는 `compact`, 실험적 로컬 문맥 랭커는 `context`를
+선택할 수 있습니다. 후보 제안은 독립 검증 전까지 항상 Review로만 표시됩니다.

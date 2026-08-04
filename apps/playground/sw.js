@@ -1,4 +1,4 @@
-const CACHE_NAME = "geullint-playground-v1";
+const CACHE_NAME = "geullint-playground-v2-standard";
 const SHELL = [
   "./",
   "./index.html",

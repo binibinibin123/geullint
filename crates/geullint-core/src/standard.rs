@@ -191,10 +191,16 @@ impl StandardPipeline {
         let legacy = self
             .engine
             .check_with_fixes(text, source_kind, include_review_fixes);
+        let diagnostics = self.check(text, source_kind);
+        let review_fixed_text = if include_review_fixes {
+            apply_review_suggestions(text, &diagnostics)
+        } else {
+            legacy.fixed_text.clone()
+        };
         StandardPipelineOutcome {
-            diagnostics: self.check(text, source_kind),
+            diagnostics,
             fixed_text: legacy.fixed_text,
-            review_fixed_text: legacy.review_fixed_text,
+            review_fixed_text,
         }
     }
 
@@ -234,6 +240,48 @@ fn sort_candidates(candidates: &mut [Candidate]) {
             .then_with(|| left.range.end.cmp(&right.range.end))
             .then_with(|| left.replacement.cmp(&right.replacement))
     });
+}
+
+/// Applies the first Review-or-Safe suggestion from one analysis pass.
+///
+/// Standard candidates are deliberately never included in `fixed_text`; this helper is only
+/// used for the explicit review preview so the browser and native callers can show one complete
+/// corrected sentence without re-running analysis or silently promoting a candidate to Safe.
+fn apply_review_suggestions(text: &str, diagnostics: &[DiagnosticV2]) -> String {
+    let mut candidates = diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.safety != FixSafety::None)
+        .filter_map(|diagnostic| {
+            let suggestion = diagnostic.suggestions.first()?;
+            let range = diagnostic.range;
+            (range.start <= range.end
+                && range.end <= text.len()
+                && text.is_char_boundary(range.start)
+                && text.is_char_boundary(range.end))
+            .then_some((range.start, range.end, suggestion.text.clone()))
+        })
+        .collect::<Vec<_>>();
+    candidates.sort_by(|left, right| {
+        left.0
+            .cmp(&right.0)
+            .then_with(|| left.1.cmp(&right.1))
+            .then_with(|| left.2.cmp(&right.2))
+    });
+
+    let mut accepted = Vec::new();
+    let mut previous_end = 0;
+    for candidate in candidates {
+        if candidate.0 >= previous_end {
+            previous_end = candidate.1;
+            accepted.push(candidate);
+        }
+    }
+
+    let mut fixed = text.to_owned();
+    for (start, end, replacement) in accepted.into_iter().rev() {
+        fixed.replace_range(start..end, &replacement);
+    }
+    fixed
 }
 
 #[derive(Debug, thiserror::Error)]

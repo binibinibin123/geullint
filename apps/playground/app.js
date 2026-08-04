@@ -5,6 +5,7 @@ import { createLocalStore } from "./storage.js";
 
 const editor = document.querySelector("#editor");
 const profile = document.querySelector("#profile");
+const engineMode = document.querySelector("#engine");
 const sourceKind = document.querySelector("#source-kind");
 const language = document.querySelector("#language");
 const scanButton = document.querySelector("#scan");
@@ -263,6 +264,7 @@ function scan() {
   prepareCorrection();
   worker.postMessage({
     id,
+    engine: engineMode.value,
     text: requestedText,
     sourceKind: sourceKind.value,
     config: { profile: profile.value, userDictionary },
@@ -389,6 +391,9 @@ redoCorrection.addEventListener("click", () => {
 includeReviewCorrections.addEventListener("change", () => {
   scan();
 });
+engineMode.addEventListener("change", scan);
+profile.addEventListener("change", scan);
+sourceKind.addEventListener("change", scan);
 dictionaryAdd.addEventListener("click", () => {
   const entry = dictionaryEntry.value.trim();
   if (!entry || userDictionary.includes(entry)) return;
@@ -415,6 +420,7 @@ feedbackExport.addEventListener("click", () => {
     severity: diagnostic.severity,
     safeFix: Boolean(diagnostic.safeFix),
     profile: profile.value,
+    engine: engineMode.value,
     sourceKind: sourceKind.value,
     originalLength: [...(diagnostic.original || "")].length,
   }));

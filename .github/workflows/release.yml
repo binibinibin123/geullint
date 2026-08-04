@@ -399,7 +399,7 @@ jobs:
       - name: Build and bundle the offline language server
         shell: pwsh
         run: |
-          cargo build --release --locked -p geullint-lsp
+          cargo build --release --locked -p geullint-lsp --features standard
           $serverDirectory = "extensions/vscode-geullint/server/${{ matrix.target_name }}"
           New-Item -ItemType Directory -Force -Path $serverDirectory | Out-Null
           Copy-Item "target/release/${{ matrix.binary_name }}" (Join-Path $serverDirectory "${{ matrix.binary_name }}")

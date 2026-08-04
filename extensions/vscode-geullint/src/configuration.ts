@@ -5,6 +5,7 @@ export interface ConfigurationReader {
 }
 
 export interface LspConfiguration {
+  engine: "compact" | "standard" | "context";
   profile: string;
   disabledRules: string[];
   userDictionary: string[];
@@ -25,6 +26,7 @@ export function createLspConfiguration(
   platform: NodeJS.Platform = process.platform,
 ): LspConfiguration {
   return {
+    engine: configuration.get<"compact" | "standard" | "context">("engine", "standard"),
     profile: configuration.get<string>("profile", "default"),
     disabledRules: configuration.get<string[]>("disabledRules", []),
     userDictionary: configuration.get<string[]>("userDictionary", []),

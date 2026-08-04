@@ -17,6 +17,7 @@ test("resolves relative rule packs from the workspace root", () => {
 
 test("resolves overlay and rule-pack paths for every LSP configuration update", () => {
   const values: Record<string, unknown> = {
+    engine: "standard",
     profile: "strict",
     userDictionary: ["GeulLint"],
     dictionaryOverlay: ["프로젝트오표기"],
@@ -30,7 +31,9 @@ test("resolves overlay and rule-pack paths for every LSP configuration update", 
   };
 
   assert.deepEqual(createLspConfiguration(configuration, "C:/project", "win32"), {
+    engine: "standard",
     profile: "strict",
+    disabledRules: [],
     userDictionary: ["GeulLint"],
     dictionaryOverlay: ["프로젝트오표기"],
     dictionaryOverlayPaths: ["C:\\project\\.geullint.overlay"],

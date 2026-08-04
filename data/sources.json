@@ -28,6 +28,18 @@
       "filename": "tatoeba/kor_sentences.tsv.bz2",
       "redistributable": false,
       "role": "natural-sentence-training-only"
+    },
+    {
+      "id": "nikl-spelling-correction-2021",
+      "url": "https://kli.korean.go.kr/request/corpusRegist.do?lang=en",
+      "recordUrl": "https://kli.korean.go.kr/request/corpusRegist.do?lang=en",
+      "license": "NO-REDISTRIBUTION",
+      "licenseUrl": "https://kli.korean.go.kr/request/corpusRegist.do?lang=en",
+      "sha256": null,
+      "filename": "nikl/spelling-correction-2021.jsonl",
+      "redistributable": false,
+      "access": "manual_authorization",
+      "role": "independent-release-holdout-pending"
     }
   ]
 }

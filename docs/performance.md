@@ -54,8 +54,8 @@ Native runner는 fixture마다 새 probe 프로세스를 실행합니다. 첫 �
 
 | 산출물 | 실제 raw | raw 상한 | 실제 gzip | gzip 상한 |
 | --- | ---: | ---: | ---: | ---: |
-| `geullint_wasm_bg.wasm` | 498,703 B | 650,000 B | 180,252 B | 220,000 B |
-| `geullint_wasm.js` | 9,190 B | 10,000 B | 2,528 B | 2,900 B |
+| `geullint_wasm_bg.wasm` | 621,434 B | 650,000 B | 212,557 B | 220,000 B |
+| `geullint_wasm.js` | 11,733 B | 14,000 B | 2,632 B | 2,900 B |
 
 시간값은 공유 CI 환경에서 흔들리므로 자동 실패 기준이 아닙니다. byte 크기는 결정적이므로 상한을 넘으면 실패합니다.
 
@@ -69,3 +69,6 @@ node scripts/artifact-budgets.mjs
 ```
 
 `--mode compact`는 이전 실행 명령과의 호환 별칭입니다. 형태소 API를 포함한 큰 opt-in 빌드는 `--mode morphology`로 따로 측정할 수 있습니다. 기본 릴리스와 브라우저에는 형태소 사전이 포함되지 않습니다.
+The browser artifact measurements above are from the `standard` feature build used by the
+playground selector. The compact API remains available for small embedders; standard and
+context candidate suggestions are Review-only and do not change the Safe-fix budget.

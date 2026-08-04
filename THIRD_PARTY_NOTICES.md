@@ -74,3 +74,8 @@ text is included in [`LICENSES/Apache-2.0.txt`](LICENSES/Apache-2.0.txt).
 GeulLint does not currently bundle Korean Basic Dictionary data. If a future
 release adds that separately licensed data, its exact source snapshot,
 retrieval date, hash, and attribution will be recorded here before release.
+
+The NIKL spelling-correction corpus is listed in `data/sources.json` only as a
+manual-authorization request. It is not downloaded, bundled, or represented as
+an evaluation result until the corpus owner grants permission and the authorized
+artifact receives a verified SHA-256 provenance record.

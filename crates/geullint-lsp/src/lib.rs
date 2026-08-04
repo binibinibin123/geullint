@@ -1,8 +1,12 @@
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "standard")]
 use geullint_core::{
-    DictionaryOverlay, Engine, LintConfig, RuleMetadata, RulePack, Severity, SourceKind,
-    rule_catalog,
+    ContextRanker, DiagnosticV2, FixSafety, GeulRankSmall, StandardLexicon, StandardPipeline,
+};
+use geullint_core::{
+    Diagnostic as CoreDiagnostic, DictionaryOverlay, Engine, LintConfig, RuleMetadata, RulePack,
+    Severity, SourceKind, rule_catalog,
 };
 use std::collections::HashMap;
 use tokio::sync::RwLock;
@@ -39,22 +43,66 @@ struct DocumentState {
 #[derive(Debug)]
 struct Backend {
     client: Client,
-    engine: RwLock<Engine>,
+    engine: RwLock<ConfiguredEngine>,
     documents: RwLock<HashMap<Uri, DocumentState>>,
+}
+
+#[derive(Debug)]
+enum ConfiguredEngine {
+    Compact(Engine),
+    #[cfg(feature = "standard")]
+    Standard(StandardPipeline),
+    #[cfg(feature = "standard")]
+    Context(StandardPipeline),
+}
+
+impl ConfiguredEngine {
+    fn check(&self, text: &str, source_kind: SourceKind) -> Vec<CoreDiagnostic> {
+        match self {
+            Self::Compact(engine) => engine.check(text, source_kind),
+            #[cfg(feature = "standard")]
+            Self::Standard(pipeline) | Self::Context(pipeline) => pipeline
+                .check(text, source_kind)
+                .iter()
+                .map(legacy_diagnostic_from_v2)
+                .collect(),
+        }
+    }
+}
+
+#[cfg(feature = "standard")]
+fn legacy_diagnostic_from_v2(diagnostic: &DiagnosticV2) -> CoreDiagnostic {
+    CoreDiagnostic {
+        rule_id: diagnostic.rule_id.clone(),
+        severity: diagnostic.severity,
+        message: diagnostic.message.clone(),
+        range: diagnostic.range,
+        original: diagnostic.original.clone(),
+        suggestions: diagnostic
+            .suggestions
+            .iter()
+            .map(|suggestion| suggestion.text.clone())
+            .collect(),
+        safe_fix: diagnostic.safety == FixSafety::Safe,
+    }
 }
 
 impl Backend {
     fn new(client: Client) -> Self {
         Self {
             client,
-            engine: RwLock::new(Engine::new(LintConfig::default())),
+            engine: RwLock::new(ConfiguredEngine::Compact(
+                Engine::new(LintConfig::default()),
+            )),
             documents: RwLock::new(HashMap::new()),
         }
     }
 
     async fn publish(&self, uri: Uri, state: &DocumentState) {
-        let engine = self.engine.read().await.clone();
-        let diagnostics = engine
+        let diagnostics = self
+            .engine
+            .read()
+            .await
             .check(&state.text, state.source_kind)
             .into_iter()
             .map(|diagnostic| {
@@ -342,7 +390,7 @@ fn byte_offset_for_position(text: &str, position: Position) -> Option<usize> {
 #[allow(clippy::items_after_test_module)] // Configuration parsers remain below the focused LSP tests.
 mod tests {
     use super::{
-        apply_content_changes, engine_from_lsp_value, lint_config_from_lsp_value,
+        ConfiguredEngine, apply_content_changes, engine_from_lsp_value, lint_config_from_lsp_value,
         position_for_byte_offset, quick_fix_for_diagnostic, rule_catalog_response,
     };
     use geullint_core::{Profile, SourceKind};
@@ -515,6 +563,22 @@ mod tests {
         fs::remove_file(path).expect("remove rule pack");
         assert_eq!(diagnostics[0].rule_id, "spelling.project.product-name");
     }
+
+    #[cfg(feature = "standard")]
+    #[test]
+    fn accepts_standard_and_context_engines_from_editor_configuration() {
+        let standard = engine_from_lsp_value(json!({
+            "geullint": { "engine": "standard" }
+        }))
+        .expect("standard engine configuration");
+        assert!(matches!(standard, ConfiguredEngine::Standard(_)));
+
+        let context = engine_from_lsp_value(json!({
+            "geullint": { "engine": "context" }
+        }))
+        .expect("context engine configuration");
+        assert!(matches!(context, ConfiguredEngine::Context(_)));
+    }
 }
 
 fn lint_config_from_lsp_value(value: serde_json::Value) -> Option<LintConfig> {
@@ -522,7 +586,9 @@ fn lint_config_from_lsp_value(value: serde_json::Value) -> Option<LintConfig> {
     serde_json::from_value(settings).ok()
 }
 
-fn engine_from_lsp_value(value: serde_json::Value) -> std::result::Result<Engine, String> {
+fn engine_from_lsp_value(
+    value: serde_json::Value,
+) -> std::result::Result<ConfiguredEngine, String> {
     let settings = value.get("geullint").cloned().unwrap_or(value);
     let mut config = lint_config_from_lsp_value(settings.clone())
         .ok_or_else(|| "기본 설정 형식이 올바르지 않습니다".to_owned())?;
@@ -560,6 +626,38 @@ fn engine_from_lsp_value(value: serde_json::Value) -> std::result::Result<Engine
                 .map_err(|error| format!("규칙 팩 ‘{path}’이 올바르지 않습니다: {error}"))
         })
         .collect::<std::result::Result<Vec<_>, _>>()?;
+    let engine_name = settings
+        .get("engine")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("compact");
+    if engine_name != "compact" {
+        #[cfg(feature = "standard")]
+        {
+            let engine = Engine::with_rule_packs(config, packs)
+                .map_err(|error| format!("rule-pack configuration collides: {error}"))?;
+            let lexicon = StandardLexicon::bundled().map_err(|error| error.to_string())?;
+            let ranker = GeulRankSmall::bundled().map_err(|error| error.clone())?;
+            let pipeline = StandardPipeline::new(engine, lexicon, ranker);
+            return match engine_name {
+                "standard" => Ok(ConfiguredEngine::Standard(pipeline)),
+                "context" => {
+                    let context = ContextRanker::bundled().map_err(|error| error.clone())?;
+                    Ok(ConfiguredEngine::Context(
+                        pipeline.with_context_ranker(context),
+                    ))
+                }
+                other => Err(format!("unknown GeulLint engine: {other}")),
+            };
+        }
+        #[cfg(not(feature = "standard"))]
+        {
+            return Err(
+                "standard/context engine requires geullint-lsp built with the standard feature"
+                    .to_owned(),
+            );
+        }
+    }
     Engine::with_rule_packs(config, packs)
+        .map(ConfiguredEngine::Compact)
         .map_err(|error| format!("규칙 팩 구성이 충돌합니다: {error}"))
 }

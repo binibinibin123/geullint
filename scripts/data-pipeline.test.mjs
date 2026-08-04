@@ -54,6 +54,30 @@ test("requires explicit acceptance for non-redistributable sources", () => {
   assert.throws(() => planDownloads(manifest, { includeNonRedistributable: true }), /explicit acceptance/);
 });
 
+test("never treats an authorization-only corpus request page as a downloadable artifact", () => {
+  const manual = {
+    schemaVersion: 1,
+    sources: [{
+      id: "nikl-release-holdout",
+      url: "https://example.test/request",
+      recordUrl: "https://example.test/request",
+      license: "NO-REDISTRIBUTION",
+      licenseUrl: "https://example.test/terms",
+      sha256: null,
+      filename: "nikl/release-holdout.jsonl",
+      redistributable: false,
+      access: "manual_authorization",
+    }],
+  };
+
+  assert.deepEqual(validateSourceManifest(manual), manual);
+  assert.deepEqual(planDownloads(manual), []);
+  assert.throws(
+    () => planDownloads(manual, { includeNonRedistributable: true, acceptNonRedistributable: true }),
+    /manual authorization source and cannot be downloaded/u,
+  );
+});
+
 test("extracts a single human edit with provenance and a review status", () => {
   const result = extractRevisionEdits([
     {

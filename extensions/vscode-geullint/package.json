@@ -54,6 +54,17 @@
     "configuration": {
       "title": "GeulLint",
       "properties": {
+        "geullint.engine": {
+          "type": "string",
+          "default": "standard",
+          "enum": [
+            "standard",
+            "compact",
+            "context"
+          ],
+          "scope": "resource",
+          "description": "분석 엔진입니다. standard는 사전 후보를 Review로 표시하고, context는 실험적 문맥 랭커를 사용합니다. Safe 자동 수정은 보수적으로 유지됩니다."
+        },
         "geullint.serverPath": {
           "type": "string",
           "default": "",

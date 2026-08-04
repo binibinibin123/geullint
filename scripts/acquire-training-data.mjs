@@ -11,6 +11,7 @@ const ALLOWED_LICENSES = new Set([
   "CC-BY-SA-4.0",
   "GPL-3.0-or-later",
   "MIT",
+  "NO-REDISTRIBUTION",
 ]);
 const HEX_SHA256 = /^[0-9a-f]{64}$/u;
 const DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
@@ -52,11 +53,22 @@ export function validateSourceManifest(manifest) {
     if (!ALLOWED_LICENSES.has(source.license)) {
       throw new Error(`source ${source.id} license is not on the allowlist: ${source.license}`);
     }
-    if (typeof source.sha256 !== "string" || !HEX_SHA256.test(source.sha256)) {
-      throw new Error(`source ${source.id} sha256 must be a 64-character hex digest`);
-    }
     if (typeof source.redistributable !== "boolean") {
       throw new Error(`source ${source.id} redistributable must be boolean`);
+    }
+    const access = source.access ?? "public";
+    if (access !== "public" && access !== "manual_authorization") {
+      throw new Error(`source ${source.id} access must be public or manual_authorization`);
+    }
+    if (access === "manual_authorization") {
+      if (source.redistributable || source.license !== "NO-REDISTRIBUTION") {
+        throw new Error(`source ${source.id} authorization-only sources cannot be redistributable`);
+      }
+      if (source.sha256 !== null) {
+        throw new Error(`source ${source.id} authorization-only sources must have a null sha256 until acquired`);
+      }
+    } else if (typeof source.sha256 !== "string" || !HEX_SHA256.test(source.sha256)) {
+      throw new Error(`source ${source.id} sha256 must be a 64-character hex digest`);
     }
     if (isAbsolute(source.filename) || source.filename.split(/[\\/]+/u).some((part) => part === "..")) {
       throw new Error(`source ${source.id} filename must be a relative file name`);
@@ -79,9 +91,15 @@ export function planDownloads(manifest, options = {}) {
   if (includeNonRedistributable && !accepted) {
     throw new Error("including non-redistributable sources requires explicit acceptance");
   }
-  return manifest.sources.filter(
-    (source) => source.redistributable || (includeNonRedistributable && accepted),
-  );
+  return manifest.sources.filter((source) => {
+    if (source.access === "manual_authorization") {
+      if (includeNonRedistributable || accepted) {
+        throw new Error(`source ${source.id} is a manual authorization source and cannot be downloaded`);
+      }
+      return false;
+    }
+    return source.redistributable || (includeNonRedistributable && accepted);
+  });
 }
 
 export async function acquireSources(

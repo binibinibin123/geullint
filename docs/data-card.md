@@ -23,3 +23,6 @@
 ## 제외 기준
 
 로그인·신청이 필요한 코퍼스, 이용 약관상 자동 대량 수집이 금지된 서비스, 라이선스가 불명확한 데이터, 특정 서비스의 교정 결과를 복제한 데이터는 기본 파이프라인에 넣지 않는다. 공개 평가셋에 포함할 때는 원문 대신 최소 인용·해시·메타데이터와 독립 검토 기록만 남긴다.
+The NIKL spelling-correction corpus is intentionally listed as
+`manual_authorization` with no hash. It is a future independent holdout request,
+not a bundled dataset or a measured quality result.

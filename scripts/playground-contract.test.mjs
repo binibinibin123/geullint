@@ -25,6 +25,8 @@ test("presents the web app as a private Korean spelling checker first", () => {
 test("ships an input, profile selector, and accessible diagnosis output", () => {
   assert.match(index, /id="editor"/);
   assert.match(index, /id="profile"/);
+  assert.match(index, /id="engine"/);
+  assert.match(index, /value="standard"/);
   assert.match(index, /aria-live="polite"/);
   assert.match(index, /모든 검사는 이 브라우저에서만/u);
   assert.match(index, /id="language"/);
@@ -50,6 +52,7 @@ test("ships a separate corrected sentence with copy and apply actions", () => {
   assert.match(index, /readonly/);
   assert.match(index, /aria-labelledby="correction-heading"/);
   assert.match(app, /data\.response\.fixedText/);
+  assert.match(app, /engine:\s*engineMode\.value/u);
   assert.match(app, /data\.response\.reviewFixedText/);
   assert.match(app, /includeReviewFixes:\s*includeReviewCorrections\.checked/u);
   assert.match(worker, /includeReviewFixes:\s*data\.includeReviewFixes/u);
@@ -112,6 +115,9 @@ test("sends text only to a local Web Worker and never to a network endpoint", ()
   assert.doesNotMatch(app, /fetch\s*\(/);
   assert.doesNotMatch(worker, /fetch\s*\(/);
   assert.match(worker, /lint_json/);
+  assert.match(worker, /lint_standard_json/);
+  assert.match(worker, /lint_context_json/);
+  assert.match(worker, /diagnostic\.safety\s*===\s*"safe"/u);
   assert.match(worker, /rule_catalog_json/);
   assert.match(app, /data\.catalog/);
   assert.match(app, /replaceUtf8Range/);
@@ -129,6 +135,7 @@ test("ships four interface languages and a searchable curated local catalogue", 
 
 test("builds the browser package from the checked Rust WASM artifact", () => {
   assert.match(buildScript, /wasm-bindgen/);
+  assert.match(buildScript, /--features[\s\S]*standard/u);
   assert.match(buildScript, /geullint_wasm\.wasm/);
   assert.match(buildScript, /"apps", "playground", "pkg"/);
 });

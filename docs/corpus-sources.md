@@ -90,3 +90,11 @@ cargo run -p geullint-cli -- `
 ## 요청이 필요한 국립국어원 코퍼스
 
 국립국어원 말뭉치 등록소의 [맞춤법 교정 말뭉치 2021·2022](https://kli.korean.go.kr/request/corpusRegist.do?lang=en)는 웹 텍스트의 맞춤법 오류 교정 자료로 소개되지만, 현재 등록소에서 `Request` 절차를 거칩니다. 권한을 받은 뒤에만 원문을 내려받고, [코퍼스 평가 형식](corpus-evaluation.md)의 JSON Lines와 manifest로 변환해야 합니다. 요청 전·권한 없이 원문을 미러링하거나 저장소에 올리지 않습니다.
+### Authorization-only release holdout
+
+`data/sources.json` records the NIKL spelling-correction corpus as
+`access: "manual_authorization"`, `redistributable: false`, and `sha256: null`.
+The acquisition tool validates that entry but never downloads the request page or
+counts it as evaluation data. After the corpus owner grants access, the local
+manifest must be replaced with the exact authorized artifact hash and a provenance
+record before `release_holdout` or `independent_human` cases can enter a quality gate.

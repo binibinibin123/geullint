@@ -33,10 +33,16 @@ remains the deterministic portable ranker; context-ranker results are not
 promoted to Safe or used for a quality claim until independent adjudicated
 holdouts pass.
 
-The opt-in runtime surfaces are `geullint check --engine context`,
-`StandardPipeline::bundled_with_context`, `evaluate_context`, and
-`lint_context_json`. They are intended for experimentation and ranking analysis;
-the compact engine, `--engine standard`, browser playground default, and VS Code
-Safe-fix behavior remain unchanged.
+The runtime surfaces are `geullint check --engine standard`,
+`StandardPipeline::bundled`, `evaluate_standard`, and `lint_standard_json`.
+The browser playground builds the standard feature and exposes `standard`,
+`compact`, and the experimental `context` engine in its local selector. Standard
+and context candidates remain Review-only; the compact engine remains available
+for the smallest embedding and the VS Code Safe-fix path remains conservative.
+
+`geullint check --engine context`, `StandardPipeline::bundled_with_context`,
+`evaluate_context`, and `lint_context_json` are intended for experimentation and
+ranking analysis. No learned candidate is promoted to Safe until an independent
+adjudicated holdout passes.
 
 브라우저는 최초 정적 자산 설치 뒤 Worker와 Service Worker 캐시만 사용한다. 캐시가 손상되거나 무결성 검증이 실패하면 검사를 시작하지 않고 사용자에게 재설치를 안내한다.

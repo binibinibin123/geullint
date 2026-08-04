@@ -76,7 +76,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             },
           },
           source: diagnostic.source,
-          data: diagnostic.data as GeulLintDiagnostic["data"],
+          data: (diagnostic as vscode.Diagnostic & { data?: unknown }).data as GeulLintDiagnostic["data"],
         })),
       );
       if (edits.length === 0) {
