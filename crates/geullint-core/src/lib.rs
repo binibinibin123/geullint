@@ -3,7 +3,9 @@
 //! `GeulLint`'s offline linting core.
 
 mod analysis;
+mod candidate;
 mod endings;
+mod lexicon;
 mod matcher;
 mod pipeline;
 mod planner;
@@ -25,8 +27,16 @@ use matcher::{LiteralMatcher, MatchBoundary};
 pub(crate) use source::source_ranges;
 
 pub use analysis::lattice::AnalysisLattice;
+pub use analysis::phonology::{
+    SyllableFeatures, compose_syllable, decompose_syllable, phonology_distance,
+};
 pub use analysis::{AnalyzedDocument, AnalyzedWord};
 pub use api::{Candidate, DiagnosticV2, Evidence, RuleContext, Suggestion};
+pub use candidate::{
+    CandidateGenerator, GrammarCandidateGenerator, GrammarRule, SpacingCandidateGenerator,
+    SpellingCandidateGenerator,
+};
+pub use lexicon::{LexiconEntry, LexiconError, StandardLexicon};
 pub use pipeline::{Pipeline, PipelineOutcome};
 pub use planner::CorrectionPlan;
 pub use policy::FixPolicy;

@@ -178,4 +178,10 @@ impl Candidate {
         self.evidence.push(evidence);
         self
     }
+
+    #[must_use]
+    pub fn with_score(mut self, score: f32) -> Self {
+        self.score = score.clamp(0.0, 1.0);
+        self
+    }
 }

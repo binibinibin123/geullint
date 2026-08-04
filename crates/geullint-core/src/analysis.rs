@@ -3,6 +3,8 @@ use serde::Serialize;
 
 #[path = "analysis/lattice.rs"]
 pub mod lattice;
+#[path = "analysis/phonology.rs"]
+pub mod phonology;
 
 #[cfg(feature = "morphology")]
 use crate::MorphAnalyzer;
