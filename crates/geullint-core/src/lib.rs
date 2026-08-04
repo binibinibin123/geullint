@@ -4,6 +4,8 @@
 
 mod analysis;
 mod candidate;
+#[cfg(feature = "standard")]
+mod context_ranker;
 mod endings;
 mod lexicon;
 mod matcher;
@@ -39,6 +41,8 @@ pub use candidate::{
     CandidateGenerator, GrammarCandidateGenerator, GrammarRule, SpacingCandidateGenerator,
     SpellingCandidateGenerator,
 };
+#[cfg(feature = "standard")]
+pub use context_ranker::ContextRanker;
 pub use lexicon::{LexiconEntry, LexiconError, StandardLexicon};
 pub use pipeline::{Pipeline, PipelineOutcome};
 pub use planner::CorrectionPlan;

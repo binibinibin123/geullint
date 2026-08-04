@@ -188,6 +188,28 @@ fn standard_engine_exposes_bounded_candidates_as_review_diagnostics() {
         .stdout(predicates::str::contains("\"safeFix\": false"));
 }
 
+#[cfg(feature = "standard")]
+#[test]
+fn context_engine_is_explicit_and_keeps_learned_candidates_review_only() {
+    Command::cargo_bin("geullint")
+        .expect("geullint binary")
+        .args([
+            "check",
+            "--engine",
+            "context",
+            "--stdin",
+            "--fail-on",
+            "info",
+            "--format",
+            "json",
+        ])
+        .write_stdin("문새를 저장합니다.")
+        .assert()
+        .code(1)
+        .stdout(predicates::str::contains("spelling.oov.near"))
+        .stdout(predicates::str::contains("\"safeFix\": false"));
+}
+
 fn run_git<const N: usize>(directory: &std::path::Path, args: [&str; N]) {
     let status = ProcessCommand::new("git")
         .args(args)

@@ -1,11 +1,13 @@
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand, ValueEnum};
+#[cfg(feature = "standard")]
+use geullint_core::{
+    ContextRanker, DiagnosticV2, FixSafety, GeulRankSmall, StandardLexicon, StandardPipeline,
+};
 use geullint_core::{
     Diagnostic, DictionaryOverlay, Engine, LintConfig, Profile, RulePack, Severity, SourceKind,
     TextRange, rule_catalog, rule_metadata,
 };
-#[cfg(feature = "standard")]
-use geullint_core::{DiagnosticV2, FixSafety, GeulRankSmall, StandardLexicon, StandardPipeline};
 use ignore::WalkBuilder;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -42,7 +44,8 @@ struct Arguments {
     #[arg(long, value_enum, default_value_t = OutputFormat::Human)]
     format: OutputFormat,
 
-    /// 검사 실행 경로입니다. `standard`는 검증 전까지 후보를 Review로만 표시합니다.
+    /// 검사 실행 경로입니다. `standard`는 후보를 Review로 표시하고, `context`는 학습형
+    /// 문맥 랭커를 실험적으로 사용하지만 모든 후보를 계속 Review로 표시합니다.
     #[arg(long, value_enum, default_value_t = EngineMode::Compact)]
     engine: EngineMode,
 
@@ -141,6 +144,8 @@ enum OutputFormat {
 enum EngineMode {
     Compact,
     Standard,
+    /// Experimental learned context ranking; all generated candidates remain Review-only.
+    Context,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -932,7 +937,7 @@ _arguments '1:command:(check fix init doctor dictionary feedback completion rule
 complete -c geullint -l stdin -d 'read one document from stdin'
 complete -c geullint -l changed -d 'check changed files'
 complete -c geullint -l fix -d 'apply safe fixes'
-complete -c geullint -l engine -a 'compact standard' -d 'select lint engine'
+complete -c geullint -l engine -a 'compact standard context' -d 'select lint engine'
 complete -c geullint -l no-color -d 'disable ANSI color output'
 "
         }
@@ -1003,10 +1008,15 @@ fn run_once(arguments: &Arguments) -> Result<bool> {
         bail!("--corpus-gate에는 --corpus 또는 --corpus-manifest가 필요합니다");
     }
 
-    if matches!(arguments.engine, EngineMode::Standard) {
+    if matches!(arguments.engine, EngineMode::Standard | EngineMode::Context) {
         #[cfg(feature = "standard")]
         {
-            return run_standard_once(arguments, config, packs);
+            return run_standard_once(
+                arguments,
+                config,
+                packs,
+                matches!(arguments.engine, EngineMode::Context),
+            );
         }
         #[cfg(not(feature = "standard"))]
         {
@@ -1099,6 +1109,7 @@ fn run_standard_once(
     arguments: &Arguments,
     config: LintConfig,
     packs: Vec<RulePack>,
+    use_context_ranker: bool,
 ) -> Result<bool> {
     if arguments.cache {
         bail!("--cache는 현재 compact 엔진에서만 지원합니다 (--engine compact)");
@@ -1108,7 +1119,13 @@ fn run_standard_once(
         .map_err(|error| anyhow::anyhow!("표준 사전을 읽을 수 없습니다: {error}"))?;
     let ranker = GeulRankSmall::bundled()
         .map_err(|error| anyhow::anyhow!("standard ranker를 읽을 수 없습니다: {error}"))?;
-    let pipeline = StandardPipeline::new(engine, lexicon, ranker);
+    let pipeline = if use_context_ranker {
+        let context_ranker = ContextRanker::bundled()
+            .map_err(|error| anyhow::anyhow!("context ranker를 읽을 수 없습니다: {error}"))?;
+        StandardPipeline::new(engine, lexicon, ranker).with_context_ranker(context_ranker)
+    } else {
+        StandardPipeline::new(engine, lexicon, ranker)
+    };
     let mut reported = Vec::new();
 
     if arguments.stdin {

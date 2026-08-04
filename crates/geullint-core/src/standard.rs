@@ -1,6 +1,6 @@
 use crate::{
-    AnalyzedDocument, Candidate, CandidateGenerator, DiagnosticV2, Engine, FixSafety,
-    GeulRankSmall, LintConfig, RuleContext, SourceKind, SpacingCandidateGenerator,
+    AnalyzedDocument, Candidate, CandidateGenerator, ContextRanker, DiagnosticV2, Engine,
+    FixSafety, GeulRankSmall, LintConfig, RuleContext, SourceKind, SpacingCandidateGenerator,
     SpellingCandidateGenerator, StandardLexicon, Suggestion,
 };
 use std::collections::{BTreeMap, BTreeSet};
@@ -30,6 +30,7 @@ pub struct StandardPipeline {
     spelling: SpellingCandidateGenerator,
     spacing: SpacingCandidateGenerator,
     ranker: GeulRankSmall,
+    context_ranker: Option<ContextRanker>,
 }
 
 impl StandardPipeline {
@@ -40,6 +41,7 @@ impl StandardPipeline {
             spelling: SpellingCandidateGenerator::new(lexicon.clone(), 32),
             spacing: SpacingCandidateGenerator::new(lexicon, 32),
             ranker,
+            context_ranker: None,
         }
     }
 
@@ -52,6 +54,32 @@ impl StandardPipeline {
         let lexicon = StandardLexicon::bundled().map_err(StandardPipelineError::Lexicon)?;
         let ranker = GeulRankSmall::bundled().map_err(StandardPipelineError::Ranker)?;
         Ok(Self::new(Engine::new(config), lexicon, ranker))
+    }
+
+    /// Load the experimental learned context ranker without making it the default path.
+    ///
+    /// Its candidates remain Review-only; the independent holdout gate must pass before a
+    /// caller should promote any confidence to Safe.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when a bundled lexicon, deterministic ranker, or context model is
+    /// malformed.
+    pub fn bundled_with_context(config: LintConfig) -> Result<Self, StandardPipelineError> {
+        let mut pipeline = Self::bundled(config)?;
+        pipeline.context_ranker =
+            Some(ContextRanker::bundled().map_err(StandardPipelineError::ContextRanker)?);
+        Ok(pipeline)
+    }
+
+    /// Attach the experimental learned context ranker to an existing pipeline.
+    ///
+    /// This keeps caller-provided rule packs and configuration intact while preserving the
+    /// explicit opt-in boundary around the learned model.
+    #[must_use]
+    pub fn with_context_ranker(mut self, context_ranker: ContextRanker) -> Self {
+        self.context_ranker = Some(context_ranker);
+        self
     }
 
     #[must_use]
@@ -67,7 +95,14 @@ impl StandardPipeline {
         let context = RuleContext::new(text, source_kind, &document, self.engine.config());
         let mut candidates = self.spelling.generate(&context);
         candidates.extend(self.spacing.generate(&context));
-        self.ranker.rank(&mut candidates, &context);
+        if let Some(context_ranker) = &self.context_ranker {
+            for candidate in &mut candidates {
+                candidate.score = context_ranker.score(text, &candidate_text(text, candidate));
+            }
+            sort_candidates(&mut candidates);
+        } else {
+            self.ranker.rank(&mut candidates, &context);
+        }
 
         let mut occupied = diagnostics
             .iter()
@@ -109,7 +144,7 @@ impl StandardPipeline {
             let Some(top) = candidates.first() else {
                 continue;
             };
-            let confidence = self.ranker.confidence(top.score);
+            let confidence = self.confidence(top.score);
             let evidence = top.evidence.clone();
             let mut seen_replacements = BTreeSet::new();
             let suggestions = candidates
@@ -119,7 +154,7 @@ impl StandardPipeline {
                 .map(|candidate| Suggestion {
                     text: candidate.replacement,
                     safety: FixSafety::Review,
-                    confidence: self.ranker.confidence(candidate.score),
+                    confidence: self.confidence(candidate.score),
                     evidence: candidate.evidence,
                 })
                 .collect();
@@ -167,6 +202,38 @@ impl StandardPipeline {
     pub const fn ranker(&self) -> GeulRankSmall {
         self.ranker
     }
+
+    #[must_use]
+    pub const fn has_context_ranker(&self) -> bool {
+        self.context_ranker.is_some()
+    }
+
+    fn confidence(&self, score: f32) -> crate::Confidence {
+        self.context_ranker.as_ref().map_or_else(
+            || self.ranker.confidence(score),
+            |ranker| ranker.confidence(score),
+        )
+    }
+}
+
+fn candidate_text(text: &str, candidate: &Candidate) -> String {
+    let mut result = text.to_owned();
+    result.replace_range(
+        candidate.range.start..candidate.range.end,
+        &candidate.replacement,
+    );
+    result
+}
+
+fn sort_candidates(candidates: &mut [Candidate]) {
+    candidates.sort_by(|left, right| {
+        right
+            .score
+            .total_cmp(&left.score)
+            .then_with(|| left.range.start.cmp(&right.range.start))
+            .then_with(|| left.range.end.cmp(&right.range.end))
+            .then_with(|| left.replacement.cmp(&right.replacement))
+    });
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -175,4 +242,6 @@ pub enum StandardPipelineError {
     Lexicon(crate::LexiconError),
     #[error("standard ranker asset is invalid: {0}")]
     Ranker(String),
+    #[error("context ranker asset is invalid: {0}")]
+    ContextRanker(String),
 }

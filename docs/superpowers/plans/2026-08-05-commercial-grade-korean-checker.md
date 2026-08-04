@@ -324,3 +324,4 @@
 - 목적별 커밋, PR, GitHub 설정, tag, release, Pages, 릴리스 후 검증
 
 사용자가 제공해야 하는 문장, API 키, 데이터 계정, 라벨, 로컬 명령, 설치 검수, GitHub 업로드 단계는 없다. 계정·본인 인증·약정 서명·유료 인증서가 필요한 제3자 채널은 완성 조건에서 제외한다.
+> **Latest implementation record (2026-08-05):** An opt-in deterministic-hash INT8 context ranker is now reproducibly trained from KoLLA annotation pairs, exported as dependency-free JSON plus `MatMulInteger` ONNX, and wired into native `StandardPipeline`, WASM (`evaluate_context`/`lint_context_json`), and CLI (`--engine context`). All learned candidates remain `Review`; the default compact/standard paths and Safe fixes are unchanged. Rebuilding the checked-in model from the derived 3,649-row pair file reproduces JSON, ONNX, and manifest hashes exactly. This does not close the independent human holdout, commercial-near quality, cross-browser, six-runner, or beta-release gates.

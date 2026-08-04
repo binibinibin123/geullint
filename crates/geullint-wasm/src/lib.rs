@@ -110,6 +110,32 @@ pub fn evaluate_standard(request: &WasmLintRequest) -> StandardWasmLintResponse 
     }
 }
 
+/// Evaluates the experimental learned context ranker in WASM.
+///
+/// The model is opt-in and every generated candidate remains Review-only. The regular
+/// [`evaluate_standard`] entry point keeps its deterministic ranking behavior.
+///
+/// # Panics
+///
+/// Panics only when a checked-in standard asset or context model is malformed.
+#[cfg(feature = "standard")]
+#[must_use]
+pub fn evaluate_context(request: &WasmLintRequest) -> StandardWasmLintResponse {
+    let pipeline = StandardPipeline::bundled_with_context(request.config.clone())
+        .expect("checked-in standard and context assets must be valid");
+    let outcome = pipeline.check_with_fixes(
+        &request.text,
+        request.source_kind,
+        request.include_review_fixes,
+    );
+    StandardWasmLintResponse {
+        version: 1,
+        diagnostics: outcome.diagnostics,
+        fixed_text: outcome.fixed_text,
+        review_fixed_text: outcome.review_fixed_text,
+    }
+}
+
 /// Lints one JSON request and returns one JSON response for a Web Worker.
 ///
 /// This binding does not open sockets, use browser storage, or transmit the text.
@@ -134,6 +160,19 @@ pub fn lint_json(request_json: &str) -> Result<String, JsValue> {
 pub fn lint_standard_json(request_json: &str) -> Result<String, JsValue> {
     let request = WasmLintRequest::from_json(request_json).map_err(js_error)?;
     serde_json::to_string(&evaluate_standard(&request)).map_err(js_error)
+}
+
+/// Lints one JSON request with the experimental learned context ranker.
+///
+/// # Errors
+///
+/// Returns a JavaScript error when the request is invalid JSON or the response cannot be
+/// serialized.
+#[cfg(feature = "standard")]
+#[wasm_bindgen]
+pub fn lint_context_json(request_json: &str) -> Result<String, JsValue> {
+    let request = WasmLintRequest::from_json(request_json).map_err(js_error)?;
+    serde_json::to_string(&evaluate_context(&request)).map_err(js_error)
 }
 
 /// Returns all bundled rule metadata for the offline playground.
