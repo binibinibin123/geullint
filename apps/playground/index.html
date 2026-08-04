@@ -100,6 +100,7 @@
             <button class="correction-action secondary" id="copy-correction" type="button" data-i18n="copyCorrection" disabled>교정문 복사</button>
             <button class="correction-action primary" id="apply-correction" type="button" data-i18n="applyCorrection" disabled>원문에 반영</button>
             <button class="correction-action secondary" id="undo-correction" type="button" data-i18n="undoCorrection" disabled>원문 복원</button>
+            <button class="correction-action secondary" id="redo-correction" type="button" data-i18n="redoCorrection" disabled>다시 적용</button>
           </div>
         </section>
 
@@ -109,6 +110,10 @@
             <span class="finding-count" id="finding-count">준비 중</span>
           </div>
           <div id="results" aria-live="polite" aria-busy="true"><p class="loading" data-i18n="engineLoading">오프라인 엔진을 준비하고 있습니다…</p></div>
+          <div class="feedback-actions" aria-label="피드백 내보내기">
+            <button class="text-button" id="feedback-export" type="button" data-i18n="feedbackExport">익명 피드백 JSONL 저장</button>
+            <a class="text-button" id="feedback-issue" href="https://github.com/binibinibin123/geullint/issues/new?template=bug.yml" target="_blank" rel="noreferrer" data-i18n="feedbackIssue">GitHub 이슈 열기</a>
+          </div>
         </section>
       </section>
 

@@ -40,6 +40,7 @@ test("ships a separate corrected sentence with copy and apply actions", () => {
     "copy-correction",
     "apply-correction",
     "undo-correction",
+    "redo-correction",
     "correction-status",
     "include-review-corrections",
   ]) {
@@ -70,6 +71,13 @@ test("ships a separate corrected sentence with copy and apply actions", () => {
   ]) {
     assert.match(i18n, new RegExp(`${key}:`));
   }
+});
+
+test("offers privacy-preserving feedback export and explicit issue handoff", () => {
+  assert.match(index, /id="feedback-export"/u);
+  assert.match(index, /id="feedback-issue"/u);
+  assert.match(app, /JSONL/u);
+  assert.match(app, /github\.com\/binibinibin123\/geullint\/issues\/new/u);
 });
 
 test("starts the human-facing demo with conservative safe corrections", () => {

@@ -107,6 +107,9 @@ kbd { padding:2px 4px; border:1px solid var(--line); border-radius:3px; backgrou
   transform:translate(-2px,-2px); box-shadow:3px 3px 0 var(--orange);
 }
 .correction-action:disabled { cursor:not-allowed; opacity:.42; }
+.feedback-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:18px; padding-top:14px; border-top:1px solid var(--line); }
+.feedback-actions .text-button { color:var(--muted); font-size:.68rem; }
+.feedback-actions .text-button:hover,.feedback-actions .text-button:focus-visible { color:var(--ink); }
 .result-panel { grid-column:1 / -1; min-height:250px; }
 .finding-count { padding:5px 8px; background:var(--acid); color:var(--ink); font:800 .68rem ui-monospace,monospace; }
 .finding { display:grid; grid-template-columns:auto 1fr auto; align-items:start; gap:13px; padding:17px 0; border-bottom:1px solid var(--line); animation:reveal .3s both; }

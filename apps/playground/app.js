@@ -20,7 +20,10 @@ const correctionStatus = document.querySelector("#correction-status");
 const copyCorrection = document.querySelector("#copy-correction");
 const applyCorrection = document.querySelector("#apply-correction");
 const undoCorrection = document.querySelector("#undo-correction");
+const redoCorrection = document.querySelector("#redo-correction");
 const includeReviewCorrections = document.querySelector("#include-review-corrections");
+const feedbackExport = document.querySelector("#feedback-export");
+const feedbackIssue = document.querySelector("#feedback-issue");
 const ruleSearch = document.querySelector("#rule-search");
 const ruleList = document.querySelector("#rule-list");
 const ruleCount = document.querySelector("#rule-count");
@@ -40,6 +43,7 @@ let currentCopy;
 let correctionState = "correctionLoading";
 let requestedText = "";
 let latestCorrection;
+let latestDiagnostics = [];
 let undoText;
 const initialText = editor.value;
 const history = createHistory(initialText, 50);
@@ -95,11 +99,17 @@ function invalidateCorrection() {
 function rememberBeforeOverwrite() {
   undoText = editor.value;
   history.push(editor.value);
-  undoCorrection.disabled = false;
+  updateHistoryActions();
+}
+
+function updateHistoryActions() {
+  undoCorrection.disabled = !history.canUndo();
+  redoCorrection.disabled = !history.canRedo();
 }
 
 function renderCorrection(originalText, fixedText, reviewFixedText, diagnostics) {
   latestCorrection = { originalText, fixedText, reviewFixedText, diagnostics };
+  latestDiagnostics = diagnostics;
   const includesReview = includeReviewCorrections.checked
     && diagnostics.some((diagnostic) => !diagnostic.safeFix && diagnostic.suggestions?.[0]);
   const previewText = includesReview
@@ -137,6 +147,7 @@ function setMessage(className, text) {
 }
 
 function renderDiagnostics(diagnostics) {
+  latestDiagnostics = diagnostics;
   results.replaceChildren();
   findingCount.textContent = `${diagnostics.length}건 발견`;
   if (diagnostics.length === 0) {
@@ -268,6 +279,7 @@ worker.addEventListener("message", ({ data }) => {
 
 editor.addEventListener("input", () => {
   history.push(editor.value);
+  updateHistoryActions();
   void localStore.saveDraft(editor.value).catch(() => {});
   updateCharacterCount();
   invalidateCorrection();
@@ -330,7 +342,17 @@ undoCorrection.addEventListener("click", () => {
   if (restored === undefined) return;
   editor.value = restored;
   undoText = undefined;
-  undoCorrection.disabled = !history.canUndo();
+  updateHistoryActions();
+  updateCharacterCount();
+  void localStore.saveDraft(editor.value).catch(() => {});
+  editor.focus();
+  scan();
+});
+redoCorrection.addEventListener("click", () => {
+  const restored = history.redo();
+  if (restored === undefined) return;
+  editor.value = restored;
+  updateHistoryActions();
   updateCharacterCount();
   void localStore.saveDraft(editor.value).catch(() => {});
   editor.focus();
@@ -340,6 +362,28 @@ includeReviewCorrections.addEventListener("change", () => {
   scan();
 });
 ruleSearch.addEventListener("input", renderRuleList);
+const GITHUB_ISSUE_URL = "https://github.com/binibinibin123/geullint/issues/new?template=bug.yml";
+if (feedbackIssue) feedbackIssue.href = GITHUB_ISSUE_URL;
+feedbackExport.addEventListener("click", () => {
+  // JSONL export contains only rule metadata and lengths; source text never leaves the tab.
+  const records = latestDiagnostics.map((diagnostic) => ({
+    version: 1,
+    ruleId: diagnostic.ruleId,
+    severity: diagnostic.severity,
+    safeFix: Boolean(diagnostic.safeFix),
+    profile: profile.value,
+    sourceKind: sourceKind.value,
+    originalLength: [...(diagnostic.original || "")].length,
+  }));
+  const jsonl = records.map((record) => JSON.stringify(record)).join("\n");
+  const blob = new Blob([jsonl ? `${jsonl}\n` : ""], { type: "application/jsonl;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "geullint-feedback.jsonl";
+  link.click();
+  URL.revokeObjectURL(url);
+});
 language.addEventListener("change", () => {
   currentCopy = applyLocale(language.value);
   setCorrectionState(correctionState);
@@ -358,6 +402,7 @@ try {
 currentCopy = applyLocale(language.value);
 setCorrectionState(correctionState);
 updateCharacterCount();
+updateHistoryActions();
 void localStore.loadDraft().then((draft) => {
   if (!draft || editor.value !== initialText) return;
   editor.value = draft;
