@@ -2,7 +2,7 @@
 
 ## 사용자 설치 원칙
 
-**npm is optional.** v0.3.0-alpha.1의 기본 경로는 저장소에 공개된 `install.ps1`과 `install.sh`입니다. 설치 스크립트가 운영체제와 CPU를 확인하고 GitHub Release의 네이티브 아카이브와 SHA-256 체크섬을 함께 받은 뒤 사용자 디렉터리에 설치합니다. 사용자는 개별 실행 파일을 직접 고를 필요가 없습니다.
+**npm is optional.** v0.3.0-alpha.2의 기본 경로는 저장소에 공개된 `install.ps1`과 `install.sh`입니다. 설치 스크립트가 운영체제와 CPU를 확인하고 GitHub Release의 네이티브 아카이브와 SHA-256 체크섬을 함께 받은 뒤 사용자 디렉터리에 설치합니다. 사용자는 개별 실행 파일을 직접 고를 필요가 없습니다.
 
 npm 패키지 구조도 함께 빌드·검증하지만, 레지스트리 자격 증명이 설정되기 전에는 README에서 공개된 설치 방법처럼 안내하지 않습니다.
 
@@ -30,11 +30,11 @@ npm 발행 권한과 `NPM_TOKEN`이 없어도 GitHub Release와 모든 플랫폼
 
 ## 버전과 태그
 
-Rust 워크스페이스와 여섯 npm 플랫폼 패키지, 런처 `package.json`의 버전은 같아야 합니다. 현재 알파 버전은 모두 `0.3.0-alpha.1`이고, 발행 태그는 `v0.3.0-alpha.1`입니다.
+Rust 워크스페이스와 여섯 npm 플랫폼 패키지, 런처 `package.json`의 버전은 같아야 합니다. 현재 알파 버전은 모두 `0.3.0-alpha.2`이고, 발행 태그는 `v0.3.0-alpha.2`입니다.
 
 ```bash
-git tag v0.3.0-alpha.1
-git push origin v0.3.0-alpha.1
+git tag v0.3.0-alpha.2
+git push origin v0.3.0-alpha.2
 ```
 
 `.github/workflows/release.yml`은 태그 버전과 `geullint-cli`의 Cargo 버전, 모든 npm 패키지 버전이 일치하는지 먼저 검증합니다. 이후 각 운영체제에서 CLI를 빌드하고 다음 순서로 진행합니다.
@@ -51,7 +51,7 @@ git push origin v0.3.0-alpha.1
 릴리스 워크플로는 사용자가 다운로드하는 각 네이티브 아카이브와 VSIX에 SPDX **SBOM**을 생성하고, 그 아카이브·VSIX 파일을 GitHub artifact **attestation**의 대상으로 서명합니다. 설치 스크립트도 별도로 빌드 출처를 증명합니다.
 
 ```bash
-gh attestation verify geullint-v0.3.0-alpha.1-vscode-win32-x64.vsix \
+gh attestation verify geullint-v0.3.0-alpha.2-vscode-win32-x64.vsix \
   --repo binibinibin123/geullint \
   --predicate-type https://spdx.dev/Document/v2.3 \
   --signer-workflow binibinibin123/geullint/.github/workflows/release.yml

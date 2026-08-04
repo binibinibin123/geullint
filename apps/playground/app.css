@@ -1,6 +1,6 @@
 :root {
   --paper:#f2f0e8; --ink:#18211c; --muted:#656d66; --line:#c8c7bd;
-  --acid:#dfff38; --orange:#ff6230; --pink:#ffb4ce; --panel:#fffefa;
+  --acid:#dfff38; --orange:#a43b1d; --pink:#ffb4ce; --panel:#fffefa;
   color:var(--ink); background:var(--paper);
   font-family:"Noto Serif KR","Iowan Old Style","Malgun Myeongjo",serif;
 }
@@ -10,6 +10,9 @@ body { margin:0; min-width:320px; }
 button,input,select,textarea { font:inherit; }
 button { cursor:pointer; }
 a { color:inherit; }
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,summary:focus-visible {
+  outline:3px solid var(--acid); outline-offset:3px;
+}
 body::before {
   position:fixed; z-index:-1; inset:0; content:""; opacity:.48;
   background-image:radial-gradient(#18211c .55px,transparent .55px);
@@ -93,9 +96,9 @@ kbd { padding:2px 4px; border:1px solid var(--line); border-radius:3px; backgrou
 #corrected-output:focus { border-color:var(--ink); box-shadow:inset 5px 0 0 var(--orange),0 0 0 3px rgba(24,33,28,.18); }
 .review-correction-toggle { display:flex; align-items:center; gap:8px; width:max-content; max-width:100%; margin-top:14px; font:.78rem/1.5 "Malgun Gothic",sans-serif; }
 .review-correction-toggle input { width:17px; height:17px; accent-color:var(--orange); }
-.correction-actions { display:flex; justify-content:flex-end; gap:9px; padding-top:14px; }
+.correction-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:9px; padding-top:14px; }
 .correction-action {
-  min-width:138px; padding:11px 14px; border:1px solid var(--ink);
+  min-width:138px; min-height:44px; padding:11px 14px; border:1px solid var(--ink);
   font:900 .72rem ui-monospace,"Cascadia Mono",monospace; transition:.16s ease;
 }
 .correction-action.secondary { background:var(--panel); color:var(--ink); }
@@ -112,7 +115,7 @@ kbd { padding:2px 4px; border:1px solid var(--line); border-radius:3px; backgrou
 .severity-error { background:var(--orange); }.severity-warning { background:var(--acid); }.severity-info { background:var(--pink); }
 .finding-rule { margin:0 0 5px; color:var(--muted); font:.66rem ui-monospace,monospace; }
 .finding-message { margin:0; font:.93rem/1.6 "Malgun Gothic",sans-serif; }
-.suggestion { padding:7px 10px; border:1px solid var(--ink); background:white; font:.82rem "Malgun Gothic",sans-serif; white-space:nowrap; }
+.suggestion { min-height:44px; padding:7px 10px; border:1px solid var(--ink); background:white; font:.82rem "Malgun Gothic",sans-serif; white-space:nowrap; touch-action:manipulation; }
 .suggestion:hover,.suggestion:focus-visible { background:var(--acid); }
 .empty,.loading,.error { margin:44px 0; text-align:center; font-family:"Malgun Gothic",sans-serif; }.empty { color:#397343; }.error { color:#ad2d0d; }
 .rule-section { display:grid; grid-template-columns:minmax(250px,.62fr) minmax(0,1.38fr); gap:70px; align-items:start; padding:130px 0 90px; scroll-margin-top:10px; }

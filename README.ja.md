@@ -12,7 +12,7 @@
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-f1efe6?labelColor=18211c"></a>
 </p>
 
-<p align="center"><strong>文章を外部へ送らない、オープンソースの韓国語文章校正・文法チェック</strong><br>韓国語の綴り・分かち書き・文法・文体をブラウザー、VS Code、ターミナルで確認します。文章は外部サーバーへ送信されません。</p>
+<p align="center"><strong>高速で安全なオープンソース韓国語スペルチェッカー</strong><br>文書を外部サーバーへ送らず、綴り・分かち書き・文法・文体を確認します。</p>
 
 <p align="center">
   <a href="https://binibinibin123.github.io/geullint/"><strong>今すぐ文章をチェック →</strong></a> ·
@@ -33,7 +33,7 @@
 | CI | 文書品質の低下を自動で防ぎ、SARIF結果を生成 |
 | 自分の語彙 | ユーザー辞書、dictionary overlay、プロジェクトrule packを追加 |
 
-文章・診断・テレメトリーを外部サービスへ送信しません。公開済みのアルファ版は**v0.3.0-alpha.1**ですが、このリポジトリのルールカタログは固定の件数目標とは独立して更新されます。
+文章・診断・テレメトリーを外部サービスへ送信しません。公開済みのアルファ版は**v0.3.0-alpha.2**ですが、このリポジトリのルールカタログは固定の件数目標とは独立して更新されます。
 
 ## 特徴
 
@@ -54,22 +54,22 @@ GeulLintはブラウザー、エディター、ターミナルで完全に**オ�
 **Windows**
 
 ```powershell
-$env:GEULLINT_VERSION='0.3.0-alpha.1'
-irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.ps1 | iex
+$env:GEULLINT_VERSION='0.3.0-alpha.2'
+irm https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.ps1 | iex
 geullint .
 ```
 
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.1/install.sh | GEULLINT_VERSION=0.3.0-alpha.1 sh
+curl -fsSL https://raw.githubusercontent.com/binibinibin123/geullint/v0.3.0-alpha.2/install.sh | GEULLINT_VERSION=0.3.0-alpha.2 sh
 geullint .
 ```
 
 スクリプトはGitHub ReleaseのSHA-256を検証します。実行前に[install.ps1](install.ps1)または[install.sh](install.sh)を確認できます。Rust環境がある場合：
 
 ```bash
-cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.1 --locked geullint-cli
+  cargo install --git https://github.com/binibinibin123/geullint --tag v0.3.0-alpha.2 --locked geullint-cli
 ```
 
 手動アーカイブは[GitHub Releases](https://github.com/binibinibin123/geullint/releases)のfallbackです。

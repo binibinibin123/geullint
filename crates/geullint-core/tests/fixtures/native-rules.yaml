@@ -186,7 +186,7 @@ cases:
     profile: strict
     expected:
       - ruleId: grammar.particle.subject-allomorph
-        suggestions: ["무가"]
+        suggestions: ["나무가"]
         safeFix: false
 
   - name: object-particle

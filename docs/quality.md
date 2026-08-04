@@ -25,4 +25,4 @@ matcher contract와 smoke corpus는 언어 정확도 사례 수로 홍보하지 
 
 ## 공개 수치
 
-알파별 측정 결과와 원본 해시는 [v0.3.0-alpha.1 품질 보고서](quality-report-v0.3.0-alpha.1.md)에 기록합니다. 이전 기준선은 [v0.2.0-alpha.1 보고서](quality-report-v0.2.0-alpha.1.md)에 보존합니다. 오류가 포함된 독립 gold corpus를 두 명 이상이 검토하기 전에는 외부 precision·recall을 주장하지 않습니다.
+알파별 측정 결과와 원본 해시는 [v0.3.0-alpha.2 품질 보고서](quality-report-v0.3.0-alpha.2.md)에 기록합니다. 이전 기준선은 [v0.3.0-alpha.1 보고서](quality-report-v0.3.0-alpha.1.md)에 보존합니다. 오류가 포함된 독립 gold corpus를 두 명 이상이 검토하기 전에는 외부 precision·recall을 주장하지 않습니다.

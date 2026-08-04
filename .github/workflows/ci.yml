@@ -61,6 +61,7 @@ jobs:
           cache: npm
           cache-dependency-path: extensions/vscode-geullint/package-lock.json
       - run: npm ci
+      - run: npm audit --omit=optional --audit-level=high
       - run: npm run check
       - run: npm test
       - run: npm run build

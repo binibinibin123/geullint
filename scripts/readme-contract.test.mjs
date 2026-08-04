@@ -18,10 +18,10 @@ const localizedReadmes = [
 
 test("leads with a spelling-checker product promise and direct action", () => {
   const productPromises = [
-    /글을 밖으로 보내지 않는 오픈소스 한국어 맞춤법 검사기/u,
-    /Open-source Korean spelling and grammar checker that keeps your writing local/iu,
-    /文章を外部へ送らない、オープンソースの韓国語文章校正・文法チェック/u,
-    /不上传文本的开源韩语拼写与语法检查器/u,
+    /빠르고 안전한 오픈소스 한국어 맞춤법 검사기/u,
+    /Fast, private, open-source Korean spelling checker/iu,
+    /高速で安全なオープンソース韓国語スペルチェッカー/u,
+    /快速、安全的开源韩语拼写检查器/u,
   ];
   const directActions = [
     /지금 문장 검사하기/u,
@@ -66,7 +66,7 @@ test("keeps the four README translations aligned", () => {
     assert.match(source, /assets\/screenshots\/vscode\.png/u, `${path} shows the editor`);
     assert.match(source, /binibinibin123\.github\.io\/geullint/u, `${path} links the live playground`);
     assert.match(source, /github\.com\/binibinibin123\/geullint\/releases/u, `${path} links releases`);
-    assert.match(source, /0\.3\.0-alpha\.1/u, `${path} identifies the alpha release`);
+    assert.match(source, /0\.3\.0-alpha\.2/u, `${path} identifies the alpha release`);
     assert.match(source, /Windows/iu, `${path} documents Windows`);
     assert.match(source, /macOS/iu, `${path} documents macOS`);
     assert.match(source, /Linux/iu, `${path} documents Linux`);
@@ -96,11 +96,11 @@ test("keeps archives behind installers and records optional npm publishing", () 
   assert.match(readme, /fallback|대안/i);
   assert.match(distributionGuide, /NPM_TOKEN/);
   assert.match(distributionGuide, /npm is optional/i);
-  assert.match(distributionGuide, /v0\.3\.0-alpha\.1/);
+  assert.match(distributionGuide, /v0\.3\.0-alpha\.2/);
 });
 
 test("documents an externally verifiable SBOM attestation command", () => {
-  assert.match(distributionGuide, /geullint-v0\.3\.0-alpha\.1-vscode-win32-x64\.vsix/);
+  assert.match(distributionGuide, /geullint-v0\.3\.0-alpha\.2-vscode-win32-x64\.vsix/);
   assert.match(
     distributionGuide,
     /--predicate-type\s+https:\/\/spdx\.dev\/Document\/v2\.3/u,

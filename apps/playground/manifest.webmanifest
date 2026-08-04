@@ -1,0 +1,11 @@
+{
+  "name": "GeulLint 오프라인 한국어 맞춤법 검사기",
+  "short_name": "GeulLint",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f0e8",
+  "theme_color": "#18211c",
+  "description": "문장을 외부 서버로 보내지 않고 브라우저에서 검사하는 오픈소스 한국어 맞춤법·문법 검사기"
+}

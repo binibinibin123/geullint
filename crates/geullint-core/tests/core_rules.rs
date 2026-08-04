@@ -1109,7 +1109,7 @@ fn strict_profile_keeps_particle_suggestions_review_only() {
         (
             "나무이 필요하다.",
             "grammar.particle.subject-allomorph",
-            "무가",
+            "나무가",
         ),
         ("책를 읽는다.", "grammar.particle.object-allomorph", "책을"),
         (
@@ -1153,5 +1153,101 @@ fn strict_profile_keeps_ambiguous_jjige_suggestion_review_only() {
 
     assert_eq!(diagnostic.suggestions, ["찌개"]);
     assert!(!diagnostic.safe_fix);
+    assert_eq!(apply_safe_fixes(source, &diagnostics), source);
+}
+
+#[test]
+fn catches_common_spelling_errors_in_unrelated_sentences() {
+    let cases = [
+        (
+            "회의 자료 데이타를 다시 만들었다.",
+            "회의 자료 데이터를 다시 만들었다.",
+        ),
+        ("그 배우의 설레임이 전해졌다.", "그 배우의 설렘이 전해졌다."),
+        ("내노라하는 전문가가 모였다.", "내로라하는 전문가가 모였다."),
+        ("왠만하면 오늘 끝내자.", "웬만하면 오늘 끝내자."),
+        ("몇일 뒤에 다시 연락하겠다.", "며칠 뒤에 다시 연락하겠다."),
+    ];
+
+    for (source, expected) in cases {
+        let diagnostics = lint_text(source, SourceKind::PlainText, &LintConfig::default());
+        assert!(!diagnostics.is_empty(), "no diagnostic for {source:?}");
+        assert_eq!(
+            apply_safe_fixes(source, &diagnostics),
+            expected,
+            "{source:?}"
+        );
+    }
+}
+
+#[test]
+fn keeps_contextual_barem_correction_review_only() {
+    let config = LintConfig {
+        profile: Profile::Strict,
+        ..LintConfig::default()
+    };
+    let source = "작은 바램 하나를 적었다.";
+    let diagnostics = lint_text(source, SourceKind::PlainText, &config);
+    let diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.rule_id == "spelling.lexical.barem")
+        .expect("바램 must be offered as a contextual review");
+
+    assert_eq!(diagnostic.suggestions, ["바람"]);
+    assert!(!diagnostic.safe_fix);
+    assert_eq!(apply_safe_fixes(source, &diagnostics), source);
+}
+
+#[test]
+fn catches_common_dependent_noun_spacing_variants() {
+    let cases = [
+        ("이 일은 할수 있다.", "이 일은 할 수 있다."),
+        ("올것 같다.", "올 것 같다."),
+        ("그 사람을 만난적 있다.", "그 사람을 만난 적 있다."),
+        ("이유를 알수없다.", "이유를 알 수 없다."),
+    ];
+
+    for (source, expected) in cases {
+        let diagnostics = lint_text(source, SourceKind::PlainText, &LintConfig::default());
+        assert!(
+            diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.original != diagnostic.suggestions[0]),
+            "no actionable diagnostic for {source:?}: {diagnostics:?}"
+        );
+        let review = Engine::new(LintConfig::default())
+            .check_with_fixes(source, SourceKind::PlainText, true)
+            .review_fixed_text;
+        assert_eq!(review, expected, "{source:?}");
+    }
+}
+
+#[test]
+fn catches_particle_errors_as_review_suggestions_without_touching_controls() {
+    let config = LintConfig {
+        profile: Profile::Strict,
+        ..LintConfig::default()
+    };
+    let source = "연필를 샀고 친구은 웃었으며 동생와 의자을 옮겼다. 학교이 멀다.";
+    let diagnostics = lint_text(source, SourceKind::PlainText, &config);
+
+    for (original, suggestion) in [
+        ("연필를", "연필을"),
+        ("친구은", "친구는"),
+        ("동생와", "동생과"),
+        ("의자을", "의자를"),
+        ("학교이", "학교가"),
+    ] {
+        assert!(
+            diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.original == original
+                    && diagnostic
+                        .suggestions
+                        .first()
+                        .is_some_and(|value| value == suggestion)),
+            "missing {original} -> {suggestion}: {diagnostics:?}"
+        );
+    }
     assert_eq!(apply_safe_fixes(source, &diagnostics), source);
 }

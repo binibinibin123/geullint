@@ -111,3 +111,6 @@
 {"id":"bundled-style.redundancy.gajang-choego","text":"가장 최고","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["style.redundancy.gajang-choego"]}
 {"id":"bundled-style.redundancy.majority-over","text":"과반수 이상","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["style.redundancy.majority-over"]}
 {"id":"bundled-technical.term.web-browser","text":"웹부라우저","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["technical.term.web-browser"]}
+{"id":"bundled-spelling.lexical.deita","text":"데이타","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.deita"]}
+{"id":"bundled-spelling.lexical.seolreim","text":"설레임","sourceKind":"plain_text","profile":"editorial","expectedRuleIds":["spelling.lexical.seolreim"]}
+{"id":"bundled-spelling.lexical.barem","text":"바램","sourceKind":"plain_text","profile":"strict","expectedRuleIds":["spelling.lexical.barem"]}

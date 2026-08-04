@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const version = "0.3.0-alpha.1";
+const version = "0.3.0-alpha.2";
 const tag = `v${version}`;
 
 const packagePaths = [
@@ -53,10 +53,10 @@ test("pins public install examples to the audited tag", () => {
 test("ships a versioned quality report with measured limits", () => {
   const report = readFileSync(`docs/quality-report-v${version}.md`, "utf8");
 
-  assert.match(report, /공개 규칙: 113개/u);
-  assert.match(report, /오류 문장 \| 72/u);
-  assert.match(report, /정상 문장 \| 72/u);
-  assert.match(report, /정상 문장 \| 249/u);
-  assert.match(report, /범용 OOV 철자 사전은 기본 엔진에 없습니다/u);
-  assert.match(report, /Harper나 상용 맞춤법 검사기와 동급이라고 부르지 않습니다/u);
+  assert.match(report, /catalogue: 116 rules/u);
+  assert.match(report, /safety-regressions-v1 \| 72 \| 72/u);
+  assert.match(report, /curated-alpha-v1 \| 84 \| 42/u);
+  assert.match(report, /KoLLA v2 review slice .*249/u);
+  assert.match(report, /OOV candidate generation remains out of scope/u);
+  assert.match(report, /not a Harper equivalent/u);
 });
