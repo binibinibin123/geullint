@@ -1,4 +1,4 @@
-surface	pos	frequency
+geullint-standard-lexicon-v1
 가게	UNK	10
 가격	UNK	10
 가다	VV	100000

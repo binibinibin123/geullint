@@ -29,3 +29,11 @@ fn rejects_unsorted_duplicate_and_malformed_lexicon_rows() {
         StandardLexicon::parse("geullint-standard-lexicon-v1\n가다\tVV\t1\n가다\tVV\t1\n").is_err()
     );
 }
+
+#[cfg(feature = "standard")]
+#[test]
+fn bundled_standard_lexicon_matches_the_checked_in_manifest_size() {
+    let lexicon = StandardLexicon::bundled().expect("bundled standard lexicon");
+    assert!(lexicon.entry_count() >= 1_000);
+    assert!(lexicon.lookup("며칠").is_some());
+}

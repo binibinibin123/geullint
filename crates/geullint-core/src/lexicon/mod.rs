@@ -73,6 +73,14 @@ impl StandardLexicon {
         Ok(Self { entries })
     }
 
+    /// Load the checked-in standard asset when the `standard` feature is enabled.
+    #[cfg(feature = "standard")]
+    pub fn bundled() -> Result<Self, LexiconError> {
+        Self::parse(include_str!(
+            "../../../../dictionaries/standard-ko-v1/standard-ko-v1.txt"
+        ))
+    }
+
     #[must_use]
     pub fn lookup(&self, surface: &str) -> Option<&LexiconEntry> {
         self.entries.get(surface)
