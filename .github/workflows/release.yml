@@ -244,7 +244,7 @@ jobs:
         with:
           # Scan the unpacked payload so the SPDX document describes the binary,
           # notices, and license files rather than only the outer archive.
-          file: release-staging/geullint-v${{ env.RELEASE_VERSION }}-${{ matrix.target_name }}
+          path: release-staging/geullint-v${{ env.RELEASE_VERSION }}-${{ matrix.target_name }}
           format: spdx-json
           output-file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-${{ matrix.target_name }}.spdx.json
           upload-artifact: false
@@ -407,7 +407,7 @@ jobs:
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
           # Scan the VSIX payload instead of treating the zip as one opaque file.
-          file: release-staging/vsix-${{ matrix.target_name }}
+          path: release-staging/vsix-${{ matrix.target_name }}
           format: spdx-json
           output-file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.spdx.json
           upload-artifact: false
