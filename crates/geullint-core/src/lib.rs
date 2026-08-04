@@ -13,6 +13,8 @@ mod policy;
 mod productive;
 mod ranking;
 mod source;
+#[cfg(feature = "standard")]
+mod standard;
 mod style;
 mod trace;
 
@@ -43,6 +45,8 @@ pub use planner::CorrectionPlan;
 pub use policy::FixPolicy;
 pub use policy::{PolicyDecision, PolicyThresholds};
 pub use ranking::{CandidateScorer, DeterministicScorer, GeulRankSmall, RankWeights};
+#[cfg(feature = "standard")]
+pub use standard::{StandardPipeline, StandardPipelineError, StandardPipelineOutcome};
 pub use style::{StyleContext, StyleProfile};
 pub use trace::{TraceEvent, TraceSink, VecTrace};
 
@@ -366,6 +370,12 @@ impl Engine {
             config,
             rule_pack_rules: Vec::new(),
         }
+    }
+
+    /// Returns the immutable configuration used by this engine.
+    #[must_use]
+    pub const fn config(&self) -> &LintConfig {
+        &self.config
     }
 
     /// Creates an offline linter with validated versioned rule packs.

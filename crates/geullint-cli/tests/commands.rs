@@ -166,6 +166,28 @@ fn changed_checks_staged_worktree_and_untracked_source_files() {
         .stdout(predicates::str::contains("untracked.md"));
 }
 
+#[cfg(feature = "standard")]
+#[test]
+fn standard_engine_exposes_bounded_candidates_as_review_diagnostics() {
+    Command::cargo_bin("geullint")
+        .expect("geullint binary")
+        .args([
+            "check",
+            "--engine",
+            "standard",
+            "--stdin",
+            "--fail-on",
+            "info",
+            "--format",
+            "json",
+        ])
+        .write_stdin("문서느 검사")
+        .assert()
+        .code(1)
+        .stdout(predicates::str::contains("spelling.oov.near"))
+        .stdout(predicates::str::contains("\"safeFix\": false"));
+}
+
 fn run_git<const N: usize>(directory: &std::path::Path, args: [&str; N]) {
     let status = ProcessCommand::new("git")
         .args(args)

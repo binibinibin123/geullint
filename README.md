@@ -115,6 +115,7 @@ geullint check .                                # 저장소 검사
 geullint check --format json docs/              # JSON
 geullint check --format sarif docs/ > geullint.sarif  # SARIF 2.1.0
 geullint check --changed --no-color              # staged·수정·untracked 파일
+geullint check --engine standard --fail-on info  # 후보 생성(검토 전용, all-features 빌드)
 geullint fix --diff docs/                        # 안전한 수정 미리보기
 geullint fix docs/                               # 안전한 수정 적용
 geullint init                                     # 프로젝트 설정 생성
@@ -200,6 +201,7 @@ Release에서 운영체제와 CPU에 맞는 **VSIX**를 받아 VS Code의 `Exten
 - matcher contract와 smoke corpus는 엔진 배선 확인용이며 실세계 정확도 수치가 아닙니다.
 - 외부 정상 제어군은 249문장뿐이므로 다양한 장르와 작성자를 대표하지 않습니다.
 - 외부 독립 코퍼스 평가는 라이선스와 검토 기록을 갖춘 데이터가 있을 때만 수치로 공개합니다.
+- `standard` 후보 경로는 현재 사전 근접 후보를 `Review`로만 표시하며 자동 수정하지 않습니다. 독립 holdout 검증 전에는 기본 compact 경로를 유지합니다.
 
 ## 기여
 

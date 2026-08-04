@@ -9,4 +9,18 @@ GeulLint의 실행 경로는 모델이나 사전을 동적으로 내려받지 �
 - Native/WASM 점수 parity와 독립 dev/holdout 지표
 - 모델 카드의 알려진 오류, 편향, 복구 경로
 
+## standard 실행 경로의 현재 상태
+
+`geullint-core`의 `standard` feature를 켜면 `StandardPipeline::bundled`가 versioned lexicon과
+portable ranker를 실제 후보 생성 단계에 연결한다. spelling/spacing 후보는 현재 모두 `Review`로만
+노출되고 `fixedText`에는 적용되지 않는다. 독립 release holdout에서 안전도와 재현율을 측정하기
+전까지 CLI·웹의 compact 기본 경로를 바꾸지 않는 것이 의도된 안전 경계다.
+
+```bash
+cargo test -p geullint-core --all-features --test standard_pipeline
+```
+
+이 baseline은 학습된 cross-encoder나 ONNX 모델을 의미하지 않는다. `models/geulrank-small/manifest.json`
+의 `deterministic-baseline` 상태와 품질 보고서를 함께 확인해야 한다.
+
 브라우저는 최초 정적 자산 설치 뒤 Worker와 Service Worker 캐시만 사용한다. 캐시가 손상되거나 무결성 검증이 실패하면 검사를 시작하지 않고 사용자에게 재설치를 안내한다.

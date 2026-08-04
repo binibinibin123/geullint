@@ -4,6 +4,8 @@ use geullint_core::{
     Diagnostic, DictionaryOverlay, Engine, LintConfig, Profile, RulePack, Severity, SourceKind,
     TextRange, rule_catalog, rule_metadata,
 };
+#[cfg(feature = "standard")]
+use geullint_core::{DiagnosticV2, FixSafety, GeulRankSmall, StandardLexicon, StandardPipeline};
 use ignore::WalkBuilder;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -39,6 +41,10 @@ struct Arguments {
     /// 출력 형식입니다.
     #[arg(long, value_enum, default_value_t = OutputFormat::Human)]
     format: OutputFormat,
+
+    /// 검사 실행 경로입니다. `standard`는 검증 전까지 후보를 Review로만 표시합니다.
+    #[arg(long, value_enum, default_value_t = EngineMode::Compact)]
+    engine: EngineMode,
 
     /// JSON Lines gold corpus를 평가하고 JSON 정밀도·재현율 보고서를 출력합니다.
     #[arg(
@@ -129,6 +135,12 @@ enum OutputFormat {
     Human,
     Json,
     Sarif,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum EngineMode {
+    Compact,
+    Standard,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -905,7 +917,7 @@ fn print_completion(shell: CompletionShell) {
         CompletionShell::Bash => {
             r#"_geullint_complete() {
   local cur="${COMP_WORDS[COMP_CWORD]}"
-  COMPREPLY=( $(compgen -W "check fix init doctor dictionary feedback completion rules lsp --stdin --changed --watch --fix --format --no-color" -- "$cur") )
+  COMPREPLY=( $(compgen -W "check fix init doctor dictionary feedback completion rules lsp --stdin --changed --watch --fix --format --engine --no-color" -- "$cur") )
 }
 complete -F _geullint_complete geullint
 "#
@@ -920,13 +932,14 @@ _arguments '1:command:(check fix init doctor dictionary feedback completion rule
 complete -c geullint -l stdin -d 'read one document from stdin'
 complete -c geullint -l changed -d 'check changed files'
 complete -c geullint -l fix -d 'apply safe fixes'
+complete -c geullint -l engine -a 'compact standard' -d 'select lint engine'
 complete -c geullint -l no-color -d 'disable ANSI color output'
 "
         }
         CompletionShell::Powershell => {
             r#"Register-ArgumentCompleter -Native -CommandName geullint -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  'check','fix','init','doctor','dictionary','feedback','completion','rules','lsp','--stdin','--changed','--watch','--fix','--format','--no-color' |
+  'check','fix','init','doctor','dictionary','feedback','completion','rules','lsp','--stdin','--changed','--watch','--fix','--format','--engine','--no-color' |
     Where-Object { $_ -like "$wordToComplete*" } |
     ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterName', $_) }
 }
@@ -988,6 +1001,18 @@ fn run_once(arguments: &Arguments) -> Result<bool> {
     }
     if quality_gate.is_some() {
         bail!("--corpus-gate에는 --corpus 또는 --corpus-manifest가 필요합니다");
+    }
+
+    if matches!(arguments.engine, EngineMode::Standard) {
+        #[cfg(feature = "standard")]
+        {
+            return run_standard_once(arguments, config, packs);
+        }
+        #[cfg(not(feature = "standard"))]
+        {
+            let _ = (config, packs);
+            bail!("이 CLI는 standard feature 없이 빌드되었습니다; all-features로 다시 빌드하세요");
+        }
     }
     let engine = build_engine(config, packs)?;
     let mut reported = Vec::new();
@@ -1067,6 +1092,93 @@ fn run_once(arguments: &Arguments) -> Result<bool> {
         cache::save(&cache_path, &cache_file)?;
     }
     Ok(has_failure)
+}
+
+#[cfg(feature = "standard")]
+fn run_standard_once(
+    arguments: &Arguments,
+    config: LintConfig,
+    packs: Vec<RulePack>,
+) -> Result<bool> {
+    if arguments.cache {
+        bail!("--cache는 현재 compact 엔진에서만 지원합니다 (--engine compact)");
+    }
+    let engine = build_engine(config, packs)?;
+    let lexicon = StandardLexicon::bundled()
+        .map_err(|error| anyhow::anyhow!("표준 사전을 읽을 수 없습니다: {error}"))?;
+    let ranker = GeulRankSmall::bundled()
+        .map_err(|error| anyhow::anyhow!("standard ranker를 읽을 수 없습니다: {error}"))?;
+    let pipeline = StandardPipeline::new(engine, lexicon, ranker);
+    let mut reported = Vec::new();
+
+    if arguments.stdin {
+        let mut text = String::new();
+        io::stdin()
+            .read_to_string(&mut text)
+            .context("표준 입력을 읽을 수 없습니다")?;
+        let diagnostics = pipeline
+            .check(&text, SourceKind::PlainText)
+            .iter()
+            .map(standard_diagnostic_to_legacy)
+            .collect::<Vec<_>>();
+        append_reported_diagnostics("<stdin>", &text, &diagnostics, &mut reported);
+    } else {
+        let paths = if arguments.changed {
+            collect_changed_files()?
+        } else {
+            collect_files(&arguments.paths)?
+        };
+        for path in paths {
+            let original = fs::read_to_string(&path)
+                .with_context(|| format!("{} 파일을 UTF-8로 읽을 수 없습니다", path.display()))?;
+            let source_kind = source_kind_for_path(&path);
+            let mut text = original.clone();
+            if arguments.fix || arguments.fix_dry_run {
+                let fixed = pipeline
+                    .check_with_fixes(&text, source_kind, false)
+                    .fixed_text;
+                if arguments.fix && !arguments.diff && fixed != text {
+                    cache::write_atomic_text(&path, &fixed).with_context(|| {
+                        format!("{} 파일에 수정 사항을 쓸 수 없습니다", path.display())
+                    })?;
+                }
+                if arguments.diff && fixed != text {
+                    print_diff(&path, &text, &fixed);
+                }
+                text = fixed;
+            }
+            let diagnostics = pipeline
+                .check(&text, source_kind)
+                .iter()
+                .map(standard_diagnostic_to_legacy)
+                .collect::<Vec<_>>();
+            let cache_key = path.display().to_string();
+            append_reported_diagnostics(&cache_key, &text, &diagnostics, &mut reported);
+        }
+    }
+
+    let has_failure = reported.iter().any(|reported_diagnostic| {
+        reaches_threshold(reported_diagnostic.diagnostic.severity, arguments.fail_on)
+    });
+    print_report(&reported, arguments.format, arguments.no_color)?;
+    Ok(has_failure)
+}
+
+#[cfg(feature = "standard")]
+fn standard_diagnostic_to_legacy(diagnostic: &DiagnosticV2) -> Diagnostic {
+    Diagnostic {
+        rule_id: diagnostic.rule_id.clone(),
+        severity: diagnostic.severity,
+        message: diagnostic.message.clone(),
+        range: diagnostic.range,
+        original: diagnostic.original.clone(),
+        suggestions: diagnostic
+            .suggestions
+            .iter()
+            .map(|suggestion| suggestion.text.clone())
+            .collect(),
+        safe_fix: diagnostic.safety == FixSafety::Safe,
+    }
 }
 
 fn append_diagnostics(

@@ -1,0 +1,178 @@
+use crate::{
+    AnalyzedDocument, Candidate, CandidateGenerator, DiagnosticV2, Engine, FixSafety,
+    GeulRankSmall, LintConfig, RuleContext, SourceKind, SpacingCandidateGenerator,
+    SpellingCandidateGenerator, StandardLexicon, Suggestion,
+};
+use std::collections::{BTreeMap, BTreeSet};
+
+const MAX_STANDARD_SUGGESTIONS: usize = 8;
+
+/// Result of the opt-in standard pipeline.
+///
+/// Candidates from the standard lexicon are deliberately exposed as Review suggestions until
+/// an independent release holdout calibrates their precision. Legacy compact fixes keep their
+/// existing safe/review behavior and are the only edits included in the preview texts.
+#[derive(Clone, Debug, PartialEq)]
+pub struct StandardPipelineOutcome {
+    pub diagnostics: Vec<DiagnosticV2>,
+    pub fixed_text: String,
+    pub review_fixed_text: String,
+}
+
+/// Standard candidate pipeline shared by native integrations.
+///
+/// This is intentionally opt-in behind the `standard` feature. It wires the versioned lexicon,
+/// bounded spelling/spacing generators, and deterministic ranker together without changing the
+/// byte-for-byte compact engine contract.
+#[derive(Debug)]
+pub struct StandardPipeline {
+    engine: Engine,
+    spelling: SpellingCandidateGenerator,
+    spacing: SpacingCandidateGenerator,
+    ranker: GeulRankSmall,
+}
+
+impl StandardPipeline {
+    #[must_use]
+    pub fn new(engine: Engine, lexicon: StandardLexicon, ranker: GeulRankSmall) -> Self {
+        Self {
+            engine,
+            spelling: SpellingCandidateGenerator::new(lexicon.clone(), 32),
+            spacing: SpacingCandidateGenerator::new(lexicon, 32),
+            ranker,
+        }
+    }
+
+    /// Loads the checked-in standard lexicon and portable ranker artifact.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if either versioned bundled asset is malformed.
+    pub fn bundled(config: LintConfig) -> Result<Self, StandardPipelineError> {
+        let lexicon = StandardLexicon::bundled().map_err(StandardPipelineError::Lexicon)?;
+        let ranker = GeulRankSmall::bundled().map_err(StandardPipelineError::Ranker)?;
+        Ok(Self::new(Engine::new(config), lexicon, ranker))
+    }
+
+    #[must_use]
+    pub fn check(&self, text: &str, source_kind: SourceKind) -> Vec<DiagnosticV2> {
+        let mut diagnostics = self
+            .engine
+            .check(text, source_kind)
+            .iter()
+            .map(DiagnosticV2::from_legacy)
+            .collect::<Vec<_>>();
+
+        let document = AnalyzedDocument::new(text, source_kind);
+        let context = RuleContext::new(text, source_kind, &document, self.engine.config());
+        let mut candidates = self.spelling.generate(&context);
+        candidates.extend(self.spacing.generate(&context));
+        self.ranker.rank(&mut candidates, &context);
+
+        let mut occupied = diagnostics
+            .iter()
+            .filter_map(|diagnostic| {
+                diagnostic.suggestions.first().map(|suggestion| {
+                    (
+                        diagnostic.range.start,
+                        diagnostic.range.end,
+                        suggestion.text.clone(),
+                    )
+                })
+            })
+            .collect::<BTreeSet<_>>();
+
+        let mut grouped = BTreeMap::<(usize, usize, String, String), Vec<Candidate>>::new();
+        for candidate in candidates {
+            if self.engine.config().is_disabled(&candidate.rule_id)
+                || candidate.original == candidate.replacement
+                || !occupied.insert((
+                    candidate.range.start,
+                    candidate.range.end,
+                    candidate.replacement.clone(),
+                ))
+            {
+                continue;
+            }
+            grouped
+                .entry((
+                    candidate.range.start,
+                    candidate.range.end,
+                    candidate.rule_id.clone(),
+                    candidate.original.clone(),
+                ))
+                .or_default()
+                .push(candidate);
+        }
+
+        for ((start, end, rule_id, original), candidates) in grouped {
+            let Some(top) = candidates.first() else {
+                continue;
+            };
+            let confidence = self.ranker.confidence(top.score);
+            let evidence = top.evidence.clone();
+            let mut seen_replacements = BTreeSet::new();
+            let suggestions = candidates
+                .into_iter()
+                .filter(|candidate| seen_replacements.insert(candidate.replacement.clone()))
+                .take(MAX_STANDARD_SUGGESTIONS)
+                .map(|candidate| Suggestion {
+                    text: candidate.replacement,
+                    safety: FixSafety::Review,
+                    confidence: self.ranker.confidence(candidate.score),
+                    evidence: candidate.evidence,
+                })
+                .collect();
+            diagnostics.push(DiagnosticV2 {
+                rule_id,
+                severity: crate::Severity::Info,
+                message: "표준 사전 후보입니다. 문맥을 확인한 뒤 적용하세요.".to_owned(),
+                range: crate::TextRange { start, end },
+                original,
+                suggestions,
+                safety: FixSafety::Review,
+                confidence,
+                evidence,
+            });
+        }
+
+        diagnostics.sort_by(|left, right| {
+            left.range
+                .start
+                .cmp(&right.range.start)
+                .then_with(|| left.range.end.cmp(&right.range.end))
+                .then_with(|| left.rule_id.cmp(&right.rule_id))
+        });
+        diagnostics
+    }
+
+    #[must_use]
+    pub fn check_with_fixes(
+        &self,
+        text: &str,
+        source_kind: SourceKind,
+        include_review_fixes: bool,
+    ) -> StandardPipelineOutcome {
+        let legacy = self
+            .engine
+            .check_with_fixes(text, source_kind, include_review_fixes);
+        StandardPipelineOutcome {
+            diagnostics: self.check(text, source_kind),
+            fixed_text: legacy.fixed_text,
+            review_fixed_text: legacy.review_fixed_text,
+        }
+    }
+
+    #[must_use]
+    pub const fn ranker(&self) -> GeulRankSmall {
+        self.ranker
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum StandardPipelineError {
+    #[error("standard lexicon asset is invalid: {0}")]
+    Lexicon(crate::LexiconError),
+    #[error("standard ranker asset is invalid: {0}")]
+    Ranker(String),
+}
