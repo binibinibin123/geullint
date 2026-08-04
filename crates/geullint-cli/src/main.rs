@@ -16,6 +16,7 @@ use std::process::{Command as ProcessCommand, ExitCode};
 use std::thread;
 use std::time::Duration;
 
+mod cache;
 mod evaluation_v2;
 use evaluation_v2::{
     CaseMetadata, CorpusOrigin, CorpusSplit, DatasetMetadata, DatasetQualityGate,
@@ -109,6 +110,10 @@ struct Arguments {
     /// `--fix` 결과를 파일에 쓰지 않고 간단한 diff로 출력합니다.
     #[arg(long, requires = "fix", conflicts_with = "fix_dry_run")]
     diff: bool,
+
+    /// 내용 해시를 `.geullint/cache-v1.json`에 저장해 재검사 시간을 줄입니다.
+    #[arg(long, conflicts_with_all = ["stdin", "corpus", "corpus_manifest"])]
+    cache: bool,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -170,6 +175,44 @@ struct DoctorArguments {
 struct DictionaryArguments {
     #[command(subcommand)]
     command: DictionaryCommand,
+}
+
+#[derive(Debug, Parser)]
+#[command(name = "geullint feedback", about = "로컬 피드백을 내보냅니다")]
+struct FeedbackArguments {
+    #[command(subcommand)]
+    command: FeedbackCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum FeedbackCommand {
+    /// 로컬 JSONL 피드백을 개인정보 필드 없이 복사합니다.
+    Export {
+        /// 입력 JSONL. 기본값은 `.geullint/feedback.jsonl`입니다.
+        #[arg(long)]
+        input: Option<PathBuf>,
+        /// 출력 JSONL. 기본값은 `geullint-feedback.jsonl`입니다.
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+}
+
+#[derive(Debug, Parser)]
+#[command(
+    name = "geullint completion",
+    about = "셸 자동 완성 스크립트를 출력합니다"
+)]
+struct CompletionArguments {
+    #[arg(value_enum)]
+    shell: CompletionShell,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum CompletionShell {
+    Bash,
+    Zsh,
+    Fish,
+    Powershell,
 }
 
 #[derive(Debug, Subcommand)]
@@ -471,6 +514,12 @@ fn main() -> ExitCode {
     if raw_arguments.get(1).map(String::as_str) == Some("dictionary") {
         return run_dictionary(&raw_arguments);
     }
+    if raw_arguments.get(1).map(String::as_str) == Some("feedback") {
+        return run_feedback(&raw_arguments);
+    }
+    if raw_arguments.get(1).map(String::as_str) == Some("completion") {
+        return run_completion(&raw_arguments);
+    }
 
     let normalized_arguments = normalize_alias(raw_arguments);
     let arguments = match Arguments::try_parse_from(normalized_arguments) {
@@ -566,6 +615,35 @@ fn run_dictionary(raw_arguments: &[String]) -> ExitCode {
             ExitCode::from(2)
         }
     }
+}
+
+fn run_feedback(raw_arguments: &[String]) -> ExitCode {
+    let arguments = match parse_subcommand::<FeedbackArguments>(raw_arguments, "feedback") {
+        Ok(arguments) => arguments,
+        Err(error) => {
+            eprintln!("geullint feedback: {error:#}");
+            return ExitCode::from(2);
+        }
+    };
+    match export_feedback(arguments) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("geullint feedback: {error:#}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+fn run_completion(raw_arguments: &[String]) -> ExitCode {
+    let arguments = match parse_subcommand::<CompletionArguments>(raw_arguments, "completion") {
+        Ok(arguments) => arguments,
+        Err(error) => {
+            eprintln!("geullint completion: {error:#}");
+            return ExitCode::from(2);
+        }
+    };
+    print_completion(arguments.shell);
+    ExitCode::SUCCESS
 }
 
 fn run_rules() -> ExitCode {
@@ -763,6 +841,92 @@ fn validate_dictionary(arguments: DictionaryArguments) -> Result<()> {
     Ok(())
 }
 
+fn export_feedback(arguments: FeedbackArguments) -> Result<()> {
+    match arguments.command {
+        FeedbackCommand::Export { input, output } => {
+            let input = input.unwrap_or_else(|| PathBuf::from(".geullint/feedback.jsonl"));
+            let output = output.unwrap_or_else(|| PathBuf::from("geullint-feedback.jsonl"));
+            let source = if input.is_file() {
+                fs::read_to_string(&input)
+                    .with_context(|| format!("{} 피드백을 읽을 수 없습니다", input.display()))?
+            } else {
+                String::new()
+            };
+            let mut exported = Vec::new();
+            for line in source.lines() {
+                let Ok(value) = serde_json::from_str::<serde_json::Value>(line) else {
+                    continue;
+                };
+                let Some(object) = value.as_object() else {
+                    continue;
+                };
+                let mut sanitized = serde_json::Map::new();
+                for key in [
+                    "version",
+                    "ruleId",
+                    "accepted",
+                    "replacement",
+                    "sourceKind",
+                    "profile",
+                ] {
+                    if let Some(value) = object.get(key) {
+                        sanitized.insert(key.to_owned(), value.clone());
+                    }
+                }
+                if sanitized.contains_key("ruleId") {
+                    exported.push(serde_json::Value::Object(sanitized));
+                }
+            }
+            let mut serialized = String::new();
+            for value in &exported {
+                writeln!(serialized, "{}", serde_json::to_string(value)?)?;
+            }
+            cache::write_atomic_text(&output, &serialized)?;
+            println!(
+                "로컬 피드백 {}건을 {}에 내보냈습니다 (네트워크 전송 없음)",
+                exported.len(),
+                output.display()
+            );
+        }
+    }
+    Ok(())
+}
+
+fn print_completion(shell: CompletionShell) {
+    let script = match shell {
+        CompletionShell::Bash => {
+            r#"_geullint_complete() {
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=( $(compgen -W "check fix init doctor dictionary feedback completion rules lsp --stdin --changed --watch --fix --format" -- "$cur") )
+}
+complete -F _geullint_complete geullint
+"#
+        }
+        CompletionShell::Zsh => {
+            r#"#compdef geullint
+_arguments '1:command:(check fix init doctor dictionary feedback completion rules lsp)' '*:path:_files'
+"#
+        }
+        CompletionShell::Fish => {
+            r#"complete -c geullint -f -n '__fish_use_subcommand' -a 'check fix init doctor dictionary feedback completion rules lsp'
+complete -c geullint -l stdin -d 'read one document from stdin'
+complete -c geullint -l changed -d 'check changed files'
+complete -c geullint -l fix -d 'apply safe fixes'
+"#
+        }
+        CompletionShell::Powershell => {
+            r#"Register-ArgumentCompleter -Native -CommandName geullint -ScriptBlock {
+  param($wordToComplete, $commandAst, $cursorPosition)
+  'check','fix','init','doctor','dictionary','feedback','completion','rules','lsp','--stdin','--changed','--watch','--fix','--format' |
+    Where-Object { $_ -like "$wordToComplete*" } |
+    ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterName', $_) }
+}
+"#
+        }
+    };
+    print!("{script}");
+}
+
 fn run(arguments: &Arguments) -> Result<bool> {
     if arguments.watch {
         return run_watch(arguments);
@@ -817,6 +981,11 @@ fn run_once(arguments: &Arguments) -> Result<bool> {
     }
     let engine = build_engine(config, packs)?;
     let mut reported = Vec::new();
+    let cache_path = PathBuf::from(".geullint/cache-v1.json");
+    let mut cache_file = arguments
+        .cache
+        .then(|| cache::load(&cache_path))
+        .transpose()?;
 
     if arguments.stdin {
         let mut text = String::new();
@@ -846,7 +1015,7 @@ fn run_once(arguments: &Arguments) -> Result<bool> {
                     .check_with_fixes(&text, source_kind, false)
                     .fixed_text;
                 if arguments.fix && !arguments.diff && fixed != text {
-                    fs::write(&path, &fixed).with_context(|| {
+                    cache::write_atomic_text(&path, &fixed).with_context(|| {
                         format!("{} 파일에 수정 사항을 쓸 수 없습니다", path.display())
                     })?;
                 }
@@ -855,13 +1024,28 @@ fn run_once(arguments: &Arguments) -> Result<bool> {
                 }
                 text = fixed;
             }
-            append_diagnostics(
-                &engine,
-                &path.display().to_string(),
-                &text,
-                source_kind,
-                &mut reported,
-            );
+            let cache_key = path.display().to_string();
+            let source_hash = cache::source_hash(&text);
+            let cached = cache_file.as_ref().and_then(|file| {
+                file.files
+                    .get(&cache_key)
+                    .filter(|entry| entry.source_hash == source_hash)
+            });
+            if let Some(entry) = cached {
+                append_reported_diagnostics(&cache_key, &text, &entry.diagnostics, &mut reported);
+            } else {
+                let diagnostics = engine.check(&text, source_kind);
+                if let Some(file) = cache_file.as_mut() {
+                    file.files.insert(
+                        cache_key.clone(),
+                        cache::CacheEntry {
+                            source_hash,
+                            diagnostics: diagnostics.clone(),
+                        },
+                    );
+                }
+                append_reported_diagnostics(&cache_key, &text, &diagnostics, &mut reported);
+            }
         }
     }
 
@@ -869,6 +1053,9 @@ fn run_once(arguments: &Arguments) -> Result<bool> {
         reaches_threshold(reported_diagnostic.diagnostic.severity, arguments.fail_on)
     });
     print_report(&reported, arguments.format)?;
+    if let Some(cache_file) = cache_file {
+        cache::save(&cache_path, &cache_file)?;
+    }
     Ok(has_failure)
 }
 
@@ -879,13 +1066,23 @@ fn append_diagnostics(
     source_kind: SourceKind,
     reported: &mut Vec<ReportedDiagnostic>,
 ) {
-    for diagnostic in engine.check(text, source_kind) {
+    let diagnostics = engine.check(text, source_kind);
+    append_reported_diagnostics(path, text, &diagnostics, reported);
+}
+
+fn append_reported_diagnostics(
+    path: &str,
+    text: &str,
+    diagnostics: &[Diagnostic],
+    reported: &mut Vec<ReportedDiagnostic>,
+) {
+    for diagnostic in diagnostics {
         let (line, column) = line_and_column(text, diagnostic.range.start);
         reported.push(ReportedDiagnostic {
             path: path.to_owned(),
             line,
             column,
-            diagnostic,
+            diagnostic: diagnostic.clone(),
         });
     }
 }
