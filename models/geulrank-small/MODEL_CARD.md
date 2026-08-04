@@ -2,6 +2,8 @@
 
 GeulRank-small은 후보를 고르는 로컬 랭킹 계층의 버전 계약이다. 현재 저장소에는 음절 편집 거리·발음 유사도·사전 빈도·기존 후보 점수를 사용하는 결정론적 INT8 기준선이 들어 있다.
 
+현재 체크인된 `geulrank-small.int8.json`은 Rust와 WASM이 직접 읽을 수 있는 164바이트 portable baseline이다. 10~15M parameter cross-encoder나 ONNX 런타임 모델을 독립 holdout으로 검증하기 전까지는 이 파일을 학습 모델이라고 부르지 않으며, 베타 품질 수치의 근거로 사용하지 않는다.
+
 ## 안전한 사용 범위
 
 - 모델은 문장을 외부로 보내지 않는다.

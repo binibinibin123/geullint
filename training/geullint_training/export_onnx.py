@@ -41,14 +41,23 @@ def main() -> None:
     manifest = {
         "schemaVersion": 1,
         "name": "GeulRank-small",
+        "version": "0.1.0-baseline",
         "format": "geulrank-linear-int8-v1",
+        "runtime": "rust-portable-json",
+        "onnx": False,
         "features": model.get("features", []),
+        "weights": quantized,
         "artifact": artifact.name,
         "bytes": len(payload),
         "sha256": hashlib.sha256(payload).hexdigest(),
         "scale": scale,
         "trainingManifestSha256": hashlib.sha256(args.input.read_bytes()).hexdigest(),
         "license": "MIT",
+        "training": {
+            "status": "deterministic-baseline",
+            "releaseHoldoutRequired": True,
+            "documentDisjoint": True,
+        },
     }
     (args.out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(manifest, indent=2))
