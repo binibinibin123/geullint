@@ -50,7 +50,7 @@ export function serializeLexicon(rows) {
 
 export function buildLexicon(rows, { name = "GeulLint standard Korean lexicon", version = "1.0.0" } = {}) {
   const raw = serializeLexicon(rows);
-  const gzip = gzipSync(raw, { level: 9, mtime: 0 });
+  const gzip = portableGzip(raw);
   return {
     raw,
     gzip,
@@ -66,6 +66,15 @@ export function buildLexicon(rows, { name = "GeulLint standard Korean lexicon", 
       gzipSha256: digest(gzip),
     },
   };
+}
+
+// Node's gzip writer sets the header's operating-system byte from the host.
+// Normalize it so manifests and release archives have the same hash on Windows
+// and Unix runners while retaining the reproducible timestamp and compression.
+function portableGzip(raw) {
+  const gzip = gzipSync(raw, { level: 9, mtime: 0 });
+  gzip[9] = 3; // RFC 1952 OS value for Unix; only metadata, not compressed data.
+  return gzip;
 }
 
 function digest(value) {

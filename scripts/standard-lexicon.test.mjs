@@ -27,6 +27,7 @@ test("builds a deterministic sorted lexicon and manifest payload", () => {
   assert.equal(result.manifest.name, "test");
   assert.equal(result.manifest.sha256.length, 64);
   assert.equal(result.manifest.gzipSha256.length, 64);
+  assert.equal(result.gzip[9], 3, "gzip metadata must be portable across release hosts");
 });
 
 test("rejects malformed rows, unsafe surfaces, and invalid frequencies", () => {

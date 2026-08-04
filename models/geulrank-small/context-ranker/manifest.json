@@ -3,7 +3,7 @@
   "featureScale": 0.6141732283464567,
   "format": "geulrank-context-linear-int8-v1",
   "jsonArtifact": "context-linear-int8.json",
-  "jsonSha256": "46ca06dbfc42cbabc3721d66cb0c7a2d963531a823017c7b976a184e6d26aea9",
+  "jsonSha256": "c3933772b77e316d20a3c0961296c2c4064e4ac4b2adccf223508e049d83dd1e",
   "name": "GeulRank-small-context",
   "onnx": true,
   "onnxArtifact": "context-linear-int8.onnx",
