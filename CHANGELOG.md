@@ -7,6 +7,7 @@
 ### Added
 
 - Auditable AI blind-panel review packets, provenance hashes, document/author/source leakage checks, deterministic H1/H2 splitting, review-quality metrics, and top-1/top-5 correction accuracy reporting.
+- Ran the first 21,169-case public-data evaluation (Native and WASM parity included) and documented the measured NO-GO boundary in `docs/public-evaluation.md`.
 
 ### Quality boundary
 

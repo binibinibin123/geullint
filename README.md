@@ -153,6 +153,7 @@ CI에서는 설치 후 `geullint .` 한 줄을 실행하면 됩니다. 디렉터
 - [현재 규칙 전체 목록](docs/rules.md)
 - [규칙 품질 게이트](docs/quality.md)
 - [독립 코퍼스 평가](docs/corpus-evaluation.md)
+- [공개 데이터 실제 평가 v1 결과](docs/public-evaluation.md)
 - [검증 가능한 코퍼스 출처](docs/corpus-sources.md)
 
 ## VS Code

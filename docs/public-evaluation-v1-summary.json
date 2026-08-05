@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "status": "NO-GO",
+  "bundle": {
+    "cases": 21169,
+    "normalCases": 15936,
+    "errorCases": 5233,
+    "sourceRevisionCases": 4161,
+    "syntheticCases": 1000,
+    "independentHumanCases": 0,
+    "splits": { "train": 16864, "H1": 2999, "H2": 1162 },
+    "crossSplitTextDeduplicated": 11,
+    "sha256": "4c587caf77200161f15d013aa05f5e18805a742c218edbca54ee6ab749cb49f9"
+  },
+  "leakage": { "passed": true, "method": "document-author-source-plus-normalized-text-and-decomposed-Hangul-5-gram" },
+  "native": {
+    "specificity": 0.9956701807228916,
+    "precision": 0.38421052631578945,
+    "recall": 0.013947267863966373,
+    "top1CorrectionAccuracy": 0.013947267863966373,
+    "top5CorrectionAccuracy": 0.013947267863966373,
+    "sourceRevisionExactFixedTextMatches": 11,
+    "sourceRevisionExactFixedTextAccuracy": 0.0026435952895938475,
+    "syntheticExactFixedTextAccuracy": 0,
+    "independentHumanExactFixedTextAccuracy": null
+  },
+  "wasm": { "passed": true, "sourceParityCases": 43 },
+  "sources": [
+    { "sourceId": "public-tatoeba", "sha256": "ad680378d418e22b659fb6de2e34a4e55827e641cae013e01f976c14f6a4ed9d", "license": "CC-BY-2.0" },
+    { "sourceId": "public-knct", "sha256": "20c137e43d0fb5f00efbb60e127817d39b55de579887914ef1f15cb709006959", "license": "NO-REDISTRIBUTION" },
+    { "sourceId": "public-kolla", "sha256": "d848bac8095bf4280e9c8f6bb7ef2733434cf0eb2c2977d34fd4a0eb6c061ed4", "license": "GPL-3.0-or-later" }
+  ]
+}

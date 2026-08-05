@@ -36,13 +36,16 @@ function addIssue(issues, issue) {
 
 export function checkCorpusLeakage(
   groups,
-  { nearDuplicateThreshold = DEFAULT_THRESHOLD } = {},
+  { nearDuplicateThreshold = DEFAULT_THRESHOLD, maxCandidatesPerGram = 512 } = {},
 ) {
   if (!Array.isArray(groups) || groups.length === 0) {
     throw new TypeError("corpus groups must be a non-empty array");
   }
   if (!(nearDuplicateThreshold > 0 && nearDuplicateThreshold <= 1)) {
     throw new RangeError("nearDuplicateThreshold must be greater than 0 and at most 1");
+  }
+  if (!(maxCandidatesPerGram === 0 || (Number.isInteger(maxCandidatesPerGram) && maxCandidatesPerGram > 0))) {
+    throw new RangeError("maxCandidatesPerGram must be zero or a positive integer");
   }
 
   const records = [];
@@ -145,7 +148,15 @@ export function checkCorpusLeakage(
   for (const record of records) {
     const candidates = new Set();
     for (const gram of record.grams) {
-      for (const candidate of gramIndex.get(gram) ?? []) {
+      const indexed = gramIndex.get(gram) ?? [];
+      // Very common grams create a quadratic candidate explosion on large
+      // natural-language corpora.  A near duplicate at the configured
+      // Jaccard threshold still shares rarer grams; skip only the popular
+      // index buckets and keep exact-text checks unconditional.
+      const candidateList = maxCandidatesPerGram === 0 || indexed.length <= maxCandidatesPerGram
+        ? indexed
+        : [];
+      for (const candidate of candidateList) {
         if (candidate.id !== record.id && candidate.split !== record.split) candidates.add(candidate);
       }
     }
