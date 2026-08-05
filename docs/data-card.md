@@ -18,7 +18,7 @@
 
 ## 현재 공개된 표준 자산
 
-`dictionaries/standard-ko-v1/`에는 저장소의 MIT 라이선스 회귀 문장과 수동 seed에서 만든 1,407개 표면형의 결정론적 lexicon이 있다. 이 자산은 후보 생성과 API 패리티를 위한 보조 사전이며, 독립 평가 코퍼스나 상용 서비스의 교정 결과를 복제하지 않는다. 원자료가 아닌 파생 TSV·gzip만 공개하고, manifest의 SHA-256과 `scripts/build-standard-lexicon.mjs`로 재현한다.
+`dictionaries/standard-ko-v1/`에는 저장소의 회귀 문장과 Tatoeba 한국어 문장 표면형에서 만든 20,866개 표면형의 결정론적 lexicon이 있다. Tatoeba 원문은 재배포하지 않고 표면형·빈도만 파생하며, CC BY 2.0 출처와 SHA-256은 `THIRD_PARTY_NOTICES.md` 및 manifest에 기록한다. 이 자산은 후보 생성과 API 패리티를 위한 보조 사전이며, 독립 평가 코퍼스나 상용 서비스의 교정 결과를 복제하지 않는다. 원자료가 아닌 파생 TSV·gzip만 공개하고, manifest의 SHA-256과 `scripts/build-standard-lexicon.mjs`로 재현한다.
 
 ## 제외 기준
 

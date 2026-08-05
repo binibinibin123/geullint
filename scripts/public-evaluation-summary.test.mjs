@@ -44,8 +44,13 @@ test('summarizes exact source-revision correction accuracy separately from rule 
     cases: 4,
     specificity: 0.9,
     falsePositiveCases: 1,
+    fixedTextCases: 3,
+    exactFixedTextHits: 1,
+    exactFixedTextAccuracy: 1 / 3,
+    correctionDetectionHits: 2,
+    correctionDetectionRecall: 2 / 3,
     caseFailures: [
-      { id: 'source-2', kind: 'fixedTextMismatch' },
+      { id: 'source-2', kind: 'fixedTextMismatch', correctionDetectionMiss: true },
       { id: 'human-1', kind: 'fixedTextMismatch' },
     ],
   };
@@ -61,4 +66,7 @@ test('summarizes exact source-revision correction accuracy separately from rule 
   assert.equal(summary.independentHumanExactFixedTextMatches, 0);
   assert.deepEqual(summary.splits, { H1: 2, H2: 1, train: 1 });
   assert.equal(summary.native.specificity, 0.9);
+  assert.equal(summary.native.fixedTextCases, 3);
+  assert.equal(summary.native.exactFixedTextAccuracy, 1 / 3);
+  assert.equal(summary.native.correctionDetectionRecall, 2 / 3);
 });

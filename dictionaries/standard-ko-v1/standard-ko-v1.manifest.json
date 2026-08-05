@@ -3,9 +3,18 @@
   "name": "GeulLint standard Korean lexicon",
   "version": "1.0.0",
   "format": "geullint-standard-lexicon-v1",
-  "entryCount": 1407,
-  "rawBytes": 24499,
-  "gzipBytes": 7138,
-  "sha256": "8052c49d7e81fc0367421dcd781110b4b0d3f1cb33d5157571668e0648fc8c6c",
-  "gzipSha256": "91584306d25f181fd48728c2e69c238703cd6cc6c561e068f49c3a8db14ecbea"
+  "entryCount": 20866,
+  "rawBytes": 368034,
+  "gzipBytes": 91493,
+  "sha256": "c4fd05b822fa77a02feb0bb9c154a9d301f25b56eca54a45538356ca3d03958f",
+  "gzipSha256": "34a91b062ca9e18212e8312a6b54a5540c49da0b7ff30d8eb17812297d689bcb",
+  "sources": [
+    {
+      "name": "Tatoeba Korean sentences",
+      "url": "https://tatoeba.org/en/downloads",
+      "license": "CC-BY-2.0",
+      "sha256": "ad680378d418e22b659fb6de2e34a4e55827e641cae013e01f976c14f6a4ed9d",
+      "derivation": "Korean surface forms and occurrence counts; no sentence text is bundled"
+    }
+  ]
 }

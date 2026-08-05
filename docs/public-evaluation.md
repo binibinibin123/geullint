@@ -32,14 +32,18 @@
 | 분할 누수 검사 | 통과 (21,622건, exact·near duplicate·문서·작성자·source·자모 5-gram) |
 | Native/WASM parity | 통과 (43건) |
 | Native specificity | 99.389% |
-| Native precision | 27.444% |
-| Native recall | 1.436% |
-| top-1 / top-5 교정 정확도 | 1.436% / 1.436% |
+| Native 규칙 precision (73개 규칙 라벨) | 34.762% |
+| Native 규칙 recall (73개 규칙 라벨) | 100.000% |
+| 전체 교정 범위 감지율 (수정 구간 겹침) | 100 / 5,066 (1.974%) |
+| 전체 최종 문장 exact 일치 | 68 / 5,066 (1.342%) |
+| source revision exact 교정 | 8 / 3,324 (0.241%) |
+| 독립 인간 exact 교정 | 6 / 1,688 (0.355%) |
 | 독립 인간 주석 exact 교정 | 6 / 1,688 (0.355%) |
 
 상용 게이트는 다음 이유로 **NO-GO**입니다.
 
-- precision 0.274, recall 0.014로 게이트 기준(0.98 / 0.85)에 미달
+- 규칙 precision 0.348, 전체 교정 exact 일치율 0.013으로 게이트 기준(0.98 / 0.85)에 미달
+- 사람 교정(source revision)은 엔진 규칙 ID가 없으므로 규칙 precision/recall에서 분리하고, 수정 구간 감지율과 exact 문장 일치율로 별도 평가
 - 필수 규칙 3개의 평가 사례 수가 50건 미만
 - 별도 `release_holdout`이 아직 없음
 

@@ -492,6 +492,8 @@ struct CorpusCaseFailure {
     id: String,
     false_positive_rule_ids: Vec<String>,
     false_negative_rule_ids: Vec<String>,
+    #[serde(skip_serializing_if = "is_false")]
+    correction_detection_miss: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     fixed_text_mismatch: Option<CorpusFixedTextMismatch>,
 }
@@ -561,11 +563,20 @@ struct CorpusReport {
     correction_cases: usize,
     top1_correction_accuracy: Option<f64>,
     top5_correction_accuracy: Option<f64>,
+    fixed_text_cases: usize,
+    exact_fixed_text_hits: usize,
+    exact_fixed_text_accuracy: Option<f64>,
+    correction_detection_hits: usize,
+    correction_detection_recall: Option<f64>,
     dataset: DatasetMetadata,
     rule_metrics: Vec<RuleCorpusMetric>,
     #[serde(skip_serializing_if = "Option::is_none")]
     quality_gate: Option<CorpusQualityGateReport>,
     case_failures: Vec<CorpusCaseFailure>,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 fn main() -> ExitCode {
@@ -1038,7 +1049,14 @@ fn run_once(arguments: &Arguments) -> Result<bool> {
         .map(load_corpus_quality_gate)
         .transpose()?;
     if let Some(corpus_path) = &arguments.corpus {
-        return evaluate_corpus(corpus_path, &config, None, &packs, quality_gate.as_ref());
+        return evaluate_corpus(
+            corpus_path,
+            &config,
+            None,
+            &packs,
+            quality_gate.as_ref(),
+            arguments.engine,
+        );
     }
     if let Some(manifest_path) = &arguments.corpus_manifest {
         let (corpus_path, provenance) = load_corpus_manifest(manifest_path)?;
@@ -1048,6 +1066,7 @@ fn run_once(arguments: &Arguments) -> Result<bool> {
             Some(provenance),
             &packs,
             quality_gate.as_ref(),
+            arguments.engine,
         );
     }
     if quality_gate.is_some() {
@@ -1652,7 +1671,13 @@ fn evaluate_corpus(
     provenance: Option<CorpusProvenance>,
     packs: &[RulePack],
     quality_gate: Option<&CorpusQualityGate>,
+    engine_mode: EngineMode,
 ) -> Result<bool> {
+    #[cfg(not(feature = "standard"))]
+    if !matches!(engine_mode, EngineMode::Compact) {
+        bail!("corpus evaluation with --engine standard/context requires the standard feature");
+    }
+
     let file = fs::File::open(path)
         .with_context(|| format!("{} corpus file could not be opened", path.display()))?;
     let reader = BufReader::new(file);
@@ -1669,7 +1694,13 @@ fn evaluate_corpus(
     let mut correction_cases = 0_usize;
     let mut top1_correction_hits = 0_usize;
     let mut top5_correction_hits = 0_usize;
+    let mut fixed_text_cases = 0_usize;
+    let mut exact_fixed_text_hits = 0_usize;
+    let mut correction_detection_hits = 0_usize;
+    let mut correction_detection_misses = 0_usize;
     let mut engines: [Option<Engine>; 3] = [None, None, None];
+    #[cfg(feature = "standard")]
+    let mut standard_engines: [Option<StandardPipeline>; 3] = [None, None, None];
     let mut has_fixed_text_mismatch = false;
 
     for (index, line) in reader.lines().enumerate() {
@@ -1773,21 +1804,90 @@ fn evaluate_corpus(
             normal: expected_diagnostics.is_empty(),
         });
         let engine_index = profile_engine_index(config.profile);
-        if engines[engine_index].is_none() {
-            engines[engine_index] = Some(build_engine(config, packs.to_vec())?);
-        }
-        let engine = engines[engine_index]
-            .as_ref()
-            .expect("engine is initialized for the selected profile");
-        let outcome = engine.check_with_fixes(&case.text, case.source_kind, false);
-        let actual_diagnostics = outcome.diagnostics;
+        let (actual_diagnostics, actual_fixed_text) = if matches!(engine_mode, EngineMode::Compact)
+        {
+            if engines[engine_index].is_none() {
+                engines[engine_index] = Some(build_engine(config, packs.to_vec())?);
+            }
+            let engine = engines[engine_index]
+                .as_ref()
+                .expect("engine is initialized for the selected profile");
+            let outcome = engine.check_with_fixes(&case.text, case.source_kind, false);
+            (outcome.diagnostics, outcome.fixed_text)
+        } else {
+            #[cfg(feature = "standard")]
+            {
+                if standard_engines[engine_index].is_none() {
+                    let engine = build_engine(config, packs.to_vec())?;
+                    let lexicon = StandardLexicon::bundled()
+                        .map_err(|error| anyhow::anyhow!("standard lexicon: {error}"))?;
+                    let ranker = GeulRankSmall::bundled()
+                        .map_err(|error| anyhow::anyhow!("standard ranker: {error}"))?;
+                    let mut pipeline = StandardPipeline::new(engine, lexicon, ranker);
+                    if matches!(engine_mode, EngineMode::Context) {
+                        pipeline = pipeline.with_context_ranker(
+                            ContextRanker::bundled()
+                                .map_err(|error| anyhow::anyhow!("context ranker: {error}"))?,
+                        );
+                    }
+                    standard_engines[engine_index] = Some(pipeline);
+                }
+                let pipeline = standard_engines[engine_index]
+                    .as_ref()
+                    .expect("standard engine is initialized for the selected profile");
+                let outcome = pipeline.check_with_fixes(&case.text, case.source_kind, true);
+                (
+                    outcome
+                        .diagnostics
+                        .iter()
+                        .map(standard_diagnostic_to_legacy)
+                        .collect(),
+                    outcome.review_fixed_text,
+                )
+            }
+            #[cfg(not(feature = "standard"))]
+            {
+                unreachable!("standard engine is rejected before corpus evaluation");
+            }
+        };
+        let is_open_ended_revision = expected_diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.rule_id == "source_revision");
         let fixed_text_mismatch = case.expected_fixed_text.as_ref().and_then(|expected| {
-            let actual = outcome.fixed_text.clone();
+            let actual = actual_fixed_text.clone();
             (actual != *expected).then(|| CorpusFixedTextMismatch {
                 expected: expected.clone(),
                 actual,
             })
         });
+        let fixed_text_case = case
+            .expected_fixed_text
+            .as_ref()
+            .is_some_and(|expected| expected != &case.text);
+        let correction_detection_hit = fixed_text_case
+            && if expected_diagnostics.is_empty() {
+                !actual_diagnostics.is_empty()
+            } else {
+                expected_diagnostics.iter().any(|expected| {
+                    expected.range.is_some_and(|range| {
+                        actual_diagnostics
+                            .iter()
+                            .any(|actual| ranges_overlap(range, actual.range))
+                    })
+                })
+            };
+        let correction_detection_miss = fixed_text_case && !correction_detection_hit;
+        if fixed_text_case {
+            fixed_text_cases += 1;
+            if fixed_text_mismatch.is_none() {
+                exact_fixed_text_hits += 1;
+            }
+            if correction_detection_hit {
+                correction_detection_hits += 1;
+            } else {
+                correction_detection_misses += 1;
+            }
+        }
         has_fixed_text_mismatch |= fixed_text_mismatch.is_some();
         if expected_diagnostics.is_empty() {
             normal_cases += 1;
@@ -1795,8 +1895,16 @@ fn evaluate_corpus(
                 false_positive_cases += 1;
             }
         }
-        let comparison = compare_diagnostics(&expected_diagnostics, &actual_diagnostics);
-        let correction = correction_accuracy(&expected_diagnostics, &actual_diagnostics);
+        let comparison = if is_open_ended_revision {
+            DiagnosticComparison::default()
+        } else {
+            compare_diagnostics(&expected_diagnostics, &actual_diagnostics)
+        };
+        let correction = if is_open_ended_revision {
+            CorrectionAccuracyCounts::default()
+        } else {
+            correction_accuracy(&expected_diagnostics, &actual_diagnostics)
+        };
         correction_cases += correction.cases;
         top1_correction_hits += correction.top1_hits;
         top5_correction_hits += correction.top5_hits;
@@ -1823,12 +1931,14 @@ fn evaluate_corpus(
         }
         if !comparison.false_positive_rule_ids.is_empty()
             || !comparison.false_negative_rule_ids.is_empty()
+            || correction_detection_miss
             || fixed_text_mismatch.is_some()
         {
             case_failures.push(CorpusCaseFailure {
                 id: case.id,
                 false_positive_rule_ids: comparison.false_positive_rule_ids,
                 false_negative_rule_ids: comparison.false_negative_rule_ids,
+                correction_detection_miss,
                 fixed_text_mismatch,
             });
         }
@@ -1876,6 +1986,11 @@ fn evaluate_corpus(
         correction_cases,
         top1_correction_accuracy: ratio(top1_correction_hits, correction_cases),
         top5_correction_accuracy: ratio(top5_correction_hits, correction_cases),
+        fixed_text_cases,
+        exact_fixed_text_hits,
+        exact_fixed_text_accuracy: ratio(exact_fixed_text_hits, fixed_text_cases),
+        correction_detection_hits,
+        correction_detection_recall: ratio(correction_detection_hits, fixed_text_cases),
         dataset,
         rule_metrics,
         quality_gate: None,
@@ -1897,9 +2012,12 @@ fn evaluate_corpus(
         gate_report.passed = gate_report.failures.is_empty();
         let passed = gate_report.passed;
         report.quality_gate = Some(gate_report);
-        !passed || has_fixed_text_mismatch
+        !passed || has_fixed_text_mismatch || correction_detection_misses > 0
     } else {
-        report.false_positives > 0 || report.false_negatives > 0 || has_fixed_text_mismatch
+        report.false_positives > 0
+            || report.false_negatives > 0
+            || has_fixed_text_mismatch
+            || correction_detection_misses > 0
     };
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(has_failure)
@@ -2158,6 +2276,7 @@ fn load_corpus_manifest(manifest_path: &Path) -> Result<(PathBuf, CorpusProvenan
     ))
 }
 
+#[derive(Default)]
 struct DiagnosticComparison {
     true_positives: usize,
     true_positive_rule_ids: Vec<String>,
@@ -2260,6 +2379,16 @@ fn compare_diagnostics(
 
 fn diagnostic_constraint_count(expectation: &CorpusExpectedDiagnostic) -> u8 {
     u8::from(expectation.range.is_some()) + u8::from(expectation.suggestions.is_some())
+}
+
+fn ranges_overlap(expected: TextRange, actual: TextRange) -> bool {
+    if expected.start == expected.end {
+        return actual.start <= expected.start && expected.start <= actual.end;
+    }
+    if actual.start == actual.end {
+        return expected.start <= actual.start && actual.start <= expected.end;
+    }
+    expected.start < actual.end && actual.start < expected.end
 }
 
 fn diagnostic_matches(expectation: &CorpusExpectedDiagnostic, diagnostic: &Diagnostic) -> bool {

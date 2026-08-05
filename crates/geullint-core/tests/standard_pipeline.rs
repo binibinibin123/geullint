@@ -42,6 +42,52 @@ fn standard_pipeline_merges_legacy_diagnostics_and_bounded_review_candidates() {
 }
 
 #[test]
+fn standard_pipeline_generates_a_candidate_for_an_oov_hangul_word() {
+    let pipeline = StandardPipeline::new(
+        Engine::new(LintConfig::default()),
+        StandardLexicon::parse("geullint-standard-lexicon-v1\n가다\tVV\t1000\n")
+            .expect("standard lexicon"),
+        GeulRankSmall::default(),
+    );
+    let diagnostics = pipeline.check("카츄", SourceKind::PlainText);
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.rule_id == "spelling.oov.near"
+            && diagnostic.original == "카츄"
+            && diagnostic
+                .suggestions
+                .iter()
+                .any(|suggestion| suggestion.text == "가다")
+    }));
+}
+
+#[test]
+fn bundled_standard_pipeline_generates_an_oov_candidate() {
+    let pipeline = StandardPipeline::new(
+        Engine::new(LintConfig::default()),
+        StandardLexicon::bundled().expect("bundled standard lexicon"),
+        GeulRankSmall::bundled().expect("bundled ranker"),
+    );
+    let diagnostics = pipeline.check("카츄", SourceKind::PlainText);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.rule_id == "spelling.oov.near")
+    );
+}
+
+#[test]
+fn standard_review_preview_does_not_apply_a_two_edit_distance_oov_guess() {
+    let pipeline = StandardPipeline::new(
+        Engine::new(LintConfig::default()),
+        StandardLexicon::parse("geullint-standard-lexicon-v1\n가다\tVV\t1000\n")
+            .expect("standard lexicon"),
+        GeulRankSmall::default(),
+    );
+    let outcome = pipeline.check_with_fixes("카츄", SourceKind::PlainText, true);
+    assert_eq!(outcome.review_fixed_text, "카츄");
+}
+
+#[test]
 fn standard_pipeline_does_not_apply_unvalidated_candidates_to_fixed_text() {
     let pipeline = StandardPipeline::new(
         Engine::new(LintConfig {
@@ -69,7 +115,7 @@ fn standard_pipeline_does_not_apply_unvalidated_candidates_to_fixed_text() {
 }
 
 #[test]
-fn standard_pipeline_includes_review_candidates_only_when_requested() {
+fn standard_pipeline_keeps_unvalidated_review_candidates_out_of_preview_text() {
     let pipeline = StandardPipeline::new(
         Engine::new(LintConfig::default()),
         lexicon(),
@@ -81,19 +127,19 @@ fn standard_pipeline_includes_review_candidates_only_when_requested() {
         .into_iter()
         .find(|diagnostic| diagnostic.rule_id == "spelling.oov.near")
         .expect("review candidate");
-    let replacement = candidate
-        .suggestions
-        .first()
-        .expect("candidate suggestion")
-        .text
-        .clone();
+    assert!(!candidate.suggestions.is_empty());
 
     let without_review = pipeline.check_with_fixes(text, SourceKind::PlainText, false);
     assert_eq!(without_review.review_fixed_text, without_review.fixed_text);
 
     let with_review = pipeline.check_with_fixes(text, SourceKind::PlainText, true);
-    assert_ne!(with_review.review_fixed_text, with_review.fixed_text);
-    assert!(with_review.review_fixed_text.contains(&replacement));
+    assert_eq!(with_review.review_fixed_text, with_review.fixed_text);
+    assert!(
+        with_review
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.rule_id == "spelling.oov.near")
+    );
 }
 
 #[test]

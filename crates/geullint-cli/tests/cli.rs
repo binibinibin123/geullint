@@ -353,6 +353,97 @@ rules:
 }
 
 #[test]
+fn scores_source_revision_cases_by_detection_and_exact_fixed_text() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let pack = directory.path().join("team-rules.yaml");
+    let corpus = directory.path().join("revision-corpus.jsonl");
+    fs::write(
+        &pack,
+        r#"
+version: 1
+language: ko
+rules:
+  - id: spelling.project.typo
+    severity: warning
+    message: "project typo"
+    safeFix: true
+    replacements:
+      - from: typo
+        to: correct
+"#,
+    )
+    .expect("test rule pack");
+    fs::write(
+        &corpus,
+        r#"{"id":"revision","text":"typo sentence","origin":"revision","textOrigin":"revision","genre":"test","documentId":"doc","authorId":"author","split":"H1","holdoutId":"H1","caseType":"error","annotationOrigin":"source_revision","reviewProvenance":{"reviewerType":"human","rubricSha256":"0000000000000000000000000000000000000000000000000000000000000000","sessionSha256":"0000000000000000000000000000000000000000000000000000000000000000","outputSha256":"0000000000000000000000000000000000000000000000000000000000000000"},"expectedDiagnostics":[{"ruleId":"source_revision","original":"typo","suggestions":["correct"]}],"expectedFixedText":"correct sentence"}"#,
+    )
+    .expect("test corpus");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    let output = command
+        .args(["--rule-pack", pack.to_str().expect("UTF-8 path")])
+        .args(["--corpus", corpus.to_str().expect("UTF-8 path")])
+        .output()
+        .expect("run geullint");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let report: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid corpus JSON report");
+    assert_eq!(report["fixedTextCases"], 1);
+    assert_eq!(report["exactFixedTextHits"], 1);
+    assert_eq!(report["exactFixedTextAccuracy"], 1.0);
+    assert_eq!(report["correctionDetectionHits"], 1);
+    assert_eq!(report["correctionDetectionRecall"], 1.0);
+    assert_eq!(report["falseNegatives"], 0);
+}
+
+#[test]
+fn source_revision_detection_requires_a_diagnostic_on_the_annotated_range() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let pack = directory.path().join("team-rules.yaml");
+    let corpus = directory.path().join("revision-corpus.jsonl");
+    fs::write(
+        &pack,
+        r#"
+version: 1
+language: ko
+rules:
+  - id: spelling.project.typo
+    severity: warning
+    message: "project typo"
+    safeFix: true
+    replacements:
+      - from: clean
+        to: clear
+"#,
+    )
+    .expect("test rule pack");
+    fs::write(
+        &corpus,
+        r#"{"id":"revision","text":"typo clean","origin":"revision","textOrigin":"revision","genre":"test","documentId":"doc","authorId":"author","split":"H1","holdoutId":"H1","caseType":"error","annotationOrigin":"source_revision","reviewProvenance":{"reviewerType":"human","rubricSha256":"0000000000000000000000000000000000000000000000000000000000000000","sessionSha256":"0000000000000000000000000000000000000000000000000000000000000000","outputSha256":"0000000000000000000000000000000000000000000000000000000000000000"},"expectedDiagnostics":[{"ruleId":"source_revision","original":"typo","suggestions":["correct"]}],"expectedFixedText":"correct clear"}"#,
+    )
+    .expect("test corpus");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    let output = command
+        .args(["--rule-pack", pack.to_str().expect("UTF-8 path")])
+        .args(["--corpus", corpus.to_str().expect("UTF-8 path")])
+        .output()
+        .expect("run geullint");
+
+    assert!(!output.status.success());
+    let report: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid corpus JSON report");
+    assert_eq!(report["correctionDetectionHits"], 0);
+    assert_eq!(report["correctionDetectionRecall"], 0.0);
+    assert_eq!(report["caseFailures"][0]["correctionDetectionMiss"], true);
+}
+
+#[test]
 fn applies_safe_fixes_from_a_local_rule_pack() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let input = directory.path().join("memo.txt");
@@ -654,7 +745,9 @@ fn derives_an_exact_utf8_range_from_a_unique_original() {
 
     assert!(
         output.status.success(),
-        "{}",
+        "status={:?} stdout={} stderr={}",
+        output.status,
+        String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
     let report: serde_json::Value =

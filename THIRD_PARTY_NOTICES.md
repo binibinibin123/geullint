@@ -75,6 +75,16 @@ GeulLint does not currently bundle Korean Basic Dictionary data. If a future
 release adds that separately licensed data, its exact source snapshot,
 retrieval date, hash, and attribution will be recorded here before release.
 
+## Tatoeba-derived standard lexicon
+
+The versioned standard lexicon also contains Korean surface forms and bounded
+occurrence counts derived from the Tatoeba Korean sentence export. The
+sentence text is not redistributed. The source snapshot is available from
+<https://tatoeba.org/en/downloads>, licensed CC BY 2.0, with SHA-256
+`ad680378d418e22b659fb6de2e34a4e55827e641cae013e01f976c14f6a4ed9d`.
+The derivation and generated-artifact hashes are recorded in
+`dictionaries/standard-ko-v1.manifest.json`.
+
 The NIKL spelling-correction corpus is listed in `data/sources.json` only as a
 manual-authorization request. It is not downloaded, bundled, or represented as
 an evaluation result until the corpus owner grants permission and the authorized

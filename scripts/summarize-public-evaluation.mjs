@@ -29,7 +29,7 @@ function countBy(items, selector) {
 }
 
 function exactFixedTextStats(cases, mismatchIds) {
-  const eligible = cases.filter((item) => item.expectedFixedText);
+  const eligible = cases.filter((item) => item.expectedFixedText && item.expectedFixedText !== item.text);
   const mismatches = eligible.filter((item) => mismatchIds.has(item.id));
   const matches = eligible.length - mismatches.length;
   return {
@@ -52,6 +52,7 @@ function summarizeSlices(cases, failures, selector) {
         correctionCases: 0,
         falsePositiveCases: 0,
         falseNegativeCases: 0,
+        correctionDetectionMisses: 0,
         fixedTextMismatches: 0,
       };
       slice.cases += 1;
@@ -61,6 +62,7 @@ function summarizeSlices(cases, failures, selector) {
       const failure = failureById.get(item.id);
       if (failure?.falsePositiveRuleIds?.length) slice.falsePositiveCases += 1;
       if (failure?.falseNegativeRuleIds?.length) slice.falseNegativeCases += 1;
+      if (failure?.correctionDetectionMiss) slice.correctionDetectionMisses += 1;
       if (failure?.fixedTextMismatch) slice.fixedTextMismatches += 1;
       slices.set(value, slice);
     }
@@ -70,7 +72,7 @@ function summarizeSlices(cases, failures, selector) {
     {
       ...slice,
       safeNormalAccuracy: slice.normalCases === 0 ? null : (slice.normalCases - slice.falsePositiveCases) / slice.normalCases,
-      diagnosticCorrectionRecall: slice.correctionCases === 0 ? null : (slice.correctionCases - slice.falseNegativeCases) / slice.correctionCases,
+      diagnosticCorrectionRecall: slice.correctionCases === 0 ? null : (slice.correctionCases - slice.falseNegativeCases - slice.correctionDetectionMisses) / slice.correctionCases,
       exactFixedTextAccuracy: slice.correctionCases === 0 ? null : (slice.correctionCases - slice.fixedTextMismatches) / slice.correctionCases,
     },
   ]));
@@ -116,6 +118,11 @@ export function summarizePublicEvaluation(cases, nativeReport) {
       macroRecall: nativeReport.macroRecall ?? null,
       top1CorrectionAccuracy: nativeReport.top1CorrectionAccuracy ?? null,
       top5CorrectionAccuracy: nativeReport.top5CorrectionAccuracy ?? null,
+      fixedTextCases: nativeReport.fixedTextCases ?? null,
+      exactFixedTextHits: nativeReport.exactFixedTextHits ?? null,
+      exactFixedTextAccuracy: nativeReport.exactFixedTextAccuracy ?? null,
+      correctionDetectionHits: nativeReport.correctionDetectionHits ?? null,
+      correctionDetectionRecall: nativeReport.correctionDetectionRecall ?? null,
     },
     byGenre: summarizeSlices(cases, failures, (item) => [item.genre ?? 'unattributed']),
     byErrorFamily: summarizeSlices(cases, failures, (item) => Array.isArray(item.errorFamilies) && item.errorFamilies.length ? item.errorFamilies : ['none']),

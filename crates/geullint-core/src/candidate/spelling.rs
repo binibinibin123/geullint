@@ -2,60 +2,78 @@
 
 use super::CandidateGenerator;
 use crate::{Candidate, Evidence, RuleContext, StandardLexicon, TextRange, phonology_distance};
+use std::collections::BTreeMap;
 
 #[derive(Clone, Debug)]
 pub struct SpellingCandidateGenerator {
-    lexicon: StandardLexicon,
+    entries_by_length: BTreeMap<usize, Vec<crate::LexiconEntry>>,
     max_candidates: usize,
 }
 
 impl SpellingCandidateGenerator {
     #[must_use]
     pub fn new(lexicon: StandardLexicon, max_candidates: usize) -> Self {
+        let mut entries_by_length = BTreeMap::<usize, Vec<_>>::new();
+        for entry in lexicon.entries() {
+            entries_by_length
+                .entry(entry.surface.chars().count())
+                .or_default()
+                .push(entry.clone());
+        }
         Self {
-            lexicon,
+            entries_by_length,
             max_candidates: max_candidates.max(1),
         }
     }
 
     fn candidates_for_word(&self, surface: &str, range: TextRange) -> Vec<Candidate> {
         let source_characters: Vec<_> = surface.chars().collect();
-        if source_characters.len() < 2 || self.lexicon.lookup(surface).is_some() {
+        if source_characters.len() < 2
+            || self
+                .entries_by_length
+                .get(&source_characters.len())
+                .is_some_and(|entries| entries.iter().any(|entry| entry.surface == surface))
+        {
             return Vec::new();
         }
         let mut candidates = Vec::new();
-        for entry in self.lexicon.entries() {
-            let target_characters: Vec<_> = entry.surface.chars().collect();
-            if target_characters.len().abs_diff(source_characters.len()) > 1 {
-                continue;
+        let lower_length = source_characters.len().saturating_sub(1);
+        let upper_length = source_characters.len() + 1;
+        for entries in self
+            .entries_by_length
+            .range(lower_length..=upper_length)
+            .map(|(_, entries)| entries)
+        {
+            for entry in entries {
+                let target_characters: Vec<_> = entry.surface.chars().collect();
+                let edit_distance = levenshtein(&source_characters, &target_characters);
+                if edit_distance > 2 {
+                    continue;
+                }
+                let phonology = source_characters
+                    .iter()
+                    .zip(target_characters.iter())
+                    .map(|(left, right)| phonology_distance(*left, *right))
+                    .sum::<u8>();
+                let frequency = (entry.frequency as f32 + 1.0).ln();
+                let score = (1.0 / (1.0 + edit_distance as f32))
+                    + (1.0 / (1.0 + phonology as f32)) * 0.35
+                    + frequency.min(16.0) / 64.0;
+                candidates.push(
+                    Candidate::new("spelling.oov.near", range, surface, &entry.surface)
+                        .with_evidence(Evidence::new(
+                            "edit-distance",
+                            edit_distance.to_string(),
+                            score as f64,
+                        ))
+                        .with_evidence(Evidence::new(
+                            "frequency",
+                            entry.frequency.to_string(),
+                            frequency as f64,
+                        ))
+                        .with_score(score),
+                );
             }
-            let edit_distance = levenshtein(&source_characters, &target_characters);
-            if edit_distance > 2 {
-                continue;
-            }
-            let phonology = source_characters
-                .iter()
-                .zip(target_characters.iter())
-                .map(|(left, right)| phonology_distance(*left, *right))
-                .sum::<u8>();
-            let frequency = (entry.frequency as f32 + 1.0).ln();
-            let score = (1.0 / (1.0 + edit_distance as f32))
-                + (1.0 / (1.0 + phonology as f32)) * 0.35
-                + frequency.min(16.0) / 64.0;
-            candidates.push(
-                Candidate::new("spelling.oov.near", range, surface, &entry.surface)
-                    .with_evidence(Evidence::new(
-                        "edit-distance",
-                        edit_distance.to_string(),
-                        score as f64,
-                    ))
-                    .with_evidence(Evidence::new(
-                        "frequency",
-                        entry.frequency.to_string(),
-                        frequency as f64,
-                    ))
-                    .with_score(score),
-            );
         }
         candidates.sort_by(|left, right| {
             right

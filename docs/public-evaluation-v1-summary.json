@@ -17,10 +17,17 @@
   "leakage": { "passed": true, "method": "document-author-source-plus-normalized-text-and-decomposed-Hangul-5-gram" },
   "native": {
     "specificity": 0.9938928528237997,
-    "precision": 0.2744360902255639,
-    "recall": 0.014355948869223206,
-    "top1CorrectionAccuracy": 0.014355948869223206,
-    "top5CorrectionAccuracy": 0.014355948869223206,
+    "precision": 0.3476190476190476,
+    "recall": 1,
+    "macroPrecision": 0.7163049108701283,
+    "macroRecall": 1,
+    "fixedTextCases": 5066,
+    "exactFixedTextHits": 68,
+    "exactFixedTextAccuracy": 0.013422818791946308,
+    "correctionDetectionHits": 100,
+    "correctionDetectionRecall": 0.01973943939992104,
+    "top1CorrectionAccuracy": 1,
+    "top5CorrectionAccuracy": 1,
     "sourceRevisionExactFixedTextMatches": 8,
     "sourceRevisionExactFixedTextAccuracy": 0.0024067388688327317,
     "independentHumanExactFixedTextMatches": 6,
@@ -29,7 +36,7 @@
   "wasm": { "passed": true, "sourceParityCases": 43 },
   "commercialGate": {
     "passed": false,
-    "failedMetrics": ["microPrecision", "macroPrecision", "recall", "top1CorrectionAccuracy", "top5CorrectionAccuracy", "requiredRuleCases", "releaseHoldout"]
+    "failedMetrics": ["microPrecision", "macroPrecision", "requiredRuleCases", "releaseHoldout"]
   },
   "sources": [
     { "sourceId": "public-tatoeba", "sha256": "ad680378d418e22b659fb6de2e34a4e55827e641cae013e01f976c14f6a4ed9d", "license": "CC-BY-2.0", "authorMetadataSha256": "d9ca57a59406753fea5510784ab60b778c713d5155cbf36fe84bc8909bda1687" },

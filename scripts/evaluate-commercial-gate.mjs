@@ -32,6 +32,11 @@ export function evaluateGateReport(report, exitCode = 0, auxiliary = {}) {
       correctionCases: report?.correctionCases ?? 0,
       top1CorrectionAccuracy: report?.top1CorrectionAccuracy ?? null,
       top5CorrectionAccuracy: report?.top5CorrectionAccuracy ?? null,
+      fixedTextCases: report?.fixedTextCases ?? 0,
+      exactFixedTextHits: report?.exactFixedTextHits ?? 0,
+      exactFixedTextAccuracy: report?.exactFixedTextAccuracy ?? null,
+      correctionDetectionHits: report?.correctionDetectionHits ?? 0,
+      correctionDetectionRecall: report?.correctionDetectionRecall ?? null,
       dataset: report?.dataset ?? null,
     },
   };

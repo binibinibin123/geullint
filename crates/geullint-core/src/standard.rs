@@ -252,6 +252,9 @@ fn apply_review_suggestions(text: &str, diagnostics: &[DiagnosticV2]) -> String 
         .iter()
         .filter(|diagnostic| diagnostic.safety != FixSafety::None)
         .filter_map(|diagnostic| {
+            if !is_safe_review_preview(diagnostic) {
+                return None;
+            }
             let suggestion = diagnostic.suggestions.first()?;
             let range = diagnostic.range;
             (range.start <= range.end
@@ -282,6 +285,10 @@ fn apply_review_suggestions(text: &str, diagnostics: &[DiagnosticV2]) -> String 
         fixed.replace_range(start..end, &replacement);
     }
     fixed
+}
+
+fn is_safe_review_preview(diagnostic: &DiagnosticV2) -> bool {
+    diagnostic.safety == FixSafety::Safe
 }
 
 #[derive(Debug, thiserror::Error)]
