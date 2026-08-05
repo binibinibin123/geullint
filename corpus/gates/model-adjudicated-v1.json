@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "name": "model-adjudicated-v1",
+  "reviewQuality": {
+    "minCases": 200,
+    "minReviewers": 3,
+    "minAgreementRate": 0.85,
+    "maxAdjudicationRate": 0.25,
+    "maxAuditDisagreementRate": 0.1,
+    "maxMissingProvenanceHashes": 0,
+    "requireAdjudicationForConflicts": true,
+    "requireAiReviewers": true
+  },
+  "policy": {
+    "aiReviewIsNotHumanEvidence": true,
+    "requiresIndependentHumanHoldoutForCommercialClaims": true,
+    "allowedPromotionStatuses": ["reviewed", "adjudicated"],
+    "ambiguousStatusIsExcludedFromGoldMetrics": true
+  }
+}

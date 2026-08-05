@@ -9,6 +9,7 @@ import { checkWasmSize } from "./check-wasm-size.mjs";
 import { assertRuntimeParity, loadSourceFixture } from "./wasm-runtime-parity.mjs";
 
 const buildScript = readFileSync("scripts/build-playground.mjs", "utf8");
+const parityScript = readFileSync("scripts/wasm-runtime-parity.mjs", "utf8");
 const budget = JSON.parse(readFileSync("scripts/wasm-size-budget.json", "utf8"));
 
 test("builds the playground WASM from the locked dependency graph", () => {
@@ -16,6 +17,11 @@ test("builds the playground WASM from the locked dependency graph", () => {
   assert.match(buildScript, /"--target", "web"/u);
   assert.match(buildScript, /CARGO_PROFILE_RELEASE_OPT_LEVEL: "z"/u);
   assert.match(buildScript, /CARGO_PROFILE_RELEASE_LTO: "fat"/u);
+});
+
+test("parity runner can emit a machine-readable gate report", () => {
+  assert.match(parityScript, /--report/u);
+  assert.match(parityScript, /passed:\s*true/u);
 });
 
 test("commits a strict raw and gzip WASM size budget", () => {

@@ -18,3 +18,6 @@
 - 위 항목 중 하나라도 측정되지 않았거나 재현 명령이 없는 경우
 
 현재 저장소는 독립 코퍼스 규모와 두 holdout 조건을 아직 충족하지 않았으므로 품질 GO가 아니라 **NO-GO / 개발 계속** 상태다. 작은 회귀 코퍼스 통과를 상용 동급 인증으로 표현하지 않는다.
+## AI 검수 경계
+
+`model-adjudicated-v1`은 AI packet의 agreement, adjudication, audit disagreement와 provenance hash를 검사하는 개발 게이트다. 이 게이트가 통과해도 `commercial-near-v1`의 독립 인간 H1/H2 조건은 통과한 것이 아니다. AI 주석을 `independent_human`으로 이름만 바꾸거나 인간 증거 없이 상용 동급 문구를 쓰면 release는 NO-GO다.

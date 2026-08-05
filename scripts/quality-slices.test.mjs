@@ -66,3 +66,27 @@ test("summarizes normal and error cases without losing slice identity", () => {
     { key: "split:release_holdout", cases: 2, errorCases: 1, normalCases: 1 },
   ]);
 });
+
+test("keeps v2 text, annotation, and holdout provenance slices", () => {
+  const slices = buildQualitySlices([{
+    id: "ai-h1",
+    text: "문장",
+    textOrigin: "human_authored",
+    annotationOrigin: "ai_blind_panel",
+    annotationStatus: "reviewed",
+    holdoutId: "H1",
+    genre: "news",
+    errorFamilies: ["spacing"],
+  }]);
+  assert.deepEqual(
+    slices.map((slice) => slice.key),
+    [
+      "annotationOrigin:ai_blind_panel",
+      "annotationStatus:reviewed",
+      "errorFamily:spacing",
+      "genre:news",
+      "holdoutId:H1",
+      "textOrigin:human_authored",
+    ],
+  );
+});

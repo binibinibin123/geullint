@@ -13,7 +13,15 @@ export function buildQualitySlices(cases) {
   const slices = new Map();
   for (const item of cases) {
     if (typeof item?.id !== "string" || !item.id.trim()) throw new TypeError("case id must be non-empty");
-    for (const dimension of ["genre", "origin", "split"]) {
+    for (const dimension of [
+      "genre",
+      "origin",
+      "split",
+      "textOrigin",
+      "annotationOrigin",
+      "annotationStatus",
+      "holdoutId",
+    ]) {
       const value = typeof item[dimension] === "string" ? item[dimension].trim() : "";
       if (value) addSlice(slices, `${dimension}:${value}`, value, item);
     }

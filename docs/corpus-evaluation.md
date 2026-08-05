@@ -182,3 +182,13 @@ cargo run -p geullint-cli -- --corpus corpus/seed-v1.jsonl
 ```
 
 외부 데이터의 원문·사본·계정 토큰·API 키는 이 저장소에 넣지 않습니다. 각 데이터 제공자의 이용 조건에 따라 적법하게 취득한 뒤, 위 manifest와 함께 별도 보관합니다.
+## JSONL v2와 AI 검수
+
+AI 검수 행은 `textOrigin`, `annotationOrigin`, `annotationStatus`, `holdoutId`와 `reviewProvenance`를 함께 기록한다. `ai_blind_panel`은 인간 독립 주석으로 해석되지 않으며, `reviewProvenance.reviewerType`과 `adjudicatorType`이 모두 `ai`이고 모델 snapshot이 두 개 이상이어야 한다. `humanEvidence`를 넣은 AI 행은 거부한다.
+
+```powershell
+node scripts/merge-ai-reviews.mjs --cases cases.jsonl --reviews reviews.jsonl --out reviewed-v2.jsonl
+node scripts/evaluate-review-quality.mjs --reviews reviews.jsonl --gate corpus/gates/model-adjudicated-v1.json
+```
+
+보고서에는 `specificity`, `top1CorrectionAccuracy`, `top5CorrectionAccuracy`, `dataset.genreCases`, `dataset.errorFamilyCases`, `dataset.holdouts`가 포함된다. 상용 게이트는 H1과 H2를 각각 검사하며 AI 행만으로 `requireIndependentHuman`을 충족할 수 없다.

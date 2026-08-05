@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Auditable AI blind-panel review packets, provenance hashes, document/author/source leakage checks, deterministic H1/H2 splitting, review-quality metrics, and top-1/top-5 correction accuracy reporting.
+
+### Quality boundary
+
+- AI-adjudicated rows remain separate from independent human evidence. The checked-in commercial-near gate remains NO-GO until both holdouts and authorized human review are present.
+
 ## [0.4.0-beta.1] - 2026-08-05
 
 ### Added

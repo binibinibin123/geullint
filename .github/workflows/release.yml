@@ -131,7 +131,7 @@ jobs:
       - name: Exercise the browser WASM and enforce its size budget
         run: |
           node scripts/build-playground.mjs
-          node scripts/wasm-runtime-parity.mjs
+          node scripts/wasm-runtime-parity.mjs --report wasm-parity-report.json
           node scripts/check-wasm-size.mjs
       - name: Install locked browser E2E dependencies
         working-directory: apps/playground
@@ -158,6 +158,20 @@ jobs:
         run: |
           PYTHONPATH=training python -m unittest discover -s training/tests -v
           node scripts/red-team-korean.mjs --cli target/debug/geullint
+      - name: Verify the checked-in commercial gate stays NO-GO without independent holdouts
+        shell: bash
+        run: |
+          set +e
+          node scripts/evaluate-commercial-gate.mjs \
+            --cli target/debug/geullint \
+            --corpus corpus/safety-regressions-v1.jsonl \
+            --gate corpus/gates/commercial-near-v1.json \
+            --parity wasm-parity-report.json \
+            > commercial-gate-report.json
+          status=$?
+          set -e
+          test "$status" -eq 1
+          jq -e '.passed == false and .qualityGate.passed == false' commercial-gate-report.json
       - name: Check the minimum supported Rust version
         run: |
           rustup toolchain install 1.88.0 --profile minimal

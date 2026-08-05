@@ -311,6 +311,48 @@ rules:
 }
 
 #[test]
+fn reports_top_k_correction_accuracy_for_expected_suggestions() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let pack = directory.path().join("team-rules.yaml");
+    let corpus = directory.path().join("correction-corpus.jsonl");
+    fs::write(
+        &pack,
+        r#"
+version: 1
+language: ko
+rules:
+  - id: spelling.project.typo
+    severity: warning
+    message: "프로젝트 표기"
+    safeFix: true
+    replacements:
+      - from: 오타
+        to: 정정
+"#,
+    )
+    .expect("test rule pack");
+    fs::write(
+        &corpus,
+        r#"{"id":"correction","text":"오타를 고칩니다.","caseType":"error","expectedDiagnostics":[{"ruleId":"spelling.project.typo","original":"오타","suggestions":["정정"]}]}"#,
+    )
+    .expect("test corpus");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    let output = command
+        .args(["--rule-pack", pack.to_str().expect("UTF-8 path")])
+        .args(["--corpus", corpus.to_str().expect("UTF-8 path")])
+        .output()
+        .expect("run geullint");
+
+    assert!(output.status.success());
+    let report: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid corpus JSON report");
+    assert_eq!(report["correctionCases"], 1);
+    assert_eq!(report["top1CorrectionAccuracy"], 1.0);
+    assert_eq!(report["top5CorrectionAccuracy"], 1.0);
+}
+
+#[test]
 fn applies_safe_fixes_from_a_local_rule_pack() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let input = directory.path().join("memo.txt");

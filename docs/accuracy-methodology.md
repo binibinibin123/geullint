@@ -66,3 +66,8 @@ release-quality 수치는 오류를 합성한 문장으로 만들지 않는다. 
 ## 출시 규칙
 
 최소 기준은 `corpus/gates/commercial-near-v1.json`에 고정한다. 서로 다른 두 holdout에서 연속 통과하기 전에는 `상용급`, `Harper급`, `네이버급`이라는 비교 문구를 사용하지 않는다. 기준을 못 넘은 family는 Review 또는 Experimental로 강등하고 실패 유형을 다음 학습 세트로만 보낸다.
+## AI 주석과 독립 인간 증거의 분리
+
+v2 평가 행은 `textOrigin`과 `annotationOrigin`을 따로 기록한다. `ai_blind_panel`은 모델·rubric·session·output hash와 두 개 이상의 snapshot을 요구하지만 `independentHumanCases`에는 포함되지 않는다. AI 패널의 합의율과 adjudication 비율은 별도 `model-adjudicated-v1` gate로 측정한다. 합의되지 않은 행은 `ambiguous`로 남기며 gold 진단 분모에서 제외한다.
+
+문서·작성자·source ID를 먼저 분할한 뒤 H1/H2를 고정한다. `split-corpus-by-document.mjs`와 `check-corpus-leakage.mjs`가 exact/near duplicate, 자모 5-gram, document·author·source 교차를 검사한다. H1/H2에는 각각 `holdoutId`가 있어야 하며, 두 holdout이 실제 독립 인간 자료로 채워지기 전에는 `commercial-near-v1` 결과를 상용 동급 근거로 사용하지 않는다.

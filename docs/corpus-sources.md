@@ -98,3 +98,18 @@ The acquisition tool validates that entry but never downloads the request page o
 counts it as evaluation data. After the corpus owner grants access, the local
 manifest must be replaced with the exact authorized artifact hash and a provenance
 record before `release_holdout` or `independent_human` cases can enter a quality gate.
+## AI 검수용 출처 가져오기
+
+출처 파일은 먼저 manifest의 SHA-256과 라이선스를 확인한 뒤 평가 후보로 정규화한다.
+
+```powershell
+node scripts/import-evaluation-sources.mjs `
+  --source-manifest data/sources.json `
+  --source-id public-source `
+  --source-bytes .\local\source.jsonl `
+  --input .\local\candidates.jsonl `
+  --split H1 `
+  --out .\local\h1-candidates.jsonl
+```
+
+`manual_authorization` 출처는 이 명령으로 가져올 수 없다. training document ID, synthetic/project 행도 H1/H2에서 거부한다. 가져온 후보는 아직 gold가 아니며, AI packet 합의와 필요한 인간 검수를 거친 뒤에만 evaluator에 넣는다.

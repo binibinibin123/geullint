@@ -218,3 +218,10 @@ Release에서 운영체제와 CPU에 맞는 **VSIX**를 받아 VS Code의 `Exten
 브라우저 플레이그라운드와 릴리스 VSIX는 `standard` 엔진을 기본으로 포함합니다.
 가장 작은 보수적 실행 경로는 `compact`, 실험적 로컬 문맥 랭커는 `context`를
 선택할 수 있습니다. 후보 제안은 독립 검증 전까지 항상 Review로만 표시됩니다.
+## 평가 데이터의 신뢰 경계
+
+GeulLint의 평가 파이프라인은 AI 다중 블라인드 검수를 지원하지만, AI 주석을 인간 검수로 포장하지 않습니다. `textOrigin`과 `annotationOrigin`을 분리하고 모델·rubric·session·output hash를 기록합니다. 합의되지 않은 결과는 `ambiguous`로 남기며 gold 지표에서 제외합니다.
+
+상용 수준을 주장하려면 독립 원문을 문서·작성자 단위로 나눈 뒤 H1/H2 두 holdout을 모두 통과해야 합니다. `specificity`, Safe precision의 Wilson 하한, top-1/top-5 교정안 적중률, 장르·오류 family 분포와 Native/WASM parity를 함께 확인합니다. 현재 저장소의 공개 corpus는 이 조건을 아직 충족하지 않으므로 상용 동급 주장을 하지 않습니다.
+
+검수 파이프라인은 [`docs/ai-adjudication.md`](docs/ai-adjudication.md)에, 실제 게이트는 [`commercial-near-v1.json`](corpus/gates/commercial-near-v1.json)과 [`model-adjudicated-v1.json`](corpus/gates/model-adjudicated-v1.json)에 설명되어 있습니다.

@@ -3,6 +3,8 @@
   "minMicroPrecision": 0.98,
   "minMacroPrecision": 0.97,
   "minRecall": 0.85,
+  "minTop1CorrectionAccuracy": 0.85,
+  "minTop5CorrectionAccuracy": 0.95,
   "minRulePrecisionWilsonLower95": 0.995,
   "minExpectedPerRule": 50,
   "requiredRuleIds": [
@@ -17,6 +19,9 @@
     "minNormalCases": 10000,
     "minGenres": 8,
     "minDocuments": 100,
+    "minAuthors": 50,
+    "minHoldoutCases": 2500,
+    "requiredHoldoutIds": ["H1", "H2"],
     "requireReleaseHoldout": true,
     "requireIndependentHuman": true,
     "rejectSynthetic": true

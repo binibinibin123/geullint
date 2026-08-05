@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -77,11 +77,31 @@ function isMainModule() {
   return process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 }
 
+function reportPath(arguments_) {
+  const index = arguments_.indexOf("--report");
+  const value = index < 0 ? undefined : arguments_[index + 1];
+  if (index >= 0 && (!value || value.startsWith("--"))) {
+    throw new Error("--report requires a file path");
+  }
+  return value ? resolve(value) : undefined;
+}
+
+function writeReport(path, report) {
+  if (path) writeFileSync(path, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
+
 if (isMainModule()) {
+  const outputPath = reportPath(process.argv.slice(2));
   try {
     const caseCount = await checkWasmRuntimeParity();
+    writeReport(outputPath, { schemaVersion: 1, passed: true, cases: caseCount });
     process.stdout.write(`WASM runtime parity OK: ${caseCount} cases\n`);
   } catch (error) {
+    writeReport(outputPath, {
+      schemaVersion: 1,
+      passed: false,
+      error: error.message,
+    });
     process.stderr.write(`${error.stack ?? error.message}\n`);
     process.exitCode = 1;
   }

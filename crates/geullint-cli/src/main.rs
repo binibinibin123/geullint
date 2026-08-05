@@ -394,6 +394,12 @@ struct CorpusCase {
     #[serde(default)]
     source_id: Option<String>,
     #[serde(default)]
+    source_sha256: Option<String>,
+    #[serde(default)]
+    source_url: Option<String>,
+    #[serde(default)]
+    license: Option<String>,
+    #[serde(default)]
     review_provenance: Option<CorpusReviewProvenance>,
     #[serde(default)]
     error_families: Vec<String>,
@@ -460,6 +466,10 @@ struct CorpusQualityGate {
     min_micro_precision: f64,
     min_macro_precision: f64,
     min_recall: f64,
+    #[serde(default)]
+    min_top1_correction_accuracy: Option<f64>,
+    #[serde(default)]
+    min_top5_correction_accuracy: Option<f64>,
     min_rule_precision_wilson_lower_95: f64,
     min_expected_per_rule: usize,
     required_rule_ids: Vec<String>,
@@ -548,6 +558,9 @@ struct CorpusReport {
     normal_cases: usize,
     false_positive_cases: usize,
     specificity: Option<f64>,
+    correction_cases: usize,
+    top1_correction_accuracy: Option<f64>,
+    top5_correction_accuracy: Option<f64>,
     dataset: DatasetMetadata,
     rule_metrics: Vec<RuleCorpusMetric>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1653,6 +1666,9 @@ fn evaluate_corpus(
     let mut rule_metric_counts = BTreeMap::<String, RuleMetricCounts>::new();
     let mut seen_case_ids = BTreeMap::<String, usize>::new();
     let mut metadata_cases = Vec::new();
+    let mut correction_cases = 0_usize;
+    let mut top1_correction_hits = 0_usize;
+    let mut top5_correction_hits = 0_usize;
     let mut engines: [Option<Engine>; 3] = [None, None, None];
     let mut has_fixed_text_mismatch = false;
 
@@ -1694,6 +1710,10 @@ fn evaluate_corpus(
         for (field, value) in [
             ("genre", case.genre.as_deref()),
             ("provenanceId", case.provenance_id.as_deref()),
+            ("sourceId", case.source_id.as_deref()),
+            ("sourceSha256", case.source_sha256.as_deref()),
+            ("sourceUrl", case.source_url.as_deref()),
+            ("license", case.license.as_deref()),
         ] {
             if value.is_some_and(|value| value.trim().is_empty()) {
                 bail!(
@@ -1702,6 +1722,13 @@ fn evaluate_corpus(
                     index + 1
                 );
             }
+        }
+        if case.source_sha256.is_some() && !is_sha256(case.source_sha256.as_ref()) {
+            bail!(
+                "{} corpus line {} sourceSha256 must be 64 lowercase hexadecimal characters",
+                path.display(),
+                index + 1
+            );
         }
         validate_corpus_metadata(path, index + 1, &case)?;
 
@@ -1742,6 +1769,7 @@ fn evaluate_corpus(
             genre: case.genre.clone(),
             document_id: case.document_id.clone(),
             author_id: case.author_id.clone(),
+            error_families: case.error_families.clone(),
             normal: expected_diagnostics.is_empty(),
         });
         let engine_index = profile_engine_index(config.profile);
@@ -1768,6 +1796,10 @@ fn evaluate_corpus(
             }
         }
         let comparison = compare_diagnostics(&expected_diagnostics, &actual_diagnostics);
+        let correction = correction_accuracy(&expected_diagnostics, &actual_diagnostics);
+        correction_cases += correction.cases;
+        top1_correction_hits += correction.top1_hits;
+        top5_correction_hits += correction.top5_hits;
         true_positives += comparison.true_positives;
         false_positives += comparison.false_positive_rule_ids.len();
         false_negatives += comparison.false_negative_rule_ids.len();
@@ -1841,6 +1873,9 @@ fn evaluate_corpus(
         normal_cases,
         false_positive_cases,
         specificity: ratio(clean_normal_cases, normal_cases),
+        correction_cases,
+        top1_correction_accuracy: ratio(top1_correction_hits, correction_cases),
+        top5_correction_accuracy: ratio(top5_correction_hits, correction_cases),
         dataset,
         rule_metrics,
         quality_gate: None,
@@ -1887,6 +1922,14 @@ fn load_corpus_quality_gate(path: &Path) -> Result<CorpusQualityGate> {
         ("minMacroPrecision", gate.min_macro_precision),
         ("minRecall", gate.min_recall),
         (
+            "minTop1CorrectionAccuracy",
+            gate.min_top1_correction_accuracy.unwrap_or(0.0),
+        ),
+        (
+            "minTop5CorrectionAccuracy",
+            gate.min_top5_correction_accuracy.unwrap_or(0.0),
+        ),
+        (
             "minRulePrecisionWilsonLower95",
             gate.min_rule_precision_wilson_lower_95,
         ),
@@ -1921,6 +1964,36 @@ fn load_corpus_quality_gate(path: &Path) -> Result<CorpusQualityGate> {
             path.display()
         );
     }
+    if gate.dataset.min_holdout_cases.is_some() {
+        if gate.dataset.required_holdout_ids.is_empty()
+            || gate
+                .dataset
+                .required_holdout_ids
+                .iter()
+                .any(|id| !matches!(id.as_str(), "H1" | "H2"))
+        {
+            bail!(
+                "{} corpus gate requiredHoldoutIds must contain H1 and/or H2",
+                path.display()
+            );
+        }
+        let holdout_id_count = gate.dataset.required_holdout_ids.len();
+        let mut holdout_ids = gate.dataset.required_holdout_ids.clone();
+        holdout_ids.sort_unstable();
+        holdout_ids.dedup();
+        if holdout_ids.len() != holdout_id_count {
+            bail!(
+                "{} corpus gate requiredHoldoutIds must not repeat a holdout ID",
+                path.display()
+            );
+        }
+        if holdout_ids != vec!["H1".to_owned(), "H2".to_owned()] {
+            bail!(
+                "{} corpus gate requiredHoldoutIds must include both H1 and H2",
+                path.display()
+            );
+        }
+    }
     Ok(gate)
 }
 
@@ -1951,6 +2024,24 @@ fn evaluate_corpus_quality_gate(
         gate.min_recall,
         None,
     );
+    if let Some(minimum) = gate.min_top1_correction_accuracy {
+        push_gate_failure(
+            &mut failures,
+            "top1CorrectionAccuracy",
+            report.top1_correction_accuracy,
+            minimum,
+            None,
+        );
+    }
+    if let Some(minimum) = gate.min_top5_correction_accuracy {
+        push_gate_failure(
+            &mut failures,
+            "top5CorrectionAccuracy",
+            report.top5_correction_accuracy,
+            minimum,
+            None,
+        );
+    }
     for required_rule_id in &gate.required_rule_ids {
         let metric = report
             .rule_metrics
@@ -2072,6 +2163,55 @@ struct DiagnosticComparison {
     true_positive_rule_ids: Vec<String>,
     false_positive_rule_ids: Vec<String>,
     false_negative_rule_ids: Vec<String>,
+}
+
+#[derive(Default)]
+struct CorrectionAccuracyCounts {
+    cases: usize,
+    top1_hits: usize,
+    top5_hits: usize,
+}
+
+fn correction_accuracy(
+    expected: &[CorpusExpectedDiagnostic],
+    actual: &[Diagnostic],
+) -> CorrectionAccuracyCounts {
+    let mut counts = CorrectionAccuracyCounts::default();
+    for expectation in expected {
+        let Some(suggestions) = expectation
+            .suggestions
+            .as_ref()
+            .filter(|suggestions| !suggestions.is_empty())
+        else {
+            continue;
+        };
+        counts.cases += 1;
+        let Some(diagnostic) = actual.iter().find(|diagnostic| {
+            expectation.rule_id == diagnostic.rule_id
+                && expectation
+                    .range
+                    .as_ref()
+                    .is_none_or(|range| range == &diagnostic.range)
+        }) else {
+            continue;
+        };
+        if diagnostic
+            .suggestions
+            .first()
+            .is_some_and(|suggestion| suggestions.contains(suggestion))
+        {
+            counts.top1_hits += 1;
+        }
+        if diagnostic
+            .suggestions
+            .iter()
+            .take(5)
+            .any(|suggestion| suggestions.contains(suggestion))
+        {
+            counts.top5_hits += 1;
+        }
+    }
+    counts
 }
 
 fn compare_diagnostics(

@@ -22,9 +22,8 @@ jobs:
         with:
           node-version: 22
       - run: cargo fmt --check
-      - run: cargo clippy --workspace -- -D warnings
-      - run: cargo test --workspace
-      - run: cargo test --workspace --all-features
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - run: cargo test --workspace --all-features --no-fail-fast
       - run: cargo build -p geullint-wasm --target wasm32-unknown-unknown --release
       - run: cargo build -p geullint-cli
       - name: Validate the committed Korean safety corpus
@@ -39,6 +38,19 @@ jobs:
         run: |
           PYTHONPATH=training python -m unittest discover -s training/tests -v
           node scripts/red-team-korean.mjs --cli target/debug/geullint
+      - name: Verify the checked-in commercial gate stays NO-GO without independent holdouts
+        shell: bash
+        run: |
+          set +e
+          node scripts/evaluate-commercial-gate.mjs \
+            --cli target/debug/geullint \
+            --corpus corpus/safety-regressions-v1.jsonl \
+            --gate corpus/gates/commercial-near-v1.json \
+            > commercial-gate-report.json
+          status=$?
+          set -e
+          test "$status" -eq 1
+          jq -e '.passed == false and .qualityGate.passed == false' commercial-gate-report.json
 
   npm-wrapper:
     runs-on: ubuntu-latest

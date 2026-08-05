@@ -58,5 +58,75 @@
         "humanEvidence": { "type": "object" }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "annotationOrigin": { "const": "ai_blind_panel" } },
+        "required": ["annotationOrigin"]
+      },
+      "then": {
+        "properties": {
+          "reviewProvenance": {
+            "required": ["modelSnapshots"],
+            "properties": {
+              "reviewerType": { "const": "ai" },
+              "modelSnapshots": { "minItems": 2 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "annotationOrigin": { "const": "human_independent" } },
+        "required": ["annotationOrigin"]
+      },
+      "then": {
+        "properties": {
+          "reviewProvenance": {
+            "required": ["humanEvidence"],
+            "properties": { "reviewerType": { "const": "human" } }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "annotationStatus": { "const": "ambiguous" } },
+        "required": ["annotationStatus"]
+      },
+      "then": { "properties": { "expectedDiagnostics": { "maxItems": 0 } } }
+    },
+    {
+      "if": {
+        "properties": { "annotationStatus": { "const": "adjudicated" } },
+        "required": ["annotationStatus"]
+      },
+      "then": {
+        "properties": {
+          "reviewProvenance": {
+            "required": ["adjudicatorId"],
+            "properties": {
+              "adjudicatorId": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "split": { "const": "H1" } },
+        "required": ["split"]
+      },
+      "then": { "properties": { "holdoutId": { "const": "H1" } } }
+    },
+    {
+      "if": {
+        "properties": { "split": { "const": "H2" } },
+        "required": ["split"]
+      },
+      "then": { "properties": { "holdoutId": { "const": "H2" } } }
+    }
+  ]
 }

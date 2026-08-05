@@ -26,3 +26,6 @@
 The NIKL spelling-correction corpus is intentionally listed as
 `manual_authorization` with no hash. It is a future independent holdout request,
 not a bundled dataset or a measured quality result.
+## AI 검수 경계
+
+AI blind-panel 주석은 독립 인간 증거가 아니다. 여러 모델이 같은 결과를 내더라도 `commercial-near-v1`의 `requireIndependentHuman` 조건을 충족하지 못한다. 승격된 행에는 모델·rubric·session·output hash를 남기고, 모호한 행은 별도 adjudication 전까지 gold 지표에서 제외한다.

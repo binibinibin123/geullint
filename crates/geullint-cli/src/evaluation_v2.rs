@@ -61,6 +61,7 @@ pub(crate) struct CaseMetadata {
     pub genre: Option<String>,
     pub document_id: Option<String>,
     pub author_id: Option<String>,
+    pub error_families: Vec<String>,
     pub normal: bool,
 }
 
@@ -107,6 +108,8 @@ pub(crate) struct DatasetMetadata {
     pub genres: Vec<String>,
     pub documents: usize,
     pub authors: usize,
+    pub genre_cases: BTreeMap<String, usize>,
+    pub error_family_cases: BTreeMap<String, usize>,
     pub splits: BTreeMap<String, usize>,
     pub holdouts: BTreeMap<String, usize>,
 }
@@ -162,6 +165,10 @@ pub(crate) fn aggregate_metadata(cases: &[CaseMetadata]) -> DatasetMetadata {
             .filter(|genre| !genre.trim().is_empty())
         {
             genres.insert(genre.trim().to_owned());
+            *metadata
+                .genre_cases
+                .entry(genre.trim().to_owned())
+                .or_default() += 1;
         }
         if let Some(document_id) = case
             .document_id
@@ -176,6 +183,14 @@ pub(crate) fn aggregate_metadata(cases: &[CaseMetadata]) -> DatasetMetadata {
             .filter(|author_id| !author_id.trim().is_empty())
         {
             authors.insert(author_id.trim().to_owned());
+        }
+        for family in &case.error_families {
+            if !family.trim().is_empty() {
+                *metadata
+                    .error_family_cases
+                    .entry(family.trim().to_owned())
+                    .or_default() += 1;
+            }
         }
         if let Some(split) = case.split {
             *metadata
@@ -337,6 +352,7 @@ mod tests {
             genre: Some(genre.to_owned()),
             document_id: Some(document_id.to_owned()),
             author_id: None,
+            error_families: vec![],
             normal,
         }
     }
@@ -466,12 +482,15 @@ mod tests {
             genre: Some("news".to_owned()),
             document_id: Some("doc-ai".to_owned()),
             author_id: Some("author-ai".to_owned()),
+            error_families: vec!["spacing".to_owned(), "grammar".to_owned()],
             normal: false,
         }]);
         assert_eq!(metadata.natural_cases, 1);
         assert_eq!(metadata.human_edit_cases, 1);
         assert_eq!(metadata.independent_human_cases, 0);
         assert_eq!(metadata.holdouts["H1"], 1);
+        assert_eq!(metadata.genre_cases["news"], 1);
+        assert_eq!(metadata.error_family_cases["spacing"], 1);
         let failures = evaluate_dataset_gate(
             &metadata,
             &DatasetQualityGate {

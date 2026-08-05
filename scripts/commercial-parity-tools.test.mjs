@@ -10,6 +10,20 @@ test("commercial gate report never turns a failed CLI into a pass", () => {
   assert.equal(failed.passed, false);
 });
 
+test("commercial gate report includes auxiliary leakage, review, and parity checks", () => {
+  const result = evaluateGateReport(
+    { qualityGate: { passed: true }, cases: 20 },
+    0,
+    {
+      leakage: { passed: true },
+      reviewQuality: { passed: false },
+      parity: { passed: true },
+    },
+  );
+  assert.equal(result.passed, false);
+  assert.equal(result.checks.reviewQuality.passed, false);
+});
+
 test("red-team fixtures include hard negatives and expected positive families", () => {
   assert.ok(RED_TEAM_CASES.some((fixture) => fixture.expected.length === 0));
   assert.ok(RED_TEAM_CASES.some((fixture) => fixture.expected.includes("spelling.lexical.myeochil")));
