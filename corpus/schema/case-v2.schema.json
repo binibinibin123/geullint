@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/binibinibin123/geullint/schema/case-v2.json",
+  "title": "GeulLint evaluation case v2",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "id",
+    "text",
+    "textOrigin",
+    "annotationOrigin",
+    "annotationStatus",
+    "expectedDiagnostics",
+    "reviewProvenance"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "text": { "type": "string", "minLength": 1 },
+    "textOrigin": { "enum": ["human_authored", "revision", "project", "synthetic"] },
+    "annotationOrigin": { "enum": ["ai_blind_panel", "human_independent", "source_revision"] },
+    "annotationStatus": { "enum": ["unreviewed", "reviewed", "adjudicated", "ambiguous"] },
+    "genre": { "type": "string", "minLength": 1 },
+    "split": { "enum": ["train", "dev", "release_holdout", "H1", "H2"] },
+    "documentId": { "type": "string", "minLength": 1 },
+    "authorId": { "type": "string", "minLength": 1 },
+    "holdoutId": { "type": ["string", "null"], "enum": ["H1", "H2", null] },
+    "expectedDiagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["range", "suggestions"],
+        "properties": {
+          "ruleId": { "type": "string", "minLength": 1 },
+          "errorFamily": { "type": "string", "minLength": 1 },
+          "range": {
+            "type": "object",
+            "required": ["start", "end"],
+            "properties": {
+              "start": { "type": "integer", "minimum": 0 },
+              "end": { "type": "integer", "minimum": 1 }
+            }
+          },
+          "suggestions": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+        }
+      }
+    },
+    "reviewProvenance": {
+      "type": "object",
+      "required": ["reviewerType", "adjudicatorType", "rubricSha256", "sessionSha256", "outputSha256"],
+      "properties": {
+        "reviewerType": { "enum": ["ai", "human"] },
+        "adjudicatorType": { "enum": ["ai", "human"] },
+        "adjudicatorId": { "type": ["string", "null"] },
+        "modelSnapshots": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "rubricSha256": { "pattern": "^[0-9a-f]{64}$" },
+        "sessionSha256": { "pattern": "^[0-9a-f]{64}$" },
+        "outputSha256": { "pattern": "^[0-9a-f]{64}$" },
+        "humanEvidence": { "type": "object" }
+      }
+    }
+  }
+}

@@ -102,7 +102,7 @@ test("requires adjudication for conflicting blind reviews and preserves ambiguit
     modelSnapshot: `model-${reviewerId}`,
     rubricSha256: hash("f"),
     sessionSha256: hash(reviewerId),
-    outputSha256: hash("g"),
+    outputSha256: hash("a"),
     status: index === 0 ? "normal" : "error",
     diagnostics: index === 0 ? [] : [{ range: { start: 0, end: 3 }, suggestions: ["다른"], errorFamily: "style" }],
   }));
@@ -112,8 +112,8 @@ test("requires adjudication for conflicting blind reviews and preserves ambiguit
     reviewerType: "ai",
     modelSnapshot: "model-adjudicator",
     rubricSha256: hash("f"),
-    sessionSha256: hash("h"),
-    outputSha256: hash("i"),
+    sessionSha256: hash("c"),
+    outputSha256: hash("b"),
     status: "ambiguous",
     diagnostics: [],
   });
