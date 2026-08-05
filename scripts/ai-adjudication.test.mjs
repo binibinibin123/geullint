@@ -5,6 +5,7 @@ import {
   mergeBlindReviews,
   validateCaseV2,
 } from "./ai-adjudication.mjs";
+import { mergeReviewPackets } from "./merge-ai-reviews.mjs";
 
 const hash = (letter) => letter.repeat(64);
 
@@ -120,4 +121,31 @@ test("requires adjudication for conflicting blind reviews and preserves ambiguit
   assert.equal(result.annotationStatus, "ambiguous");
   assert.deepEqual(result.expectedDiagnostics, []);
   assert.equal(result.reviewProvenance.adjudicatorType, "ai");
+});
+
+test("merges packet records in base order and rejects duplicate packet IDs", () => {
+  const baseCases = [
+    { id: "first", text: "첫 문장입니다.", textOrigin: "human_authored", genre: "news", split: "dev", documentId: "doc-1", authorId: "author-1", holdoutId: null },
+    { id: "second", text: "둘째 문장입니다.", textOrigin: "human_authored", genre: "news", split: "dev", documentId: "doc-2", authorId: "author-2", holdoutId: null },
+  ];
+  const review = (caseId, reviewerId) => ({
+    caseId,
+    reviewerId,
+    reviewerType: "ai",
+    modelSnapshot: `model-${reviewerId}`,
+    rubricSha256: hash("a"),
+    sessionSha256: hash(reviewerId),
+    outputSha256: hash("b"),
+    status: "normal",
+    diagnostics: [],
+  });
+  const packets = mergeReviewPackets(baseCases, [
+    review("second", "a"), review("second", "b"),
+    review("first", "a"), review("first", "b"),
+  ]);
+  assert.deepEqual(packets.map((entry) => entry.id), ["first", "second"]);
+  assert.throws(
+    () => mergeReviewPackets(baseCases, [review("first", "a"), review("first", "a")]),
+    /duplicate review packet/u,
+  );
 });

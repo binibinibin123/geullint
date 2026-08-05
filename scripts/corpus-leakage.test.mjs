@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { checkCorpusLeakage } from "./check-corpus-leakage.mjs";
+import { characterNgrams, checkCorpusLeakage } from "./check-corpus-leakage.mjs";
 
 test("rejects exact text and source document leakage across splits", () => {
   const result = checkCorpusLeakage([
@@ -78,4 +78,44 @@ test("accepts distinct source documents and texts", () => {
 
   assert.equal(result.passed, true);
   assert.deepEqual(result.issues, []);
+});
+
+test("uses decomposed Hangul jamo for five-gram leakage checks", () => {
+  const grams = characterNgrams("한글 맞춤법");
+  assert.ok([...grams].some((gram) => gram.includes("ᄒ")), "expected decomposed choseong in the gram index");
+});
+
+test("does not drop a near duplicate after a popular gram exceeds the candidate cap", () => {
+  const trainCases = Array.from({ length: 513 }, (_, index) => ({
+    id: `train-${index}`,
+    text: `공통문자열-${index}-독립 문서의 서로 다른 꼬리표입니다.`,
+  }));
+  const result = checkCorpusLeakage([
+    { split: "train", cases: trainCases },
+    {
+      split: "H1",
+      cases: [{
+        id: "holdout-target",
+        text: "공통문자열-512-독립 문서의 서로 다른 꼬리표입니다.",
+      }],
+    },
+  ], { maxCandidatesPerGram: 0 });
+  assert.equal(result.passed, false);
+  assert.ok(result.issues.some((issue) => issue.kind === "near_duplicate" && issue.rightId === "holdout-target"));
+});
+
+test("rejects source lineage leakage and a mismatched holdout identifier", () => {
+  const result = checkCorpusLeakage([
+    {
+      split: "dev",
+      cases: [{ id: "dev-source", text: "개발 문장입니다.", sourceId: "source-shared" }],
+    },
+    {
+      split: "H1",
+      cases: [{ id: "holdout-source", text: "잠금 문장입니다.", sourceId: "source-shared", holdoutId: "H2" }],
+    },
+  ]);
+  assert.equal(result.passed, false);
+  assert.ok(result.issues.some((issue) => issue.kind === "source"));
+  assert.ok(result.issues.some((issue) => issue.kind === "holdout_id"));
 });

@@ -961,6 +961,26 @@ fn reports_dataset_metadata_and_rejects_synthetic_quality_data() {
 }
 
 #[test]
+fn rejects_ai_review_mislabeled_as_human_review() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let corpus = directory.path().join("ai-provenance.jsonl");
+    fs::write(
+        &corpus,
+        r#"{"id":"ai-case","text":"검수 대상 문장입니다.","textOrigin":"human_authored","annotationOrigin":"ai_blind_panel","annotationStatus":"reviewed","genre":"news","split":"H1","holdoutId":"H1","documentId":"doc-ai","authorId":"author-ai","caseType":"normal","expectedDiagnostics":[],"reviewProvenance":{"reviewerType":"human","adjudicatorType":"ai","modelSnapshots":["model-a","model-b"],"rubricSha256":"0000000000000000000000000000000000000000000000000000000000000000","sessionSha256":"0000000000000000000000000000000000000000000000000000000000000000","outputSha256":"0000000000000000000000000000000000000000000000000000000000000000"}}"#,
+    )
+    .expect("AI provenance corpus");
+
+    let mut command = Command::cargo_bin("geullint").expect("geullint binary");
+    command
+        .args(["--corpus", corpus.to_str().expect("UTF-8 path")])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains(
+            "AI blind-panel annotation requires reviewerType `ai`",
+        ));
+}
+
+#[test]
 fn rejects_non_project_corpus_rows_without_provenance_metadata() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let corpus = directory.path().join("missing-provenance.jsonl");

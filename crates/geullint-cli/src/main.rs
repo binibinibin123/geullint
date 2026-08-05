@@ -23,8 +23,9 @@ use std::time::Duration;
 mod cache;
 mod evaluation_v2;
 use evaluation_v2::{
-    CaseMetadata, CorpusOrigin, CorpusSplit, DatasetMetadata, DatasetQualityGate,
-    aggregate_metadata, evaluate_dataset_gate,
+    CaseMetadata, CorpusAnnotationOrigin, CorpusAnnotationStatus, CorpusOrigin, CorpusSplit,
+    CorpusTextOrigin, DatasetMetadata, DatasetQualityGate, aggregate_metadata,
+    evaluate_dataset_gate,
 };
 
 #[derive(Clone, Debug, Parser)]
@@ -377,11 +378,23 @@ struct CorpusCase {
     #[serde(default)]
     origin: CorpusOrigin,
     #[serde(default)]
+    text_origin: Option<CorpusTextOrigin>,
+    #[serde(default)]
+    annotation_origin: Option<CorpusAnnotationOrigin>,
+    #[serde(default)]
+    annotation_status: Option<CorpusAnnotationStatus>,
+    #[serde(default)]
     split: Option<CorpusSplit>,
+    #[serde(default)]
+    holdout_id: Option<String>,
     #[serde(default)]
     document_id: Option<String>,
     #[serde(default)]
     author_id: Option<String>,
+    #[serde(default)]
+    source_id: Option<String>,
+    #[serde(default)]
+    review_provenance: Option<CorpusReviewProvenance>,
     #[serde(default)]
     error_families: Vec<String>,
     #[serde(default)]
@@ -390,6 +403,24 @@ struct CorpusCase {
     expected_diagnostics: Vec<CorpusExpectedDiagnostic>,
     #[serde(default)]
     expected_fixed_text: Option<String>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct CorpusReviewProvenance {
+    #[serde(default)]
+    reviewer_type: Option<String>,
+    #[serde(default)]
+    adjudicator_type: Option<String>,
+    #[serde(default)]
+    adjudicator_id: Option<String>,
+    #[serde(default)]
+    human_evidence: Option<serde_json::Value>,
+    #[serde(default)]
+    model_snapshots: Vec<String>,
+    rubric_sha256: Option<String>,
+    session_sha256: Option<String>,
+    output_sha256: Option<String>,
 }
 
 #[derive(Clone, Copy, Deserialize)]
@@ -489,6 +520,8 @@ struct CorpusQualityGateFailure {
     minimum: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     rule_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    holdout_id: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -1372,8 +1405,181 @@ fn resolve_expected_diagnostic_ranges(
     Ok(())
 }
 
+fn is_sha256(value: Option<&String>) -> bool {
+    value.is_some_and(|value| {
+        value.len() == 64
+            && value
+                .bytes()
+                .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+    })
+}
+
+#[allow(clippy::too_many_lines)]
 fn validate_corpus_metadata(path: &Path, line: usize, case: &CorpusCase) -> Result<()> {
-    if case.origin == CorpusOrigin::Project {
+    let text_origin = case.text_origin.unwrap_or(match case.origin {
+        CorpusOrigin::IndependentHuman => CorpusTextOrigin::HumanAuthored,
+        CorpusOrigin::Revision => CorpusTextOrigin::Revision,
+        CorpusOrigin::Project => CorpusTextOrigin::Project,
+        CorpusOrigin::Synthetic => CorpusTextOrigin::Synthetic,
+    });
+    let requires_external_metadata =
+        text_origin != CorpusTextOrigin::Project || case.text_origin.is_some();
+
+    if case
+        .source_id
+        .as_deref()
+        .is_some_and(|source_id| source_id.trim().is_empty())
+    {
+        bail!(
+            "{} corpus line {line} sourceId cannot be empty",
+            path.display()
+        );
+    }
+
+    if let Some(split) = case.split {
+        let is_holdout = matches!(split, CorpusSplit::H1 | CorpusSplit::H2);
+        if is_holdout {
+            if case.holdout_id.as_deref() != Some(split.as_str()) {
+                bail!(
+                    "{} corpus line {line} {} split requires holdoutId `{}`",
+                    path.display(),
+                    split.as_str(),
+                    split.as_str()
+                );
+            }
+        } else if case.holdout_id.is_some() {
+            bail!(
+                "{} corpus line {line} holdoutId is only valid for H1 or H2",
+                path.display()
+            );
+        }
+    } else if case.holdout_id.is_some() {
+        bail!(
+            "{} corpus line {line} holdoutId requires a split",
+            path.display()
+        );
+    }
+
+    if let Some(annotation_origin) = case.annotation_origin {
+        let provenance = case.review_provenance.as_ref().ok_or_else(|| {
+            anyhow::anyhow!(
+                "{} corpus line {line} annotationOrigin `{}` requires reviewProvenance",
+                path.display(),
+                serde_json::to_string(&annotation_origin).unwrap_or_else(|_| "unknown".to_owned())
+            )
+        })?;
+        if provenance
+            .model_snapshots
+            .iter()
+            .any(|snapshot| snapshot.trim().is_empty())
+        {
+            bail!(
+                "{} corpus line {line} reviewProvenance modelSnapshots cannot contain empty values",
+                path.display()
+            );
+        }
+        if provenance
+            .adjudicator_type
+            .as_deref()
+            .is_some_and(|kind| kind.trim().is_empty())
+            || provenance
+                .adjudicator_id
+                .as_deref()
+                .is_some_and(|id| id.trim().is_empty())
+        {
+            bail!(
+                "{} corpus line {line} reviewProvenance adjudicator fields cannot be empty",
+                path.display()
+            );
+        }
+        for (field, value) in [
+            ("rubricSha256", &provenance.rubric_sha256),
+            ("sessionSha256", &provenance.session_sha256),
+            ("outputSha256", &provenance.output_sha256),
+        ] {
+            if !is_sha256(value.as_ref()) {
+                bail!(
+                    "{} corpus line {line} reviewProvenance {field} must be 64 lowercase hexadecimal characters",
+                    path.display()
+                );
+            }
+        }
+        match annotation_origin {
+            CorpusAnnotationOrigin::AiBlindPanel => {
+                if provenance.reviewer_type.as_deref() != Some("ai") {
+                    bail!(
+                        "{} corpus line {line} AI blind-panel annotation requires reviewerType `ai`",
+                        path.display()
+                    );
+                }
+                if provenance.adjudicator_type.as_deref() != Some("ai") {
+                    bail!(
+                        "{} corpus line {line} AI blind-panel annotation requires adjudicatorType `ai`",
+                        path.display()
+                    );
+                }
+                if provenance.model_snapshots.len() < 2 {
+                    bail!(
+                        "{} corpus line {line} AI blind-panel annotation requires at least two modelSnapshots",
+                        path.display()
+                    );
+                }
+                if provenance.human_evidence.is_some() {
+                    bail!(
+                        "{} corpus line {line} AI blind-panel annotation cannot include humanEvidence",
+                        path.display()
+                    );
+                }
+                if matches!(
+                    case.annotation_status,
+                    None | Some(CorpusAnnotationStatus::Unreviewed)
+                ) {
+                    bail!(
+                        "{} corpus line {line} AI blind-panel annotation must be reviewed, adjudicated, or ambiguous",
+                        path.display()
+                    );
+                }
+            }
+            CorpusAnnotationOrigin::HumanIndependent => {
+                if provenance.reviewer_type.as_deref() != Some("human") {
+                    bail!(
+                        "{} corpus line {line} independent human annotation requires reviewerType `human`",
+                        path.display()
+                    );
+                }
+                if provenance.human_evidence.is_none() {
+                    bail!(
+                        "{} corpus line {line} independent human annotation requires humanEvidence",
+                        path.display()
+                    );
+                }
+                if matches!(
+                    case.annotation_status,
+                    None | Some(CorpusAnnotationStatus::Unreviewed)
+                ) {
+                    bail!(
+                        "{} corpus line {line} independent human annotation must be reviewed, adjudicated, or ambiguous",
+                        path.display()
+                    );
+                }
+            }
+            CorpusAnnotationOrigin::SourceRevision => {
+                if provenance.reviewer_type.as_deref() == Some("ai") {
+                    bail!(
+                        "{} corpus line {line} source revision cannot be labeled as an AI review",
+                        path.display()
+                    );
+                }
+            }
+        }
+    } else if case.review_provenance.is_some() || case.annotation_status.is_some() {
+        bail!(
+            "{} corpus line {line} annotationStatus/reviewProvenance requires annotationOrigin",
+            path.display()
+        );
+    }
+
+    if !requires_external_metadata {
         return Ok(());
     }
     if case
@@ -1528,9 +1734,14 @@ fn evaluate_corpus(
         metadata_cases.push(CaseMetadata {
             id: case.id.clone(),
             origin: case.origin,
+            text_origin: case.text_origin,
+            annotation_origin: case.annotation_origin,
+            annotation_status: case.annotation_status,
             split: case.split,
+            holdout_id: case.holdout_id.clone(),
             genre: case.genre.clone(),
             document_id: case.document_id.clone(),
+            author_id: case.author_id.clone(),
             normal: expected_diagnostics.is_empty(),
         });
         let engine_index = profile_engine_index(config.profile);
@@ -1645,6 +1856,7 @@ fn evaluate_corpus(
                     actual: Some(failure.actual as f64),
                     minimum: failure.minimum as f64,
                     rule_id: None,
+                    holdout_id: failure.holdout_id,
                 }),
         );
         gate_report.passed = gate_report.failures.is_empty();
@@ -1782,6 +1994,7 @@ fn push_gate_failure(
             actual,
             minimum,
             rule_id,
+            holdout_id: None,
         });
     }
 }

@@ -3,7 +3,6 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
 const DEFAULT_THRESHOLD = 0.85;
-const DEFAULT_MAX_CANDIDATES_PER_GRAM = 512;
 
 export function normalizeCorpusText(value) {
   return String(value)
@@ -14,7 +13,7 @@ export function normalizeCorpusText(value) {
 }
 
 export function characterNgrams(value, size = 5) {
-  const characters = [...normalizeCorpusText(value)];
+  const characters = [...normalizeCorpusText(value).normalize("NFD")];
   if (characters.length <= size) return new Set(characters.length ? [characters.join("")] : []);
   const grams = new Set();
   for (let index = 0; index <= characters.length - size; index += 1) {
@@ -37,10 +36,7 @@ function addIssue(issues, issue) {
 
 export function checkCorpusLeakage(
   groups,
-  {
-    nearDuplicateThreshold = DEFAULT_THRESHOLD,
-    maxCandidatesPerGram = DEFAULT_MAX_CANDIDATES_PER_GRAM,
-  } = {},
+  { nearDuplicateThreshold = DEFAULT_THRESHOLD } = {},
 ) {
   if (!Array.isArray(groups) || groups.length === 0) {
     throw new TypeError("corpus groups must be a non-empty array");
@@ -50,6 +46,7 @@ export function checkCorpusLeakage(
   }
 
   const records = [];
+  const issues = [];
   const seenIds = new Set();
   for (const group of groups) {
     if (typeof group?.split !== "string" || !group.split.trim()) {
@@ -61,22 +58,35 @@ export function checkCorpusLeakage(
       if (typeof item?.text !== "string") throw new TypeError(`case ${item.id} text must be a string`);
       if (seenIds.has(item.id)) throw new Error(`duplicate case id: ${item.id}`);
       seenIds.add(item.id);
+      const holdoutId = typeof item.holdoutId === "string" ? item.holdoutId.trim() : null;
+      if ((group.split === "H1" || group.split === "H2") && holdoutId !== group.split) {
+        addIssue(issues, {
+          kind: "holdout_id",
+          leftId: item.id,
+          rightId: item.id,
+          leftSplit: group.split,
+          rightSplit: group.split,
+          holdoutId,
+          expectedHoldoutId: group.split,
+        });
+      }
       records.push({
         id: item.id,
         text: item.text,
         split: group.split,
         documentId: typeof item.documentId === "string" ? item.documentId.trim() : "",
         authorId: typeof item.authorId === "string" ? item.authorId.trim() : "",
+        sourceId: typeof item.sourceId === "string" ? item.sourceId.trim() : "",
         normalized: normalizeCorpusText(item.text),
         grams: characterNgrams(item.text),
       });
     }
   }
 
-  const issues = [];
   const compareKeys = [
     ["document", "documentId"],
     ["author", "authorId"],
+    ["source", "sourceId"],
   ];
   for (const [kind, field] of compareKeys) {
     const byValue = new Map();
@@ -127,7 +137,7 @@ export function checkCorpusLeakage(
   for (const record of records) {
     for (const gram of record.grams) {
       const list = gramIndex.get(gram) ?? [];
-      if (list.length < maxCandidatesPerGram) list.push(record);
+      list.push(record);
       gramIndex.set(gram, list);
     }
   }
