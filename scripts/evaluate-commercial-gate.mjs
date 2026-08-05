@@ -37,32 +37,40 @@ export function evaluateGateReport(report, exitCode = 0, auxiliary = {}) {
   };
 }
 
+export function decodeCliJson(raw) {
+  const buffer = Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw));
+  const isUtf16Le = (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xfe)
+    || (buffer.length >= 4 && buffer[1] === 0x00 && buffer[3] === 0x00);
+  const text = (isUtf16Le ? buffer.toString("utf16le") : buffer.toString("utf8")).replace(/^\ufeff/u, "");
+  return JSON.parse(text);
+}
+
 function runCli(arguments_) {
   const corpus = optionValues(arguments_, "--corpus")[0];
   const manifest = optionValues(arguments_, "--manifest")[0];
   const gate = optionValues(arguments_, "--gate")[0];
   const cli = optionValues(arguments_, "--cli")[0] ?? resolve("target", "debug", process.platform === "win32" ? "geullint.exe" : "geullint");
   if ((!corpus && !manifest) || (corpus && manifest) || !gate) throw new Error("usage: node scripts/evaluate-commercial-gate.mjs --corpus PATH|--manifest PATH --gate PATH [--cli PATH]");
-  let stdout = "";
+  let stdout = Buffer.alloc(0);
   let exitCode = 0;
   try {
     const inputArgs = manifest ? ["--corpus-manifest", manifest] : ["--corpus", corpus];
-    stdout = execFileSync(cli, ["--format", "json", ...inputArgs, "--corpus-gate", gate], { encoding: "utf8" });
+    stdout = execFileSync(cli, ["--format", "json", ...inputArgs, "--corpus-gate", gate], { maxBuffer: 64 * 1024 * 1024 });
   } catch (error) {
-    stdout = error.stdout?.toString() ?? "";
+    stdout = error.stdout ?? Buffer.alloc(0);
     exitCode = error.status ?? 2;
   }
   let report;
   try {
-    report = JSON.parse(stdout);
+    report = decodeCliJson(stdout);
   } catch (error) {
     throw new Error(`CLI did not emit a JSON quality report: ${error.message}`);
   }
   const auxiliary = {};
   const leakagePath = optionValues(arguments_, "--leakage")[0];
-  if (leakagePath) auxiliary.leakage = JSON.parse(readFileSync(resolve(leakagePath), "utf8"));
+  if (leakagePath) auxiliary.leakage = decodeCliJson(readFileSync(resolve(leakagePath)));
   const parityPath = optionValues(arguments_, "--parity")[0];
-  if (parityPath) auxiliary.parity = JSON.parse(readFileSync(resolve(parityPath), "utf8"));
+  if (parityPath) auxiliary.parity = decodeCliJson(readFileSync(resolve(parityPath)));
   const reviewsPath = optionValues(arguments_, "--review-quality")[0];
   if (reviewsPath) {
     const reviewGatePath = optionValues(arguments_, "--review-gate")[0];

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { evaluateGateReport } from "./evaluate-commercial-gate.mjs";
+import { decodeCliJson, evaluateGateReport } from "./evaluate-commercial-gate.mjs";
 import { RED_TEAM_CASES, evaluateRedTeamResults } from "./red-team-korean.mjs";
 
 test("commercial gate report never turns a failed CLI into a pass", () => {
@@ -22,6 +22,11 @@ test("commercial gate report includes auxiliary leakage, review, and parity chec
   );
   assert.equal(result.passed, false);
   assert.equal(result.checks.reviewQuality.passed, false);
+});
+
+test("commercial gate decodes the UTF-16LE JSON emitted by the Windows CLI", () => {
+  const raw = Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from('{"qualityGate":{"passed":false}}', "utf16le")]);
+  assert.deepEqual(decodeCliJson(raw), { qualityGate: { passed: false } });
 });
 
 test("red-team fixtures include hard negatives and expected positive families", () => {

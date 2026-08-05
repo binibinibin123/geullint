@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "scope": {
+    "cases": 200,
+    "selection": "100 Tatoeba normal cases + 100 K-NCT H1 revision cases",
+    "reviewers": 3,
+    "adjudicator": 1,
+    "batchSize": 8
+  },
+  "models": [
+    { "name": "qwen2.5:1.5b", "digest": "65ec06548149b04c096a120e4a6da9d4017ea809c91734ea5631e89f96ddc57b" },
+    { "name": "gemma3:1b", "digest": "8648f39daa8fbf5b18c7b4e6a8fb4990c692751d49917417b8842ca5758e7ffc" },
+    { "name": "llama3.2:1b", "digest": "baf6a787fdffd633537aa2eb51cfd54cb93ff08e28040095462bb63daf552878" }
+  ],
+  "adjudicatorModel": "qwen2.5:1.5b",
+  "metrics": {
+    "reviewPackets": 600,
+    "unanimousCases": 194,
+    "conflictCases": 6,
+    "adjudicatedCases": 6,
+    "agreementRate": 0.97,
+    "adjudicationRate": 0.03,
+    "auditDisagreementRate": 0,
+    "missingProvenanceHashes": 0,
+    "ambiguousPackets": 594,
+    "normalPackets": 6
+  },
+  "artifacts": {
+    "baseCasesSha256": "a2b564a70ca5b2ecc0885e76787ea94a56da74c1568c98826a9dbd40afb4179b",
+    "reviewsSha256": "abdabc32096dde9bbf29139c37cb93c8640d1f1799ee07db8c50e1cfb30833fa",
+    "adjudicationsSha256": "6164249573367a4e15efa794d425fe9da8dfcb963e43e8fc5475eaddf3b92ce5",
+    "validatedSha256": "8a98b863f68fdce4b3df18bb0fff8f1394637ea8dcba0f2d6eeb8c69c61de4f8"
+  },
+  "interpretation": "AI blind-panel agreement is development evidence only. It is not independent human evidence and does not change the commercial NO-GO result."
+}

@@ -5,6 +5,9 @@ import {
   buildEvaluationBundle,
   parseKnct,
   parseKollaQueue,
+  parseKowikitext,
+  parseTatoebaDetailedAuthors,
+  parseTatoebaUsers,
   parseTatoeba,
   synthesizeSpacingCorrections,
 } from "./build-public-evaluation-bundle.mjs";
@@ -67,6 +70,7 @@ test("builds a deterministic bundle and retains mixed source counts", () => {
     normal: 1,
     errors: 1,
     sourceRevision: 1,
+    independentHuman: 0,
     crossSplitTextDeduplicated: 0,
     synthetic: 0,
   });
@@ -95,4 +99,48 @@ test("keeps a source revision and removes a cross-split normal duplicate", () =>
   });
   assert.deepEqual(result.cases.map((entry) => entry.id), ["knct-1"]);
   assert.equal(result.report.counts.crossSplitTextDeduplicated, 1);
+});
+
+test("maps Tatoeba sentence authors from the users export", () => {
+  const authors = parseTatoebaUsers("alice\t1\t1\t2020-01-01\n\tbogus\n");
+  const cases = parseTatoeba("1\tkor\t안녕하세요.\n", { ...source, authorBySentenceId: authors });
+  assert.equal(cases[0].authorId, "tatoeba:alice");
+});
+
+test("maps Tatoeba detailed-export authors without treating the sentence text as metadata", () => {
+  const authors = parseTatoebaDetailedAuthors("1\tkor\t문장입니다.\twriter\t\\N\t2024-01-01\n");
+  const cases = parseTatoeba("1\tkor\t문장입니다.\n", { ...source, authorBySentenceId: authors });
+  assert.equal(cases[0].authorId, "tatoeba:writer");
+});
+
+test("parses a CC-BY-SA KWikiText line as an H2 normal case", () => {
+  const cases = parseKowikitext("첫 번째 문장입니다.\n\n두 번째 문장입니다.\n", source, { limit: 1 });
+  assert.equal(cases.length, 1);
+  assert.equal(cases[0].caseType, "normal");
+  assert.equal(cases[0].split, "H2");
+  assert.equal(cases[0].textOrigin, "human_authored");
+});
+
+test("can reserve a separate release holdout from the same licensed source", () => {
+  const cases = parseKowikitext("첫 문장입니다.\n\n둘째 문장입니다.\n", source, { limit: 1, split: "release_holdout", holdoutId: null });
+  assert.equal(cases[0].split, "release_holdout");
+  assert.equal(cases[0].holdoutId, null);
+});
+
+test("expands KoLLA multi-reference rows into independent human annotations", () => {
+  const rows = [{
+    id: "kolla-2",
+    text: "문장 오류",
+    sourceTokens: ["문장", "오류"],
+    references: [
+      { annotator: "0", edits: [{ startToken: 1, endToken: 2, correction: "수정" }] },
+      { annotator: "1", edits: [{ startToken: 1, endToken: 2, correction: "교정" }] },
+    ],
+  }];
+  const cases = parseKollaQueue(rows, source, { expandReferences: true });
+  assert.equal(cases.length, 2);
+  assert.deepEqual(cases.map((entry) => entry.id), ["kolla-kolla-2-ref-0", "kolla-kolla-2-ref-1"]);
+  assert.equal(cases[0].annotationOrigin, "human_independent");
+  assert.equal(cases[0].annotationStatus, "reviewed");
+  assert.equal(cases[0].reviewProvenance.humanEvidence.evidenceId, "kolla-kolla-2-ref-0");
 });
