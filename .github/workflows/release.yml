@@ -256,7 +256,7 @@ jobs:
         run: node scripts/release-smoke.mjs "${{ steps.archive.outputs.archive }}" "${{ steps.archive.outputs.archive }}.sha256" "${{ matrix.binary_name }}"
 
       - name: Generate an SBOM for the downloadable archive
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
           # Scan the unpacked payload so the SPDX document describes the binary,
           # notices, and license files rather than only the outer archive.
@@ -420,7 +420,7 @@ jobs:
           $vsixContents = "../../release-staging/vsix-${{ matrix.target_name }}"
           Expand-Archive -Path $vsix -DestinationPath $vsixContents -Force
       - name: Generate a VSIX SBOM
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
           # Scan the VSIX payload instead of treating the zip as one opaque file.
           path: release-staging/vsix-${{ matrix.target_name }}
