@@ -265,7 +265,7 @@ jobs:
           output-file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-${{ matrix.target_name }}.spdx.json
           upload-artifact: false
       - name: Attest the downloadable archive and its SBOM
-        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: ${{ steps.archive.outputs.archive }}
           sbom-path: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-${{ matrix.target_name }}.spdx.json
@@ -428,7 +428,7 @@ jobs:
           output-file: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.spdx.json
           upload-artifact: false
       - name: Attest the VSIX and its SBOM
-        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.vsix
           sbom-path: release-artifacts/geullint-v${{ env.RELEASE_VERSION }}-vscode-${{ matrix.target_name }}.spdx.json
@@ -481,7 +481,7 @@ jobs:
             exit 1
           }
       - name: Attest the downloadable installer scripts
-        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: |
             release-assets/install.sh
