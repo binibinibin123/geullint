@@ -6,6 +6,6 @@
     "e2e": "node ../../scripts/playground-e2e.spec.mjs --no-build"
   },
   "devDependencies": {
-    "playwright": "1.62.1"
+    "playwright": "1.63.0"
   }
 }
